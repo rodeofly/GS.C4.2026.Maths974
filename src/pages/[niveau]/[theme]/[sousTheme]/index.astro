@@ -1,0 +1,21 @@
+---
+import A4Layout from '../../../layouts/A4.astro';
+import Etiquette from '../../../components/Etiquette.astro';
+
+const { niveau, theme, sousTheme } = Astro.params;
+const contentBase = `../../../../../content/${niveau}/${theme}/${sousTheme}`;
+const infoEntries = await Astro.glob(`${contentBase}/index.md`);
+if (!infoEntries.length) {
+  throw new Error(`Aucun fichier index.md trouvé pour le sous-thème ${niveau}/${theme}/${sousTheme}`);
+}
+const info = infoEntries[0];
+const etiquettesRaw = await Astro.glob(`${contentBase}/*.md`);
+const etiquettes = etiquettesRaw
+  .filter((item) => !item.file.endsWith('/index.md'))
+  .sort((a, b) => a.file.localeCompare(b.file, 'fr'));
+---
+<A4Layout info={info} niveau={niveau} theme={theme} sousTheme={sousTheme}>
+  {etiquettes.map((entry) => (
+    <Etiquette entry={entry} />
+  ))}
+</A4Layout>
