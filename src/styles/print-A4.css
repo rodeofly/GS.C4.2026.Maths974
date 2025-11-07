@@ -1,0 +1,43 @@
+@page {
+  size: A4 portrait;
+  margin: 1.5cm;
+}
+
+.layout-a4 {
+  padding: 1cm 0;
+}
+
+.layout-a4 .etiquettes-grid {
+  grid-template-columns: repeat(auto-fill, minmax(9cm, 1fr));
+  gap: 0.6cm;
+}
+
+.format-1_1 {
+  min-height: 24cm;
+}
+
+.format-1_2 {
+  min-height: 12cm;
+}
+
+.format-1_4 {
+  min-height: 6cm;
+}
+
+.format-1_8 {
+  min-height: 3cm;
+}
+
+@media print {
+  .layout-header {
+    margin-bottom: 1cm;
+  }
+  .etiquette {
+    box-shadow: none !important;
+    border-color: #9ca3af;
+    padding: 0.8cm;
+  }
+  .qr-wrapper svg {
+    filter: none;
+  }
+}

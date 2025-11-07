@@ -1,0 +1,63 @@
+---
+const { info, dialogId = 'subtheme-info' } = Astro.props;
+const fm = info?.frontmatter ?? {};
+const Content = info?.Content;
+const dialogTitle = fm.title ?? fm.sous_theme ?? 'Informations';
+---
+{info ? (
+  <>
+    <button
+      class="info-btn"
+      type="button"
+      aria-haspopup="dialog"
+      aria-controls={dialogId}
+      data-dialog={dialogId}
+    >
+      🛈 Infos
+    </button>
+    <dialog id={dialogId} class="subtheme-dialog" data-print>
+      <article>
+        <header>
+          <h2>{dialogTitle}</h2>
+          <button type="button" class="close-btn" data-close>Fermer</button>
+        </header>
+        <div class="dialog-body">
+          {Content ? <Content /> : null}
+        </div>
+      </article>
+    </dialog>
+    <section class="print-only">
+      <h2>{dialogTitle}</h2>
+      <div class="dialog-body">
+        {Content ? <Content /> : null}
+      </div>
+    </section>
+    <script is:inline>
+      (() => {
+        if (typeof window === 'undefined') return;
+        const id = `${dialogId}`;
+        const trigger = document.querySelector(`button[data-dialog="${id}"]`);
+        const dialog = document.getElementById(id);
+        if (!trigger || !(dialog instanceof HTMLDialogElement)) return;
+
+        const closeDialog = () => dialog.close();
+        trigger.addEventListener('click', () => {
+          if (dialog.open) {
+            closeDialog();
+          } else {
+            dialog.showModal();
+          }
+        });
+        dialog.addEventListener('click', (event) => {
+          const target = event.target;
+          if (target instanceof HTMLElement && (target.dataset.close !== undefined || target === dialog)) {
+            closeDialog();
+          }
+        });
+        dialog.querySelectorAll('[data-close]').forEach((btn) => {
+          btn.addEventListener('click', closeDialog);
+        });
+      })();
+    </script>
+  </>
+) : null}

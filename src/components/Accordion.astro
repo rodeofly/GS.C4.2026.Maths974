@@ -1,0 +1,11 @@
+---
+import { Markdown } from 'astro/components';
+
+const { titre, contenu } = Astro.props;
+---
+<details class="etiquette-accordion">
+  <summary>{titre}</summary>
+  <div class="accordion-content">
+    <Markdown content={contenu ?? ''} />
+  </div>
+</details>

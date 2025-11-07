@@ -1,0 +1,38 @@
+---
+const examples = [
+  {
+    niveau: 'terminale',
+    theme: 'algebre',
+    sousTheme: '2-factoriser-une-expression',
+  },
+];
+---
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guide de Survie Maths974</title>
+  </head>
+  <body>
+    <main style="font-family: sans-serif; max-width: 48rem; margin: 3rem auto; padding: 0 1.5rem;">
+      <h1>Guide de Survie Maths974</h1>
+      <p>
+        Cette démonstration Astro charge automatiquement les étiquettes Markdown pour chaque sous-thème.
+        Utilisez les liens suivants pour découvrir le rendu A4 et A5.
+      </p>
+      <ul>
+        {examples.map((item) => {
+          const base = `/${item.niveau}/${item.theme}/${item.sousTheme}`;
+          return (
+            <li>
+              <a href={base}>Sous-thème A4 : {base}</a>
+              {' | '}
+              <a href={`${base}/a5/`}>Format A5</a>
+            </li>
+          );
+        })}
+      </ul>
+    </main>
+  </body>
+</html>

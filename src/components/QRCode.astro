@@ -1,0 +1,16 @@
+---
+import { toString as qrToString } from 'qrcode';
+
+const { lien } = Astro.props;
+const { url, label, position = 'bas-droit', size = 'small' } = lien ?? {};
+if (!url) {
+  throw new Error('QRCode component requires a lien.url value.');
+}
+const svg = await qrToString(url, { type: 'svg', margin: 0, width: 256 });
+---
+<div class={`qr-wrapper pos-${position} size-${size}`}>
+  <a href={url} target="_blank" rel="noreferrer noopener" aria-label={label ?? 'Ouvrir le lien'}>
+    <div class="qr-svg" set:html={svg}></div>
+  </a>
+  {label ? <span class="label">{label}</span> : null}
+</div>

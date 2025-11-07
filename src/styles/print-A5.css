@@ -1,0 +1,37 @@
+@page {
+  size: A5 portrait;
+  margin: 1cm;
+}
+
+.layout-a5 {
+  padding: 0.75cm 0;
+}
+
+.layout-a5 .etiquettes-grid {
+  grid-template-columns: repeat(auto-fill, minmax(6.8cm, 1fr));
+  gap: 0.45cm;
+}
+
+.format-1_1 {
+  min-height: 16cm;
+}
+
+.format-1_2 {
+  min-height: 8cm;
+}
+
+.format-1_4 {
+  min-height: 4cm;
+}
+
+.format-1_8 {
+  min-height: 2cm;
+}
+
+@media print {
+  .etiquette {
+    padding: 0.6cm;
+    border-color: #a8a29e;
+    box-shadow: none !important;
+  }
+}
