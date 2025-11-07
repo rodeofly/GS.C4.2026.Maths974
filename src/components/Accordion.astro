@@ -1,11 +1,14 @@
 ---
-import { Markdown } from 'astro/components';
+import { createMarkdownProcessor } from '@astrojs/markdown-remark';
+
+const markdownProcessor = await createMarkdownProcessor();
 
 const { titre, contenu } = Astro.props;
+const { code: contenuHTML } = await markdownProcessor.render(contenu ?? '', {
+  fileID: 'AccordionContent',
+});
 ---
 <details class="etiquette-accordion">
   <summary>{titre}</summary>
-  <div class="accordion-content">
-    <Markdown content={contenu ?? ''} />
-  </div>
+  <div class="accordion-content" set:html={contenuHTML}></div>
 </details>
