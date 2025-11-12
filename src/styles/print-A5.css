@@ -1,19 +1,19 @@
 @page {
   size: A5 portrait;
-  margin: 1cm;
+  margin: 0.2cm;
 }
 
 .layout-a5 {
-  --page-margin: 1cm;
+  --page-margin: 0.2cm;
   --page-width: calc(14.8cm - 2 * var(--page-margin));
   --page-height: calc(21cm - 2 * var(--page-margin));
-  padding: 0.75cm 0.45cm;
+  padding: 0.35cm 0.25cm;
   margin: 0 auto;
   width: var(--page-width);
   min-height: var(--page-height);
   position: relative;
-  border: 1px dashed rgba(148, 163, 184, 0.35);
-  border-radius: 0.35cm;
+  border: none;
+  border-radius: 0.2cm;
   background: white;
 }
 
@@ -27,7 +27,7 @@
 .layout-a5 .etiquettes-grid {
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-auto-flow: row dense;
-  gap: 0.45cm;
+  gap: 0.2cm;
 }
 
 .layout-a5 .format-1_1 {
@@ -48,7 +48,7 @@
 
 @media print {
   .etiquette {
-    padding: 0.6cm 0.9cm;
+    padding: 0.45cm 0.55cm;
     border-color: #a8a29e;
     box-shadow: none !important;
   }

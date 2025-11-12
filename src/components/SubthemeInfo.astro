@@ -15,11 +15,12 @@ const hasMeta = objectif || competences.length > 0 || tags.length > 0;
       <button
         class="info-btn"
         type="button"
+        aria-label="Informations"
         aria-haspopup="dialog"
         aria-controls={dialogId}
         data-dialog={dialogId}
       >
-        🛈 Infos
+        <span aria-hidden="true">i</span>
       </button>
     </div>
     <dialog id={dialogId} class="subtheme-dialog" data-print>

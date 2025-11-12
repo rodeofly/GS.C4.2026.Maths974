@@ -1,23 +1,23 @@
 @page {
   size: A4 portrait;
-  margin: 1.5cm;
+  margin: 0.25cm;
 }
 
 .layout-a4 {
-  --page-margin: 1.5cm;
+  --page-margin: 0.25cm;
   --page-width: calc(21cm - 2 * var(--page-margin));
   --page-height: calc(29.7cm - 2 * var(--page-margin));
-  padding: 1cm 0.5cm;
+  padding: 0.35cm 0.25cm;
   margin: 0 auto;
   width: var(--page-width);
   min-height: var(--page-height);
   position: relative;
-  border: 1px dashed rgba(148, 163, 184, 0.35);
-  border-radius: 0.4cm;
+  border: none;
+  border-radius: 0.2cm;
   background: white;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 1.2cm;
+  gap: 0.4cm;
 }
 
 .layout-a4 .layout-header,
@@ -44,25 +44,14 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1.5cm 1.8cm;
-}
-
-.layout-a4 .etiquette::before {
-  left: clamp(-1.5rem, -2vw, -1rem);
-}
-
-.layout-a4 .etiquette::after {
-  right: clamp(-1.5rem, -2vw, -1rem);
+  padding: 0.9cm 0.8cm;
 }
 
 @media print {
-  .layout-header {
-    margin-bottom: 1cm;
-  }
   .etiquette {
     box-shadow: none !important;
     border-color: #9ca3af;
-    padding: 1.5cm 1.8cm;
+    padding: 0.9cm 0.8cm;
   }
   .qr-wrapper svg {
     filter: none;

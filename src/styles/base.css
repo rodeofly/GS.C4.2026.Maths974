@@ -35,7 +35,7 @@ body {
   color: #0f172a;
   font-family: var(--font-base);
   font-size: 1rem;
-  line-height: 1.3;
+  line-height: 1.15;
   -webkit-font-smoothing: antialiased;
   font-variant-ligatures: common-ligatures;
 }
@@ -46,15 +46,15 @@ p {
 }
 
 p + p {
-  margin-top: 0.35rem;
+  margin-top: 0.1rem;
 }
 
 .layout {
   min-height: 100vh;
-  padding: 1.25rem clamp(1rem, 3vw, 2rem);
+  padding: clamp(0.25rem, 1vw, 0.75rem);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .layout-header {
@@ -62,18 +62,19 @@ p + p {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.5rem 1rem;
+  gap: 0.25rem 0.5rem;
 }
 
 .theme-badge {
+  position: relative;
   display: inline-flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.2rem;
   background: var(--theme-badge-bg);
   color: var(--theme-badge-color);
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 0.65rem;
-  min-width: 11rem;
+  min-width: 9rem;
   box-shadow: 0 0.2rem 0.6rem rgba(2, 48, 71, 0.25);
 }
 
@@ -96,13 +97,15 @@ p + p {
 }
 
 .theme-badge .info-trigger {
-  margin-top: 0.2rem;
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  margin: 0;
 }
 
 .theme-badge .info-btn {
   border-color: var(--theme-badge-color);
   color: var(--theme-badge-color);
-  padding: 0.25rem 0.6rem;
   font-size: 0.85rem;
 }
 
@@ -111,7 +114,7 @@ p + p {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .subtheme-heading h1 {
@@ -125,20 +128,25 @@ p + p {
 
 .info-btn {
   background: transparent;
-  border: 2px solid var(--subtheme-color);
-  color: var(--subtheme-color);
-  border-radius: 999px;
-  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--theme-badge-color);
+  color: var(--theme-badge-color);
+  border-radius: 50%;
+  padding: 0.1rem;
+  width: 1.4rem;
+  height: 1.4rem;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
 .info-btn:hover,
 .info-btn:focus-visible {
-  background: var(--subtheme-color);
-  color: white;
+  background: var(--theme-badge-color);
+  color: var(--theme-badge-bg);
 }
 
 .etiquettes-grid {
@@ -153,38 +161,14 @@ p + p {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 1rem;
-  padding: clamp(1.1rem, 2.5vw, 1.5rem) clamp(1.4rem, 3vw, 2rem);
+  border-radius: 0.85rem;
+  padding: clamp(0.6rem, 1.5vw, 1rem) clamp(0.8rem, 2vw, 1.2rem);
   box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
   page-break-inside: avoid;
   overflow: visible;
-}
-
-.etiquette::before,
-.etiquette::after {
-  content: '{}';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: 'Latin Modern Roman', 'Times New Roman', serif;
-  font-size: clamp(5rem, 11vw, 7.5rem);
-  font-weight: 400;
-  line-height: 0.9;
-  color: rgba(11, 79, 108, 0.12);
-  pointer-events: none;
-}
-
-.etiquette::before {
-  content: '{';
-  left: clamp(-1.9rem, -3vw, -1.2rem);
-}
-
-.etiquette::after {
-  content: '}';
-  right: clamp(-1.9rem, -3vw, -1.2rem);
 }
 
 .etiquette-title {
