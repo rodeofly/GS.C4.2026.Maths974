@@ -109,10 +109,11 @@ const hasMeta = objectif || competences.length > 0 || tags.length > 0;
           ) : null}
         </div>
       </section>
-    <script is:inline>
+    <script is:inline data-dialog={dialogId}>
       (() => {
         if (typeof window === 'undefined') return;
-        const id = `${dialogId}`;
+        const script = document.currentScript;
+        const id = script?.dataset.dialog ?? 'subtheme-info';
         const trigger = document.querySelector(`button[data-dialog="${id}"]`);
         const dialog = document.getElementById(id);
         if (!trigger || !(dialog instanceof HTMLDialogElement)) return;
