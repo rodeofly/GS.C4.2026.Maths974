@@ -13,16 +13,21 @@ const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
 const liens = Array.isArray(fm.liens) ? fm.liens : [];
 ---
 <article class={`etiquette ${formatClass}`} id={fm.id}>
-  <header>
-    <h2>{fm.title ?? 'Étiquette'}</h2>
-    <div class="meta">
-      {fm.objectif ? <span><strong>Objectif :</strong> {fm.objectif}</span> : null}
-      {fm.sous_theme ? <span>{fm.sous_theme}</span> : null}
+  <header class="etiquette-header">
+    <h2 class="etiquette-title">{fm.title ?? 'Étiquette'}</h2>
+    <div class="etiquette-meta">
+      {fm.objectif ? (
+        <span class="meta-item">
+          <span class="meta-label">Objectif</span>
+          <span class="meta-value">{fm.objectif}</span>
+        </span>
+      ) : null}
+      {fm.sous_theme ? <span class="meta-item meta-subtheme">{fm.sous_theme}</span> : null}
     </div>
   </header>
   {contenus.length ? (
-    <section>
-      <h3>À retenir</h3>
+    <section class="etiquette-section section-retain">
+      <h3 class="section-title">À retenir</h3>
       <ul class="contenus">
         {contenus.map((item) => (
           <li>{item}</li>
@@ -31,13 +36,14 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
     </section>
   ) : null}
   {fm.rappel ? (
-    <section class="rappel">
-      <strong>Rappel :</strong> {fm.rappel}
+    <section class="etiquette-section section-rappel">
+      <h3 class="section-title">Rappel</h3>
+      <p>{fm.rappel}</p>
     </section>
   ) : null}
   {erreurs.length ? (
-    <section class="erreurs">
-      <strong>Erreurs fréquentes :</strong>
+    <section class="etiquette-section section-erreurs">
+      <h3 class="section-title">Erreurs fréquentes</h3>
       <ul>
         {erreurs.map((item) => (
           <li>{item}</li>
@@ -46,12 +52,12 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
     </section>
   ) : null}
   {Content ? (
-    <section class="texte">
+    <section class="etiquette-section section-texte">
       <Content />
     </section>
   ) : null}
   {accordions.length ? (
-    <section class="accordion-group">
+    <section class="etiquette-section section-accordeons">
       {accordions.map((item) => (
         <Accordion titre={item.titre} contenu={item.contenu} />
       ))}
