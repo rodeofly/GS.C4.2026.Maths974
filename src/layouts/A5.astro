@@ -17,11 +17,8 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — Format A5</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Latin+Modern+Roman:wght@400;500;700&display=swap"
-    />
     <link rel="stylesheet" href={printA5StylesUrl} media="print" />
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
     <script is:inline>
       window.MathJax = {
         tex: {
@@ -29,12 +26,8 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
             ['$', '$'],
             ['\\(', '\\)'],
           ],
-          packages: { '[+]': ['require', 'tikz'] },
         },
         svg: { fontCache: 'global' },
-        loader: {
-          load: ['[tex]/require', '[tex]/tikz'],
-        },
       };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
@@ -59,6 +52,32 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     </footer>
     <script is:inline>
       if (typeof window !== 'undefined') {
+        const convertTikzBlocks = () => {
+          document.querySelectorAll('.etiquette').forEach((container) => {
+            if (container.dataset.tikzProcessed === 'true') {
+              return;
+            }
+
+            let html = container.innerHTML;
+
+            if (!html || !html.includes('\\begin{tikzpicture}')) {
+              container.dataset.tikzProcessed = 'true';
+              return;
+            }
+
+            const tikzPattern = /\\\[(?:\s*\\require\{tikz\}\s*)?([\s\S]*?\\begin{tikzpicture}[\s\S]*?\\end{tikzpicture}[\s\S]*?)\\\]/g;
+
+            html = html.replace(tikzPattern, (_, tikz) => {
+              const cleaned = tikz.replace(/\\require\{tikz\}/g, '').trim();
+              return '<script type="text/tikz">' + cleaned + '</scr' + 'ipt>';
+            });
+
+            html = html.replace(/\\require\{tikz\}/g, '');
+            container.innerHTML = html;
+            container.dataset.tikzProcessed = 'true';
+          });
+        };
+
         const renderTikz = () => {
           if (window.tikzjax?.renderAll) {
             window.tikzjax.renderAll();
@@ -66,6 +85,8 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
         };
 
         const runMath = () => {
+          convertTikzBlocks();
+
           if (window.MathJax?.typesetPromise) {
             window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
           } else {
@@ -75,10 +96,16 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
 
         const onReady = () => {
           if (window.MathJax?.startup?.promise) {
-            window.MathJax.startup.promise.then(runMath);
+            window.MathJax.startup.promise.then(runMath).catch(renderTikz);
           } else {
             runMath();
           }
+        };
+
+        const resetTikzProcessing = () => {
+          document.querySelectorAll('.etiquette').forEach((container) => {
+            delete container.dataset.tikzProcessed;
+          });
         };
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -87,7 +114,10 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
           document.addEventListener('DOMContentLoaded', onReady, { once: true });
         }
 
-        document.addEventListener('astro:after-swap', onReady);
+        document.addEventListener('astro:after-swap', () => {
+          resetTikzProcessing();
+          onReady();
+        });
 
         const openAll = () => {
           document.querySelectorAll('details').forEach((detail) => {
