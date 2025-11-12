@@ -1,6 +1,7 @@
 ---
 import '../styles/base.css';
 import '../styles/print-A5.css';
+import printA5StylesUrl from '../styles/print-A5.css?url';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
@@ -15,7 +16,7 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — Format A5</title>
-    <link rel="stylesheet" href={Astro.resolve('../styles/print-A5.css')} media="print" />
+    <link rel="stylesheet" href={printA5StylesUrl} media="print" />
     <script>
       {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };`}
     </script>

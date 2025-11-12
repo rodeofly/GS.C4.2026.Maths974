@@ -2,6 +2,24 @@
 import A4Layout from '../../../../layouts/A4.astro';
 import Etiquette from '../../../../components/Etiquette.astro';
 
+export async function getStaticPaths() {
+  const infoEntries = await Astro.glob('../../../../../content/*/*/*/index.md');
+
+  return infoEntries.map((info) => {
+    const match = info.file.match(/\/content\/([^/]+)\/([^/]+)\/([^/]+)\/index\.md$/);
+
+    if (!match) {
+      throw new Error(`Impossible d'extraire les paramètres depuis le chemin ${info.file}`);
+    }
+
+    const [, niveau, theme, sousTheme] = match;
+
+    return {
+      params: { niveau, theme, sousTheme },
+    };
+  });
+}
+
 const { niveau, theme, sousTheme } = Astro.params;
 const contentPathSegment = `/content/${niveau}/${theme}/${sousTheme}/`;
 const infoEntries = await Astro.glob('../../../../../content/*/*/*/index.md');

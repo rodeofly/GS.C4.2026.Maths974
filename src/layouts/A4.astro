@@ -1,6 +1,7 @@
 ---
 import '../styles/base.css';
 import '../styles/print-A4.css';
+import printA4StylesUrl from '../styles/print-A4.css?url';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
@@ -15,7 +16,7 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <link rel="stylesheet" href={Astro.resolve('../styles/print-A4.css')} media="print" />
+    <link rel="stylesheet" href={printA4StylesUrl} media="print" />
     <script>
       {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };`}
     </script>
