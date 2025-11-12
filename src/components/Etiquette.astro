@@ -63,7 +63,11 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
       ))}
     </section>
   ) : null}
-  {liens.map((lien) => (
-    <QRCode lien={lien} />
-  ))}
+  {liens.length ? (
+    <div class="qr-collection">
+      {liens.map((lien) => (
+        <QRCode lien={lien} />
+      ))}
+    </div>
+  ) : null}
 </article>
