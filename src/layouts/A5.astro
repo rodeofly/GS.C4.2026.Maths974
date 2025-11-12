@@ -16,12 +16,13 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} — Format A5</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Latin+Modern+Roman:wght@400;500;700&display=swap"
     />
     <link rel="stylesheet" href={printA5StylesUrl} media="print" />
-    <script>
+    <script is:inline>
       window.MathJax = {
         tex: {
           inlineMath: [

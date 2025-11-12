@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Maths974 favicon</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b3d91" />
+      <stop offset="100%" stop-color="#1f7dd4" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="12" fill="url(#bg)" />
+  <g fill="#ffffff" font-family="'Fira Sans', 'Segoe UI', sans-serif" font-weight="700">
+    <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="32">M</text>
+  </g>
+  <path d="M18 48h28" stroke="#f9d44a" stroke-width="4" stroke-linecap="round" />
+</svg>
