@@ -18,9 +18,10 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     <title>{title}</title>
     <link rel="stylesheet" href={printA4StylesUrl} media="print" />
     <script>
-      {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };`}
+      {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], packages: { '[+]': ['tikz'] } }, svg: { fontCache: 'global' } };`}
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
+    <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
   <body class="layout layout-a4">
     <header class="layout-header">
@@ -47,6 +48,36 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
           });
         };
         window.addEventListener('beforeprint', openAll);
+
+        const renderTikz = () => {
+          if (window.tikzjax?.renderAll) {
+            window.tikzjax.renderAll();
+          }
+        };
+
+        const runMath = () => {
+          if (window.MathJax?.typesetPromise) {
+            window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
+          } else {
+            renderTikz();
+          }
+        };
+
+        const onReady = () => {
+          if (window.MathJax?.startup?.promise) {
+            window.MathJax.startup.promise.then(runMath);
+          } else {
+            runMath();
+          }
+        };
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+          onReady();
+        } else {
+          document.addEventListener('DOMContentLoaded', onReady, { once: true });
+        }
+
+        document.addEventListener('astro:after-swap', onReady);
       }
     </script>
   </body>

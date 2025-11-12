@@ -35,7 +35,7 @@
   .etiquette {
     box-shadow: none !important;
     border-color: #9ca3af;
-    padding: 0.8cm;
+    padding: 0.8cm 1.1cm;
   }
   .qr-wrapper svg {
     filter: none;
