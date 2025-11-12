@@ -4,28 +4,46 @@
 }
 
 .layout-a4 {
-  padding: 1cm 0;
+  --page-margin: 1.5cm;
+  --page-width: calc(21cm - 2 * var(--page-margin));
+  --page-height: calc(29.7cm - 2 * var(--page-margin));
+  padding: 1cm 0.5cm;
+  margin: 0 auto;
+  width: var(--page-width);
+  min-height: var(--page-height);
+  position: relative;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 0.4cm;
+  background: white;
+}
+
+.layout-a4 .layout-header,
+.layout-a4 .etiquettes-grid,
+.layout-a4 footer {
+  position: relative;
+  z-index: 1;
 }
 
 .layout-a4 .etiquettes-grid {
-  grid-template-columns: repeat(auto-fill, minmax(9cm, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   gap: 0.6cm;
 }
 
-.format-1_1 {
-  min-height: 24cm;
+.layout-a4 .format-1_1 {
+  grid-column: span 8;
 }
 
-.format-1_2 {
-  min-height: 12cm;
+.layout-a4 .format-1_2 {
+  grid-column: span 4;
 }
 
-.format-1_4 {
-  min-height: 6cm;
+.layout-a4 .format-1_4 {
+  grid-column: span 2;
 }
 
-.format-1_8 {
-  min-height: 3cm;
+.layout-a4 .format-1_8 {
+  grid-column: span 1;
 }
 
 @media print {
