@@ -22,7 +22,7 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
     />
     <link rel="stylesheet" href={printA5StylesUrl} media="print" />
     <script>
-      {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };`}
+      {`window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], packages: { '[+]': ['tikz'] } }, svg: { fontCache: 'global' } };`}
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" defer></script>
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
@@ -45,21 +45,36 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
       <slot name="footer" />
     </footer>
     <script is:inline>
-      const runRenderers = () => {
-        if (window.MathJax?.typesetPromise) {
-          window.MathJax.typesetPromise();
-        }
-        if (window.tikzjax?.renderAll) {
-          window.tikzjax.renderAll();
-        }
-      };
-
       if (typeof window !== 'undefined') {
+        const renderTikz = () => {
+          if (window.tikzjax?.renderAll) {
+            window.tikzjax.renderAll();
+          }
+        };
+
+        const runMath = () => {
+          if (window.MathJax?.typesetPromise) {
+            window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
+          } else {
+            renderTikz();
+          }
+        };
+
+        const onReady = () => {
+          if (window.MathJax?.startup?.promise) {
+            window.MathJax.startup.promise.then(runMath);
+          } else {
+            runMath();
+          }
+        };
+
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
-          runRenderers();
+          onReady();
         } else {
-          document.addEventListener('DOMContentLoaded', runRenderers, { once: true });
+          document.addEventListener('DOMContentLoaded', onReady, { once: true });
         }
+
+        document.addEventListener('astro:after-swap', onReady);
 
         const openAll = () => {
           document.querySelectorAll('details').forEach((detail) => {
@@ -67,7 +82,6 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
           });
         };
         window.addEventListener('beforeprint', openAll);
-        document.addEventListener('astro:after-swap', runRenderers);
       }
     </script>
   </body>

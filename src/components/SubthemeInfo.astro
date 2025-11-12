@@ -3,6 +3,11 @@ const { info, dialogId = 'subtheme-info' } = Astro.props;
 const fm = info?.frontmatter ?? {};
 const Content = info?.Content;
 const dialogTitle = fm.title ?? fm.sous_theme ?? 'Informations';
+const competences = Array.isArray(fm.competences) ? fm.competences : [];
+const tags = Array.isArray(fm.tags) ? fm.tags : [];
+const liens = Array.isArray(fm.liens) ? fm.liens : [];
+const objectif = fm.objectif ?? fm.resume ?? '';
+const hasMeta = objectif || competences.length > 0 || tags.length > 0;
 ---
 {info ? (
   <>
@@ -15,23 +20,95 @@ const dialogTitle = fm.title ?? fm.sous_theme ?? 'Informations';
     >
       🛈 Infos
     </button>
-    <dialog id={dialogId} class="subtheme-dialog" data-print>
-      <article>
-        <header>
-          <h2>{dialogTitle}</h2>
-          <button type="button" class="close-btn" data-close>Fermer</button>
-        </header>
+      <dialog id={dialogId} class="subtheme-dialog" data-print>
+        <article>
+          <header>
+            <h2>{dialogTitle}</h2>
+            <button type="button" class="close-btn" data-close>Fermer</button>
+          </header>
+          <div class="dialog-body">
+            {hasMeta ? (
+              <div class="info-meta">
+                {objectif ? <p class="objectif">{objectif}</p> : null}
+                {competences.length ? (
+                  <div class="meta-group">
+                    <h3>Compétences mobilisées</h3>
+                    <ul class="info-chips">
+                      {competences.map((item) => (
+                        <li class="info-chip">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {tags.length ? (
+                  <div class="meta-group">
+                    <h3>Mots-clés</h3>
+                    <ul class="info-chips">
+                      {tags.map((item) => (
+                        <li class="info-chip tag">{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {Content ? <Content /> : null}
+            {liens.length ? (
+              <ul class="info-links">
+                {liens.map((lien) => (
+                  <li>
+                    <a href={lien.url} target="_blank" rel="noreferrer noopener">
+                      {lien.label ?? lien.type ?? lien.url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        </article>
+      </dialog>
+      <section class="print-only">
+        <h2>{dialogTitle}</h2>
         <div class="dialog-body">
+          {hasMeta ? (
+            <div class="info-meta">
+              {objectif ? <p class="objectif">{objectif}</p> : null}
+              {competences.length ? (
+                <div class="meta-group">
+                  <h3>Compétences mobilisées</h3>
+                  <ul class="info-chips">
+                    {competences.map((item) => (
+                      <li class="info-chip">{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {tags.length ? (
+                <div class="meta-group">
+                  <h3>Mots-clés</h3>
+                  <ul class="info-chips">
+                    {tags.map((item) => (
+                      <li class="info-chip tag">{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {Content ? <Content /> : null}
+          {liens.length ? (
+            <ul class="info-links">
+              {liens.map((lien) => (
+                <li>
+                  <a href={lien.url} target="_blank" rel="noreferrer noopener">
+                    {lien.label ?? lien.type ?? lien.url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
-      </article>
-    </dialog>
-    <section class="print-only">
-      <h2>{dialogTitle}</h2>
-      <div class="dialog-body">
-        {Content ? <Content /> : null}
-      </div>
-    </section>
+      </section>
     <script is:inline>
       (() => {
         if (typeof window === 'undefined') return;

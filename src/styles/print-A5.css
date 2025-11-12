@@ -30,7 +30,7 @@
 
 @media print {
   .etiquette {
-    padding: 0.6cm;
+    padding: 0.6cm 0.9cm;
     border-color: #a8a29e;
     box-shadow: none !important;
   }
