@@ -24,11 +24,11 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
             ['$', '$'],
             ['\\(', '\\)'],
           ],
-          packages: { '[+]': ['require'] },
+          packages: { '[+]': ['require', 'tikz'] },
         },
         svg: { fontCache: 'global' },
         loader: {
-          load: ['[tex]/require'],
+          load: ['[tex]/require', '[tex]/tikz'],
         },
       };
     </script>

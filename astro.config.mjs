@@ -8,5 +8,6 @@ export default defineConfig({
   },
   markdown: {
     syntaxHighlight: false,
+    smartypants: false,
   },
 });

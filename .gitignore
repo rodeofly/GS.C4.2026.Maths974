@@ -1,5 +1,7 @@
 node_modules/
-.dist/
+.astro/
+dist/
 .output/
 .DS_Store
 .env*
+src/env.d.ts

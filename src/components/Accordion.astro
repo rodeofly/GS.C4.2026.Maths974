@@ -1,7 +1,10 @@
 ---
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 
-const markdownProcessor = await createMarkdownProcessor();
+const markdownProcessor = await createMarkdownProcessor({
+  smartypants: false,
+  syntaxHighlight: false,
+});
 
 const { titre, contenu } = Astro.props;
 const { code: contenuHTML } = await markdownProcessor.render(contenu ?? '', {
