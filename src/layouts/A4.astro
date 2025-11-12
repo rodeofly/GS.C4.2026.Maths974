@@ -36,12 +36,14 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
   <body class="layout layout-a4">
     <header class="layout-header">
       <div class="theme-badge">
-        <span class="niveau-label">{niveauLabel}</span>
-        <span class="theme-label">{themeLabel}</span>
+        <div class="theme-badge-meta">
+          <span class="niveau-label">{niveauLabel}</span>
+          <span class="theme-label">{themeLabel}</span>
+        </div>
+        <SubthemeInfo info={info} />
       </div>
       <div class="subtheme-heading">
         <h1>{title}</h1>
-        <SubthemeInfo info={info} />
       </div>
     </header>
     <main class="etiquettes-grid">

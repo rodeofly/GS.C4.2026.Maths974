@@ -11,16 +11,18 @@ const hasMeta = objectif || competences.length > 0 || tags.length > 0;
 ---
 {info ? (
   <>
-    <button
-      class="info-btn"
-      type="button"
-      aria-haspopup="dialog"
-      aria-controls={dialogId}
-      data-dialog={dialogId}
-    >
-      🛈 Infos
-    </button>
-      <dialog id={dialogId} class="subtheme-dialog" data-print>
+    <div class="info-trigger">
+      <button
+        class="info-btn"
+        type="button"
+        aria-haspopup="dialog"
+        aria-controls={dialogId}
+        data-dialog={dialogId}
+      >
+        🛈 Infos
+      </button>
+    </div>
+    <dialog id={dialogId} class="subtheme-dialog" data-print>
         <article>
           <header>
             <h2>{dialogTitle}</h2>
