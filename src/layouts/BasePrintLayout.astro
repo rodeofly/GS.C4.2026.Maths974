@@ -1,6 +1,7 @@
 ---
 // src/layouts/BasePrintLayout.astro
 import '../styles/main.css';
+import Navbar from '../components/Navbar.astro'; // <--- Import
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, cssUrl, niveauLabel, themeLabel } = Astro.props;
@@ -29,9 +30,7 @@ const { info, title, layoutClass, cssUrl, niveauLabel, themeLabel } = Astro.prop
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
   <body class={`layout ${layoutClass}`}>
-    <a href="/" class="home-link print:hidden">
-      ⬅ Retour au sommaire
-    </a>
+    <Navbar title={title} />
     <header class="layout-header">
       <div class="theme-badge">
         <div class="theme-badge-meta">
