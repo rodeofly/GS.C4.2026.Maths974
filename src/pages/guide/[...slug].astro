@@ -5,7 +5,6 @@ import Etiquette from '../../components/Etiquette.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('guide');
-  // On génère les pages pour les index.md
   return entries
     .filter(e => e.slug.endsWith('/index') || e.id.endsWith('/index.md'))
     .map(entry => ({
@@ -17,22 +16,19 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { slug } = Astro.params;
 
-// Récupérer les enfants de ce dossier GUIDE
 const allGuides = await getCollection('guide');
 const children = allGuides
   .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
   .sort((a, b) => a.id.localeCompare(b.id));
 
-// Rendu du contenu de l'index
 const { Content: IndexContent } = await entry.render();
 const hasIndexContent = entry.body && entry.body.trim().length > 0;
 ---
 
 <A4Layout info={entry} niveau={entry.data.niveau} theme={entry.data.theme}>
   
-  <!-- SECTION INDEX (avant les étiquettes) -->
   {hasIndexContent && (
-    <article class="etiquette etiquette-full-width etiquette-index format-1_1">
+    <article class="etiquette etiquette-full-width etiquette-index format-1_1" style="order: -999;">
       <header class="etiquette-header">
         <h2 class="etiquette-title">{entry.data.sous_theme || entry.data.title}</h2>
       </header>
@@ -43,7 +39,6 @@ const hasIndexContent = entry.body && entry.body.trim().length > 0;
     </article>
   )}
   
-  <!-- ÉTIQUETTES ENFANTS (après l'index) -->
-  {children.map(child => <Etiquette entry={child} />)}
+  {children.map((child, index) => <Etiquette entry={child} />)}
   
 </A4Layout>

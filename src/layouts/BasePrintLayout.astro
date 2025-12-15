@@ -1,10 +1,10 @@
 ---
 // src/layouts/BasePrintLayout.astro
 import '../styles/main.css';
-import Navbar from '../components/Navbar.astro'; // <--- Import
+import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
-const { info, title, layoutClass, cssUrl, niveauLabel, themeLabel } = Astro.props;
+const { info, title, layoutClass, niveauLabel, themeLabel } = Astro.props;
 ---
 <!DOCTYPE html>
 <html lang="fr">
@@ -13,8 +13,6 @@ const { info, title, layoutClass, cssUrl, niveauLabel, themeLabel } = Astro.prop
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    
-    <link rel="stylesheet" href={cssUrl} media="print" />
     
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
     
@@ -102,7 +100,6 @@ const { info, title, layoutClass, cssUrl, niveauLabel, themeLabel } = Astro.prop
           });
         };
 
-        // Ouverture des <details> pour l'impression
         const openAll = () => {
           document.querySelectorAll('details').forEach((detail) => {
             detail.setAttribute('open', '');

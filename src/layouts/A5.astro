@@ -1,10 +1,7 @@
 ---
 import BasePrintLayout from './BasePrintLayout.astro';
-import printA5StylesUrl from '../styles/print-A5.css?url';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
-
-// CORRECTION CRITIQUE ICI AUSSI :
 const fm = info?.data ?? info?.frontmatter ?? {};
 
 const titleRaw = fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sous-thème';
@@ -17,7 +14,6 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
   info={info}
   title={title}
   layoutClass="layout-a5"
-  cssUrl={printA5StylesUrl}
   niveauLabel={niveauLabel}
   themeLabel={themeLabel}
 >

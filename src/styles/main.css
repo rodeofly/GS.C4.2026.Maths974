@@ -19,11 +19,11 @@
 @import './components/tags.css';
 
 /* 3. Layouts */
-@import './layouts/page.css';
+/* @import './layouts/page.css'; */  /* Vide pour l'instant */
 
 /* 4. Thèmes */
-@import './themes/guide.css';
-@import './themes/rapido.css';
+/* @import './themes/guide.css'; */  /* Vide pour l'instant */
+/* @import './themes/rapido.css'; */ /* Vide pour l'instant */
 
 /* 5. Print (chargé uniquement à l'impression) */
 @import './layouts/print-a4.css' print;
