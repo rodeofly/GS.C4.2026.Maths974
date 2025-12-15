@@ -40,6 +40,25 @@ body {
   font-variant-ligatures: common-ligatures;
 }
 
+home-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #e2e8f0;
+  color: #334155;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+.home-link:hover {
+  background-color: #cbd5e1;
+}
+@media print {
+  .home-link { display: none !important; }
+}
+
+
 .content p,
 p {
   margin: 0;

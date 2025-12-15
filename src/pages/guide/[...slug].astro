@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content';
+import A4Layout from '../../layouts/A4.astro';
+import Etiquette from '../../components/Etiquette.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('guide');
+  // On génère les pages pour les index.md
+  return entries
+    .filter(e => e.slug.endsWith('/index') || e.id.endsWith('/index.md'))
+    .map(entry => ({
+      params: { slug: entry.slug.replace(/\/index$/, '') },
+      props: { entry },
+    }));
+}
+
+const { entry } = Astro.props;
+const { slug } = Astro.params;
+
+// Récupérer les enfants de ce dossier GUIDE
+const allGuides = await getCollection('guide');
+const children = allGuides
+  .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
+  .sort((a, b) => a.id.localeCompare(b.id));
+---
+
+<A4Layout info={entry} niveau={entry.data.niveau} theme={entry.data.theme}>
+  {children.map(child => <Etiquette entry={child} />)}
+</A4Layout>

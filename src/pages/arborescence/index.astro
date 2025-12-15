@@ -1,59 +1,25 @@
 ---
-title: "Arborescence thématique"
-resume: "Vue synthétique des étiquettes de classement pour les séquences et ressources."
-tags:
-  - "Organisation"
-  - "Révisions"
----
-
-```text
-A. Séquence en cours
-├── Fiches de méthodes clés
-├── Exercices phares de la période
-└── Points de vigilance immédiats
-
-B. Lectures graphiques
-├── Courbes
-├── Coordonnées
-└── Antécédents
-
-C. Calculs numériques
-├── Fractions
-├── Puissances
-└── Ordre de grandeur
-
-D. Évolutions et pourcentages
-├── Taux
-├── Coefficients multiplicateurs
-└── Indices d'évolution
-
-E. Calculs algébriques
-├── Équations
-├── Factorisation
-└── Inéquations
-
-F. Fonctions
-├── Lecture graphique
-├── Variations
-└── Droites
-
-G. Statistiques et probabilités
-├── Diagrammes
-├── Loi de Bernoulli
-└── Échantillonnage
-
-H. Algorithmique et programmation
-├── Python
-├── Boucles
-└── Conditions---
-import { getEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import A4Layout from '../../layouts/A4.astro';
 
-// On va chercher le fichier arborescence/index.md dans la collection
-const entry = await getEntry('guide', 'arborescence/index');
+// 1. Au lieu de chercher une aiguille précise, on récupère toute la botte de foin
+const allEntries = await getCollection('guide');
+
+// 2. On cherche le fichier qui correspond à l'arborescence
+// On teste plusieurs possibilités pour être sûr de le trouver
+const entry = allEntries.find(e => 
+  e.slug === 'arborescence' || 
+  e.slug === 'arborescence/index' ||
+  e.id === 'arborescence/index.md'
+);
 
 if (!entry) {
-  throw new Error("⚠️ Fichier 'src/content/guide/arborescence/index.md' introuvable !");
+  // Si on est ici, c'est que le fichier n'est VRAIMENT pas dans src/content/guide/
+  throw new Error(`
+    ⚠️ Fichier introuvable ! 
+    Assurez-vous que le fichier 'index.md' existe bien dans le dossier :
+    'src/content/guide/arborescence/'
+  `);
 }
 
 const { Content } = await entry.render();
@@ -64,6 +30,7 @@ const { Content } = await entry.render();
     <header class="etiquette-header">
       <h2 class="etiquette-title">{entry.data.title}</h2>
     </header>
+    
     <section class="etiquette-section section-texte">
       <div class="arborescence-container">
         <Content />
@@ -73,13 +40,14 @@ const { Content } = await entry.render();
 </A4Layout>
 
 <style>
-  /* Pour afficher l'arbre proprement */
   .arborescence-container :global(pre) {
     background: #f1f5f9;
     padding: 1rem;
     border-radius: 0.5rem;
     border: 1px solid #cbd5e1;
     font-family: monospace;
+    font-size: 0.9rem;
     line-height: 1.4;
+    white-space: pre-wrap;
   }
 </style>

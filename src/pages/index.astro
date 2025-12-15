@@ -1,435 +1,85 @@
 ---
-// src/pages/index.astro
 import { getCollection } from 'astro:content';
 
-// Fonction utilitaire pour nettoyer les slugs si un titre manque
-const toTitle = (slug) =>
-  slug
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toLocaleUpperCase('fr'))
-    .replace(/\d+/g, (match) => match);
+// On récupère juste les racines (les niveaux) de chaque collection
+const guides = await getCollection('guide', ({ slug }) => slug.split('/').length === 2 && slug.endsWith('/index'));
+const rapidos = await getCollection('rapidos', ({ slug }) => slug.split('/').length === 2 && slug.endsWith('/index'));
 
-const sortByName = (a, b) =>
-  a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' });
-
-// 1. On récupère tout le contenu de la collection "guide"
-const allEntries = await getCollection('guide');
-
-// 2. On filtre pour ne garder que les fichiers "index.md" qui représentent les sous-thèmes
-// Le slug est typiquement : "terminale/analyse/limites/index"
-const subThemeEntries = allEntries.filter((entry) => entry.slug.endsWith('/index'));
-
-// 3. On reconstruit l'arborescence à partir des entrées trouvées
-const tree = {};
-
-for (const entry of subThemeEntries) {
-  // On décompose le slug : [niveau, theme, sousTheme, 'index']
-  const parts = entry.slug.split('/');
-  if (parts.length < 4) continue;
-
-  const [niveauSlug, themeSlug, sousThemeSlug] = parts;
-  const { title, sous_theme, niveau, theme } = entry.data;
-
-  // Initialisation du niveau s'il n'existe pas
-  if (!tree[niveauSlug]) {
-    tree[niveauSlug] = {
-      name: niveau || toTitle(niveauSlug),
-      slug: niveauSlug,
-      themes: {},
-    };
-  }
-
-  // Initialisation du thème s'il n'existe pas
-  if (!tree[niveauSlug].themes[themeSlug]) {
-    tree[niveauSlug].themes[themeSlug] = {
-      name: theme || toTitle(themeSlug),
-      slug: themeSlug,
-      sousThemes: [],
-    };
-  }
-
-  // Ajout du sous-thème avec son lien et son titre "propre"
-  tree[niveauSlug].themes[themeSlug].sousThemes.push({
-    name: title || sous_theme || toTitle(sousThemeSlug),
-    href: `/${niveauSlug}/${themeSlug}/${sousThemeSlug}/`,
-  });
-}
-
-// 4. On transforme l'objet en tableau trié pour l'affichage (format attendu par le template)
-const sommaire = Object.values(tree)
-  .map((niveauItem) => ({
-    name: niveauItem.name,
-    href: `/${niveauItem.slug}/`, // Lien vers la page niveau (optionnel)
-    themes: Object.values(niveauItem.themes)
-      .map((themeItem) => ({
-        ...themeItem,
-        href: `/${niveauItem.slug}/${themeItem.slug}/`, // Lien vers la page thème (optionnel)
-        sousThemes: themeItem.sousThemes.sort(sortByName),
-      }))
-      .sort(sortByName),
-  }))
-  .sort(sortByName);
-
-const heroHighlights = [
-  {
-    title: 'Fiches prêtes à l’emploi',
-    description: 'Des supports A4 et A5 imprimables pour chaque notion clé.',
-  },
-  {
-    title: 'Parcours guidés',
-    description: 'Une progression organisée par niveaux, thèmes et sous-thèmes.',
-  },
-  {
-    title: 'Outils de révision',
-    description: 'Des résumés et méthodes pour aller à l’essentiel rapidement.',
-  },
-];
+// Fonction de tri
+const sortContent = (a, b) => a.slug.localeCompare(b.slug);
 ---
+
 <!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Guide de Survie Maths974</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <style>
-      :root {
-        color-scheme: light;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        color: #0f172a;
-        background-color: #f1f5f9;
-      }
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Maths974 - Accueil</title>
+  <style>
+    body { font-family: system-ui; margin: 0; background: #f1f5f9; color: #1e293b; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { max-width: 900px; width: 100%; padding: 2rem; }
+    h1 { text-align: center; color: #0f172a; font-size: 2.5rem; margin-bottom: 3rem; }
+    
+    .menu-section { margin-bottom: 3rem; }
+    .section-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+    .guide-color { color: #0b4f6c; }
+    .rapido-color { color: #d97706; }
 
-      * {
-        box-sizing: border-box;
-      }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+    
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid transparent;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    
+    .guide-card:hover { border-color: #0b4f6c; }
+    .rapido-card:hover { border-color: #d97706; }
 
-      body {
-        margin: 0;
-        background: radial-gradient(circle at 20% 20%, #e0f2fe, transparent 55%),
-          radial-gradient(circle at 80% 0%, #fce7f3, transparent 50%),
-          #f8fafc;
-      }
+    .card h3 { margin: 0; font-size: 1.25rem; }
+    .card p { margin: 0.5rem 0 0; font-size: 0.9rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Maths974</h1>
 
-      a {
-        color: inherit;
-      }
+    <div class="menu-section">
+      <div class="section-title guide-color">
+        <span>📚</span> Guides de Survie
+      </div>
+      <div class="grid">
+        {guides.sort(sortContent).map(g => (
+          <a href={`/guide/${g.slug.replace('/index', '')}/`} class="card guide-card">
+            <h3>{g.data.title}</h3>
+            <p>{g.data.resume || "Fiches de révision complètes"}</p>
+          </a>
+        ))}
+      </div>
+    </div>
 
-      main {
-        max-width: 72rem;
-        margin: 0 auto;
-        padding: 4rem 1.5rem 6rem;
-        display: grid;
-        gap: 3rem;
-      }
+    <div class="menu-section">
+      <div class="section-title rapido-color">
+        <span>⚡</span> Rapidos
+      </div>
+      <div class="grid">
+        {rapidos.length > 0 ? rapidos.sort(sortContent).map(r => (
+          <a href={`/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
+            <h3>{r.data.title}</h3>
+            <p>Exercices d'échauffement</p>
+          </a>
+        )) : (
+          <p style="color: #64748b; font-style: italic;">Aucun rapido disponible pour le moment.</p>
+        )}
+      </div>
+    </div>
 
-      .hero {
-        background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 116, 144, 0.25));
-        border-radius: 1.75rem;
-        padding: 3rem;
-        box-shadow: 0 25px 50px -20px rgba(15, 23, 42, 0.25);
-        display: grid;
-        gap: 1.5rem;
-      }
-
-      .hero h1 {
-        font-size: clamp(2.75rem, 5vw, 3.5rem);
-        line-height: 1.1;
-        margin: 0;
-      }
-
-      .hero p {
-        font-size: 1.125rem;
-        max-width: 42rem;
-        margin: 0;
-        color: #0f172a;
-      }
-
-      .hero-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-      }
-
-      .hero-actions a {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.9rem 1.5rem;
-        border-radius: 9999px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: transform 150ms ease, box-shadow 150ms ease;
-      }
-
-      .hero-actions a.primary {
-        background: #0284c7;
-        color: white;
-        box-shadow: 0 10px 20px -10px rgba(8, 145, 178, 0.7);
-      }
-
-      .hero-actions a.secondary {
-        background: rgba(255, 255, 255, 0.75);
-        border: 1px solid rgba(148, 163, 184, 0.4);
-      }
-
-      .hero-actions a:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 40px -24px rgba(15, 23, 42, 0.35);
-      }
-
-      .highlights {
-        display: grid;
-        gap: 1.5rem;
-      }
-
-      .highlights h2 {
-        margin: 0;
-        font-size: 1.5rem;
-      }
-
-      .highlight-grid {
-        display: grid;
-        gap: 1.5rem;
-        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-      }
-
-      .highlight-card {
-        background: rgba(255, 255, 255, 0.85);
-        border-radius: 1rem;
-        padding: 1.5rem;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        box-shadow: 0 10px 30px -24px rgba(15, 23, 42, 0.3);
-        backdrop-filter: blur(6px);
-        display: grid;
-        gap: 0.75rem;
-      }
-
-      .highlight-card h3 {
-        margin: 0;
-        font-size: 1.25rem;
-      }
-
-      .sommaire {
-        background: rgba(15, 23, 42, 0.82);
-        color: #f8fafc;
-        padding: 3rem;
-        border-radius: 1.75rem;
-        display: grid;
-        gap: 2rem;
-        box-shadow: 0 35px 60px -45px rgba(15, 23, 42, 0.6);
-      }
-
-      .sommaire h2 {
-        margin: 0;
-        font-size: 2rem;
-      }
-
-      .sommaire p {
-        margin: 0;
-        max-width: 42rem;
-        color: rgba(226, 232, 240, 0.9);
-      }
-
-      .sommaire-grid {
-        display: grid;
-        gap: 1.5rem;
-        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-      }
-
-      .sommaire-card {
-        background: rgba(15, 23, 42, 0.25);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 1.25rem;
-        padding: 1.75rem;
-        display: grid;
-        gap: 1rem;
-      }
-
-      .sommaire-card h3 {
-        margin: 0;
-        font-size: 1.3rem;
-      }
-
-      .sommaire-card h3 a {
-        text-decoration: none;
-      }
-
-      .sommaire-card details {
-        background: rgba(15, 23, 42, 0.3);
-        border-radius: 0.75rem;
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        padding: 0.75rem 1rem;
-        color: rgba(226, 232, 240, 0.95);
-      }
-
-      .sommaire-card summary {
-        cursor: pointer;
-        font-weight: 600;
-        list-style: none;
-      }
-
-      .sommaire-card summary::-webkit-details-marker {
-        display: none;
-      }
-
-      .sommaire-card summary::after {
-        content: '▾';
-        float: right;
-        transition: transform 200ms ease;
-      }
-
-      .sommaire-card details[open] summary::after {
-        transform: rotate(-180deg);
-      }
-
-      .sommaire-card ul {
-        margin: 0.75rem 0 0;
-        padding-left: 1rem;
-        display: grid;
-        gap: 0.35rem;
-      }
-
-      .sommaire-card li a {
-        color: rgba(224, 242, 254, 0.95);
-        text-decoration: none;
-        transition: color 150ms ease;
-      }
-
-      .sommaire-card li a:hover {
-        color: #f97316;
-      }
-
-      .extra-section {
-        display: grid;
-        gap: 1.5rem;
-      }
-
-      .extra-section h2 {
-        margin: 0;
-        font-size: 1.75rem;
-      }
-
-      .resource-list {
-        display: grid;
-        gap: 1rem;
-      }
-
-      .resource-item {
-        background: rgba(255, 255, 255, 0.85);
-        border-radius: 1rem;
-        padding: 1.25rem 1.5rem;
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        display: grid;
-        gap: 0.5rem;
-      }
-
-      footer {
-        text-align: center;
-        color: rgba(15, 23, 42, 0.65);
-        font-size: 0.875rem;
-      }
-
-      @media (max-width: 720px) {
-        .hero,
-        .sommaire {
-          padding: 2.25rem;
-        }
-
-        .hero h1 {
-          font-size: 2.25rem;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <section class="hero">
-        <h1>Votre base de secours en mathématiques</h1>
-        <p>
-          Préparez vos séquences, ateliers et révisions en un clin d’œil.
-          Explorez des fiches synthétiques, des supports imprimables et des parcours prêts à l’emploi pour accompagner vos élèves du lycée.
-        </p>
-        <div class="hero-actions">
-          <a class="primary" href="#sommaire">Explorer le sommaire</a>
-          <a class="secondary" href="/arborescence/">Voir l’arborescence complète</a>
-        </div>
-      </section>
-
-      <section class="highlights">
-        <h2>Pourquoi le Guide de Survie Maths974&nbsp;?</h2>
-        <div class="highlight-grid">
-          {heroHighlights.map((item) => (
-            <article class="highlight-card">
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section class="sommaire" id="sommaire">
-        <div>
-          <h2>Sommaire guidé</h2>
-          <p>
-            Naviguez dans les niveaux, thèmes et sous-thèmes disponibles.
-            Chaque lien vous emmène vers des fiches prêtes à l’emploi et des formats adaptés à vos besoins.
-          </p>
-        </div>
-        <div class="sommaire-grid">
-          {sommaire.map((niveau) => (
-            <article class="sommaire-card">
-              <h3><a href={niveau.href}>{niveau.name}</a></h3>
-              <div class="theme-list">
-                {niveau.themes.map((theme) => (
-                  <details>
-                    <summary>{theme.name}</summary>
-                    <ul>
-                      <li>
-                        <a href={theme.href}>Voir toutes les ressources «&nbsp;{theme.name}&nbsp;»</a>
-                      </li>
-                      {theme.sousThemes.map((sousTheme) => (
-                        <li>
-                          <a href={sousTheme.href}>{sousTheme.name}</a>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section class="extra-section">
-        <h2>Des ressources en constante évolution</h2>
-        <div class="resource-list">
-          <article class="resource-item">
-            <h3>Arborescence thématique</h3>
-            <p>
-              Visualisez la logique de classement des ressources et repérez rapidement la fiche qu’il
-              vous faut pour la séance du jour.
-            </p>
-            <a href="/arborescence/">Consulter la cartographie complète →</a>
-          </article>
-          <article class="resource-item">
-            <h3>Formats prêts à imprimer</h3>
-            <p>
-              Chaque sous-thème propose une mise en page A4 et A5 pour un usage immédiat en classe ou en devoir surveillé.
-            </p>
-          </article>
-          <article class="resource-item">
-            <h3>Focus sur les méthodes</h3>
-            <p>
-              Les fiches mettent en avant les automatismes, astuces et alertes à partager avec vos
-              élèves pour éviter les pièges classiques.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <footer>Construisons ensemble un parcours mathématique clair, concret et rassurant ✨</footer>
-    </main>
-  </body>
+  </div>
+</body>
 </html>
