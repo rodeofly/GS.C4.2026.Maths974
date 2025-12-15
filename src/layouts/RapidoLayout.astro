@@ -51,11 +51,30 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       pointer-events: none;
     }
 
+    .frise-lambrequin {
+        /* Hauteur de la frise : ajustez selon le rendu voulu */
+        height: 3rem; 
+        width: 100%;
+        
+        /* Image et répétition */
+        background-image: url('/images/lambrequin.svg');
+        background-repeat: repeat-x;
+        background-size: contain; /* Garde les proportions du motif */
+        background-position: top center;
+        
+        /* Espacement pour ne pas coller au titre */
+        margin-top: 0rem;
+        margin-bottom: 1rem;
+        
+        /* Optionnel : ajouter une légère ombre ou opacité */
+        opacity: 0.9;
+    }
+
     /* 2. ÉLÉMENTS FLOTTANTS (DECO) */
     .deco-volcan {
       position: absolute;
-      bottom: 0;
-      right: 0;
+      top: 1rem;
+      right: 4rem;
       width: 18vw; /* Taille responsive */
       max-width: 250px;
       z-index: 2;
@@ -64,8 +83,8 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 
     .copyright {
       position: absolute;
-      bottom: 10px;
-      right: 20px;
+      top: 1rem;
+      right: 4rem;
       color: white;
       font-size: 0.9rem;
       font-weight: 600;
@@ -75,8 +94,8 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 
     .deco-margouillat {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
+      top: 20px;
+      left: 25%;
       width: 10vw;
       max-width: 120px;
       z-index: 2;
@@ -113,7 +132,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 
     header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 0rem;
     }
 
     h1 {
@@ -203,8 +222,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 
   <img src="/images/curves.svg" alt="" class="bg-curves" />
   
-  <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
-  <div class="copyright">© maths974</div>
+  
   <img src="/images/margouillat.png" alt="Margouillat" class="deco-margouillat" />
 
   <a href="/" class="back-btn">⬅ Accueil</a>
@@ -213,8 +231,10 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
     <header>
       <h2>Maths974</h2>
       <h1>Rapido {niveau} — {numero}</h1>
+      <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
+      <div class="copyright">© maths974</div>
     </header>
-
+    <div class="frise-lambrequin"></div>
     <div class="questions-grid">
       {questions.map((item, index) => (
         <article class="q-card">

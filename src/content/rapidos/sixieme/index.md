@@ -1,4 +1,4 @@
 ---
-title: "Rapidos 6ème"   <-- Indispensable pour le menu
+title: "Rapidos 6ème"
 niveau: "6ème"
 ---

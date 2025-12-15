@@ -1,0 +1,345 @@
+/* ========================================
+   COMPOSANT : ÉTIQUETTE
+   Carte d'étiquette Guide de Survie
+   ======================================== */
+
+.etiquette {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  
+  background: white;
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  
+  /* Éviter les coupures à l'impression */
+  page-break-inside: avoid;
+  overflow: visible;
+}
+
+.etiquette:hover {
+  border-color: var(--color-guide-primary);
+  box-shadow: var(--shadow-guide);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   HEADER
+   ======================================== */
+
+.etiquette-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.etiquette-id {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--color-guide-primary), var(--color-guide-secondary));
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  width: fit-content;
+  box-shadow: var(--shadow-sm);
+}
+
+.etiquette-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-black);
+  color: var(--color-gray-900);
+  line-height: var(--leading-tight);
+  margin: 0;
+  
+  /* Soulignement décoratif */
+  position: relative;
+  padding-bottom: var(--space-2);
+}
+
+.etiquette-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 60px;
+  background: linear-gradient(90deg, var(--color-guide-primary), transparent);
+  border-radius: var(--radius-full);
+}
+
+/* ========================================
+   META (tags, compétences, etc.)
+   ======================================== */
+
+.etiquette-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-gray-600);
+}
+
+.meta-item {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-guide-bg);
+  border: 1px solid var(--color-guide-light);
+  border-radius: var(--radius-md);
+}
+
+.meta-label {
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+  color: var(--color-guide-primary);
+  font-weight: var(--font-semibold);
+}
+
+.meta-value {
+  font-size: var(--text-sm);
+  color: var(--color-gray-900);
+}
+
+/* ========================================
+   SECTIONS DE CONTENU
+   ======================================== */
+
+.etiquette-section {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  border: 2px solid transparent;
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-guide-primary);
+}
+
+/* Section Texte (contenu principal) */
+.section-texte {
+  background: var(--color-guide-bg);
+  border-color: var(--color-guide-light);
+}
+
+.section-texte p {
+  margin: 0;
+  line-height: var(--leading-relaxed);
+}
+
+.section-texte p + p {
+  margin-top: var(--space-3);
+}
+
+/* Section Rappel */
+.section-rappel {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border-left: 4px solid var(--color-success);
+  display: flex;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.section-rappel-icon {
+  font-size: var(--text-2xl);
+  flex-shrink: 0;
+}
+
+.section-rappel-content {
+  flex: 1;
+}
+
+.section-rappel-title {
+  font-weight: var(--font-bold);
+  color: #065f46;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+}
+
+.section-rappel-text {
+  color: #064e3b;
+  line-height: var(--leading-relaxed);
+}
+
+/* Section Erreurs fréquentes */
+.section-erreurs {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border-left: 4px solid var(--color-danger);
+}
+
+.section-erreurs-title {
+  font-weight: var(--font-bold);
+  color: #991b1b;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.section-erreurs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.section-erreurs li {
+  padding-left: var(--space-6);
+  position: relative;
+  color: #7f1d1d;
+  line-height: var(--leading-relaxed);
+}
+
+.section-erreurs li::before {
+  content: '⚠️';
+  position: absolute;
+  left: 0;
+  font-size: var(--text-lg);
+}
+
+/* Liste de contenus */
+.contenus {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.contenus li {
+  padding-left: var(--space-5);
+  position: relative;
+  line-height: var(--leading-relaxed);
+}
+
+.contenus li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--color-guide-primary);
+  font-weight: var(--font-bold);
+}
+
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.etiquette-footer {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* ========================================
+   FORMATS (colonnes grid)
+   ======================================== */
+
+.format-1_1 {
+  grid-column: span 1;
+}
+
+.format-1_2 {
+  grid-column: span 1;
+}
+
+.format-1_4 {
+  grid-column: span 1;
+}
+
+.format-1_8 {
+  grid-column: span 1;
+}
+
+/* Pleine largeur (via YAML full_width: true) */
+.etiquette-full-width {
+  grid-column: 1 / -1; /* Prend toutes les colonnes */
+}
+
+/* Style spécial pour l'index du sous-thème */
+.etiquette-index {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px solid var(--color-guide-primary);
+  border-left-width: 6px;
+}
+
+.etiquette-index .etiquette-title {
+  color: var(--color-guide-primary);
+  font-size: var(--text-2xl);
+}
+
+.etiquette-index .etiquette-title::after {
+  width: 100px;
+  height: 4px;
+}
+
+/* Sur desktop (2 colonnes) */
+@media (min-width: 768px) {
+  .format-1_1 {
+    grid-column: span 2; /* Par défaut, 1/1 prend 2 colonnes */
+  }
+  
+  .format-1_2 {
+    grid-column: span 1; /* 1/2 prend 1 colonne */
+  }
+}
+
+/* ========================================
+   RESPONSIVE MOBILE
+   ======================================== */
+
+@media (max-width: 640px) {
+  .etiquette {
+    padding: var(--space-4);
+  }
+  
+  .etiquette-title {
+    font-size: var(--text-xl);
+  }
+  
+  .etiquette-section {
+    padding: var(--space-3);
+  }
+}
+
+/* ========================================
+   PRINT
+   ======================================== */
+
+@media print {
+  .etiquette {
+    box-shadow: none;
+    border-color: var(--color-gray-400);
+    page-break-inside: avoid;
+  }
+  
+  .etiquette:hover {
+    transform: none;
+  }
+}

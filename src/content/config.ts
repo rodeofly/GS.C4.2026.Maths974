@@ -1,7 +1,6 @@
 import { z, defineCollection } from 'astro:content';
 
 const guideCollection = defineCollection({
-  // ... (votre configuration guide existante, on n'y touche pas)
   type: 'content',
   schema: z.object({
     title: z.string(),
@@ -11,6 +10,7 @@ const guideCollection = defineCollection({
     objectif: z.string().optional(),
     resume: z.string().optional(),
     format: z.string().optional().default('1/1'),
+    full_width: z.boolean().optional().default(false), // NOUVEAU : Force pleine largeur
     contenus: z.array(z.string()).optional(),
     erreurs_frequentes: z.array(z.string()).optional(),
     competences: z.array(z.string()).optional(),
@@ -24,19 +24,13 @@ const guideCollection = defineCollection({
   }),
 });
 
-// NOUVEAU SCHÉMA RAPIDOS
 const rapidosCollection = defineCollection({
   type: 'content',
   schema: z.object({
-    // ON CHANGE ICI : On remplace 'title' par 'numero'
     numero: z.string(), 
-    
-    // On garde les infos de contexte
     niveau: z.string(),
     periode: z.number().optional(),
     semaine: z.number().optional(),
-
-    // ON CHANGE ICI : 'questions' devient une liste d'objets complexes
     questions: z.array(
       z.object({
         texte: z.string(),

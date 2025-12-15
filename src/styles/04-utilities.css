@@ -1,0 +1,333 @@
+/* ========================================
+   UTILITIES - Classes utilitaires
+   ======================================== */
+
+/* ========================================
+   DISPLAY
+   ======================================== */
+
+.block { display: block; }
+.inline-block { display: inline-block; }
+.inline { display: inline; }
+.hidden { display: none; }
+.invisible { visibility: hidden; }
+
+/* ========================================
+   POSITION
+   ======================================== */
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+/* ========================================
+   TEXT
+   ======================================== */
+
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+.text-xs { font-size: var(--text-xs); }
+.text-sm { font-size: var(--text-sm); }
+.text-base { font-size: var(--text-base); }
+.text-lg { font-size: var(--text-lg); }
+.text-xl { font-size: var(--text-xl); }
+.text-2xl { font-size: var(--text-2xl); }
+.text-3xl { font-size: var(--text-3xl); }
+
+.font-normal { font-weight: var(--font-normal); }
+.font-medium { font-weight: var(--font-medium); }
+.font-semibold { font-weight: var(--font-semibold); }
+.font-bold { font-weight: var(--font-bold); }
+.font-black { font-weight: var(--font-black); }
+
+.uppercase { text-transform: uppercase; }
+.lowercase { text-transform: lowercase; }
+.capitalize { text-transform: capitalize; }
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ========================================
+   COLORS
+   ======================================== */
+
+.text-gray-500 { color: var(--color-gray-500); }
+.text-gray-600 { color: var(--color-gray-600); }
+.text-gray-700 { color: var(--color-gray-700); }
+.text-gray-900 { color: var(--color-gray-900); }
+
+.text-guide { color: var(--color-guide-primary); }
+.text-rapido { color: var(--color-rapido-primary); }
+.text-accent { color: var(--color-accent); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+
+.bg-white { background-color: white; }
+.bg-gray-50 { background-color: var(--color-gray-50); }
+.bg-gray-100 { background-color: var(--color-gray-100); }
+.bg-guide { background-color: var(--color-guide-bg); }
+.bg-rapido { background-color: var(--color-rapido-bg); }
+
+/* ========================================
+   BORDERS
+   ======================================== */
+
+.border { border: 1px solid var(--color-gray-200); }
+.border-0 { border: none; }
+.border-2 { border-width: 2px; }
+.border-t { border-top: 1px solid var(--color-gray-200); }
+.border-b { border-bottom: 1px solid var(--color-gray-200); }
+.border-l { border-left: 1px solid var(--color-gray-200); }
+.border-r { border-right: 1px solid var(--color-gray-200); }
+
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-2xl { border-radius: var(--radius-2xl); }
+.rounded-full { border-radius: var(--radius-full); }
+
+/* ========================================
+   SHADOWS
+   ======================================== */
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+.shadow-none { box-shadow: none; }
+
+/* ========================================
+   WIDTH & HEIGHT
+   ======================================== */
+
+.w-full { width: 100%; }
+.w-auto { width: auto; }
+.w-fit { width: fit-content; }
+
+.h-full { height: 100%; }
+.h-auto { height: auto; }
+.h-screen { height: 100vh; }
+
+.max-w-none { max-width: none; }
+.max-w-xs { max-width: 20rem; }
+.max-w-sm { max-width: 24rem; }
+.max-w-md { max-width: 28rem; }
+.max-w-lg { max-width: 32rem; }
+.max-w-xl { max-width: 36rem; }
+.max-w-2xl { max-width: 42rem; }
+.max-w-full { max-width: 100%; }
+
+/* ========================================
+   OVERFLOW
+   ======================================== */
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-scroll { overflow: scroll; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* ========================================
+   CURSOR
+   ======================================== */
+
+.cursor-pointer { cursor: pointer; }
+.cursor-wait { cursor: wait; }
+.cursor-not-allowed { cursor: not-allowed; }
+
+/* ========================================
+   TRANSITIONS
+   ======================================== */
+
+.transition {
+  transition-property: all;
+  transition-duration: var(--transition-base);
+}
+
+.transition-fast {
+  transition-duration: var(--transition-fast);
+}
+
+.transition-slow {
+  transition-duration: var(--transition-slow);
+}
+
+.transition-none {
+  transition: none;
+}
+
+/* ========================================
+   HOVER EFFECTS
+   ======================================== */
+
+.hover-lift {
+  transition: transform var(--transition-base);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-scale {
+  transition: transform var(--transition-base);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* ========================================
+   OPACITY
+   ======================================== */
+
+.opacity-0 { opacity: 0; }
+.opacity-50 { opacity: 0.5; }
+.opacity-75 { opacity: 0.75; }
+.opacity-100 { opacity: 1; }
+
+/* ========================================
+   Z-INDEX
+   ======================================== */
+
+.z-0 { z-index: var(--z-base); }
+.z-10 { z-index: var(--z-dropdown); }
+.z-20 { z-index: var(--z-sticky); }
+.z-30 { z-index: var(--z-fixed); }
+.z-40 { z-index: var(--z-modal-backdrop); }
+.z-50 { z-index: var(--z-modal); }
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-accent);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  font-weight: var(--font-bold);
+  z-index: var(--z-tooltip);
+  border-radius: 0 0 var(--radius-md) 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* ========================================
+   PRINT UTILITIES
+   ======================================== */
+
+.no-print {
+  @media print {
+    display: none !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block;
+  }
+}
+
+.page-break-before {
+  @media print {
+    page-break-before: always;
+  }
+}
+
+.page-break-after {
+  @media print {
+    page-break-after: always;
+  }
+}
+
+.page-break-inside-avoid {
+  @media print {
+    page-break-inside: avoid;
+  }
+}
+
+/* ========================================
+   RESPONSIVE UTILITIES
+   ======================================== */
+
+/* Mobile only */
+@media (max-width: 767px) {
+  .mobile-hidden { display: none; }
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .tablet-hidden { display: none; }
+}
+
+/* Desktop and up */
+@media (min-width: 1024px) {
+  .desktop-hidden { display: none; }
+}
+
+/* ========================================
+   LOADING STATE
+   ======================================== */
+
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: wait;
+  position: relative;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+
+/* ========================================
+   GRADIENT BACKGROUNDS (974)
+   ======================================== */
+
+.bg-gradient-guide {
+  background: linear-gradient(135deg, var(--color-guide-primary), var(--color-guide-secondary));
+}
+
+.bg-gradient-rapido {
+  background: linear-gradient(135deg, var(--color-rapido-primary), var(--color-rapido-secondary));
+}
+
+.bg-gradient-soft {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e0f2fe 100%);
+}

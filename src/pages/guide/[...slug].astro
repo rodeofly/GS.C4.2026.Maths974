@@ -22,8 +22,28 @@ const allGuides = await getCollection('guide');
 const children = allGuides
   .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
   .sort((a, b) => a.id.localeCompare(b.id));
+
+// Rendu du contenu de l'index
+const { Content: IndexContent } = await entry.render();
+const hasIndexContent = entry.body && entry.body.trim().length > 0;
 ---
 
 <A4Layout info={entry} niveau={entry.data.niveau} theme={entry.data.theme}>
+  
+  <!-- SECTION INDEX (avant les étiquettes) -->
+  {hasIndexContent && (
+    <article class="etiquette etiquette-full-width etiquette-index format-1_1">
+      <header class="etiquette-header">
+        <h2 class="etiquette-title">{entry.data.sous_theme || entry.data.title}</h2>
+      </header>
+      
+      <section class="etiquette-section section-texte">
+        <IndexContent />
+      </section>
+    </article>
+  )}
+  
+  <!-- ÉTIQUETTES ENFANTS (après l'index) -->
   {children.map(child => <Etiquette entry={child} />)}
+  
 </A4Layout>

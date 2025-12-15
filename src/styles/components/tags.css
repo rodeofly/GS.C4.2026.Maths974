@@ -1,0 +1,223 @@
+/* ========================================
+   COMPOSANT : TAGS
+   Badges et étiquettes de métadonnées
+   ======================================== */
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* ========================================
+   TAG BASE
+   ======================================== */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+/* ========================================
+   TAG VARIANTS
+   ======================================== */
+
+/* Guide (teal) */
+.tag-guide {
+  background: var(--color-guide-light);
+  color: var(--color-guide-primary);
+  border-color: var(--color-guide-primary);
+}
+
+.tag-guide:hover {
+  background: var(--color-guide-primary);
+  color: white;
+}
+
+/* Rapido (orange) */
+.tag-rapido {
+  background: var(--color-rapido-light);
+  color: var(--color-rapido-primary);
+  border-color: var(--color-rapido-primary);
+}
+
+.tag-rapido:hover {
+  background: var(--color-rapido-primary);
+  color: white;
+}
+
+/* Neutral (gray) */
+.tag-neutral,
+.tag {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border-color: var(--color-gray-300);
+}
+
+.tag-neutral:hover,
+.tag:hover {
+  background: var(--color-gray-200);
+}
+
+/* Success (green) */
+.tag-success {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+/* Warning (yellow) */
+.tag-warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+/* Danger (red) */
+.tag-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #ef4444;
+}
+
+/* Info (blue) */
+.tag-info {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+/* ========================================
+   TAG SIZES
+   ======================================== */
+
+.tag-sm {
+  font-size: var(--text-xs);
+  padding: var(--space-1) var(--space-3);
+}
+
+.tag-lg {
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-5);
+}
+
+/* ========================================
+   TAG INTERACTIVE (clickable)
+   ======================================== */
+
+button.tag,
+a.tag {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+button.tag:focus-visible,
+a.tag:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   TAG WITH ICON
+   ======================================== */
+
+.tag-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-icon::before {
+  font-size: 1.1em;
+}
+
+/* ========================================
+   TAG REMOVABLE (avec croix)
+   ======================================== */
+
+.tag-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2em;
+  height: 1.2em;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background var(--transition-fast);
+  padding: 0;
+  margin-left: var(--space-1);
+}
+
+.tag-remove:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tag-remove::after {
+  content: '×';
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+/* ========================================
+   TAG GROUP (avec label)
+   ======================================== */
+
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-group-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-600);
+  margin-right: var(--space-2);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 640px) {
+  .tag {
+    font-size: var(--text-xs);
+    padding: var(--space-1) var(--space-3);
+  }
+  
+  .tag-lg {
+    font-size: var(--text-sm);
+    padding: var(--space-2) var(--space-4);
+  }
+}
+
+/* ========================================
+   PRINT
+   ======================================== */
+
+@media print {
+  .tag {
+    border: 1px solid currentColor;
+    background: transparent !important;
+  }
+  
+  .tag-remove {
+    display: none;
+  }
+}

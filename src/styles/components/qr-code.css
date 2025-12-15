@@ -1,0 +1,175 @@
+/* ========================================
+   COMPOSANT : QR CODE
+   QR codes pour liens externes
+   ======================================== */
+
+.qr-collection {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-4);
+}
+
+/* ========================================
+   QR WRAPPER
+   ======================================== */
+
+.qr-wrapper {
+  --qr-size: 3.5rem;
+  
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  
+  transition: all var(--transition-base);
+}
+
+.qr-wrapper:hover {
+  border-color: var(--color-guide-primary);
+  box-shadow: var(--shadow-guide);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   QR LINK
+   ======================================== */
+
+.qr-wrapper a {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ========================================
+   QR SVG
+   ======================================== */
+
+.qr-svg,
+.qr-wrapper svg {
+  display: block;
+  width: var(--qr-size);
+  height: var(--qr-size);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* ========================================
+   QR LABEL
+   ======================================== */
+
+.qr-wrapper .label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-gray-600);
+  text-align: center;
+  max-width: 8rem;
+  line-height: var(--leading-tight);
+}
+
+/* ========================================
+   SIZES
+   ======================================== */
+
+.qr-wrapper.size-small {
+  --qr-size: 3rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.qr-wrapper.size-medium {
+  --qr-size: 4rem;
+}
+
+.qr-wrapper.size-large {
+  --qr-size: 5rem;
+  padding: var(--space-4) var(--space-5);
+}
+
+/* ========================================
+   POSITIONS (optionnel, si positionnement absolu)
+   ======================================== */
+
+.qr-wrapper.pos-bas-droit {
+  /* Position par défaut dans le flow */
+}
+
+.qr-wrapper.pos-bas-gauche {
+  /* Position par défaut dans le flow */
+}
+
+/* Si besoin de position absolue plus tard */
+.qr-wrapper[data-absolute] {
+  position: absolute;
+}
+
+.qr-wrapper[data-absolute].pos-bas-droit {
+  bottom: var(--space-4);
+  right: var(--space-4);
+}
+
+.qr-wrapper[data-absolute].pos-bas-gauche {
+  bottom: var(--space-4);
+  left: var(--space-4);
+}
+
+/* ========================================
+   RESPONSIVE - Cacher sur mobile
+   ======================================== */
+
+@media (max-width: 640px) {
+  .qr-wrapper {
+    display: none;
+  }
+}
+
+/* ========================================
+   PRINT
+   ======================================== */
+
+@media print {
+  .qr-collection {
+    gap: 0.4cm;
+  }
+  
+  .qr-wrapper {
+    --qr-size: 2.2cm;
+    padding: 0.2cm 0.35cm;
+    border-color: var(--color-gray-400);
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: none;
+  }
+  
+  .qr-wrapper:hover {
+    transform: none;
+  }
+  
+  .qr-svg,
+  .qr-wrapper svg {
+    filter: none;
+  }
+  
+  .qr-wrapper.size-small {
+    --qr-size: 2cm;
+  }
+  
+  .qr-wrapper.size-medium {
+    --qr-size: 2.5cm;
+  }
+  
+  .qr-wrapper.size-large {
+    --qr-size: 3cm;
+  }
+  
+  .qr-wrapper .label {
+    font-size: 0.7rem;
+  }
+}

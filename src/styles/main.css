@@ -1,80 +1,96 @@
-/* src/styles/main.css */
+/* ========================================
+   MATHS974 - Main CSS Entry Point
+   Architecture modulaire Sprint 1
+   ======================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+/* 1. Fondations */
+@import './00-tokens.css';
+@import './01-reset.css';
+@import './02-typography.css';
+@import './03-layout.css';
+@import './04-utilities.css';
 
-:root {
-  --font-sans: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  
-  --bg-app: #f3f4f6;
-  --bg-paper: #ffffff;
-  --text-main: #111827;
-  --text-muted: #6b7280;
-  
-  --primary: #0d9488; /* Teal 600 */
-  --accent: #f59e0b;
-}
+/* 2. Composants */
+@import './components/navbar.css';
+@import './components/etiquette.css';
+@import './components/accordion.css';
+@import './components/qr-code.css';
+@import './components/dialog.css';
+@import './components/tags.css';
 
-*, *::before, *::after { box-sizing: border-box; }
+/* 3. Layouts */
+@import './layouts/page.css';
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  -webkit-font-smoothing: antialiased;
-}
+/* 4. Thèmes */
+@import './themes/guide.css';
+@import './themes/rapido.css';
 
-/* --- SCREEN ONLY STYLES --- */
-@media screen {
-  /* Le conteneur "Papier" sur l'écran */
-  .layout-a4, .layout-a5 {
-    margin: 3rem auto;
-    background: var(--bg-paper);
-    /* Ombre portée réaliste pour effet "feuille posée" */
-    box-shadow: 
-      0 1px 3px rgba(0,0,0,0.02),
-      0 10px 30px -10px rgba(0,0,0,0.1),
-      0 4px 6px -2px rgba(0,0,0,0.05);
-    border: 1px solid rgba(0,0,0,0.02);
-    
-    width: 21cm;
-    min-height: 29.7cm;
-    padding: 1cm;
-    
-    /* Animation d'entrée */
-    animation: slideUp 0.4s ease-out;
-  }
-  
-  .layout-a5 {
-    width: 14.8cm;
-    min-height: 21cm;
+/* 5. Print (chargé uniquement à l'impression) */
+@import './layouts/print-a4.css' print;
+@import './layouts/print-a5.css' print;
+
+/* ========================================
+   CLASSES UTILITAIRES GLOBALES
+   ======================================== */
+
+.no-print {
+  @media print {
+    display: none !important;
   }
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* --- PRINT STYLES (Ne pas toucher aux marges ici) --- */
-@media print {
-  @page { margin: 0; }
-  body { background: white; }
-  .no-print { display: none !important; }
-  
-  .layout-a4, .layout-a5 {
-    margin: 0;
-    box-shadow: none;
-    border: none;
-    width: 100%;
+.print-only {
+  display: none;
+  @media print {
+    display: block;
   }
 }
 
-/* Grille des étiquettes */
-.etiquettes-grid {
-  display: grid;
-  gap: 1rem;
-  /* Alignement automatique en haut pour ne pas étirer les cartes */
-  align-content: start; 
+/* Skip link pour accessibilité */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--color-accent);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  text-decoration: none;
+  font-weight: var(--font-bold);
+  z-index: var(--z-tooltip);
+  border-radius: 0 0 var(--radius-md) 0;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Conteneur responsive */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 0 var(--space-6);
+  }
+}
+
+/* États de chargement */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: wait;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

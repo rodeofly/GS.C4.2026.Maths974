@@ -1,0 +1,162 @@
+/* ========================================
+   COMPOSANT : NAVBAR
+   Navigation principale 974
+   ======================================== */
+
+.main-navbar {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-bottom: 1px solid #334155;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  box-shadow: var(--shadow-lg);
+}
+
+.navbar-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* ========================================
+   BRAND / LOGO
+   ======================================== */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  text-decoration: none;
+  color: white;
+  font-weight: var(--font-bold);
+  font-size: var(--text-lg);
+  transition: opacity var(--transition-fast);
+}
+
+.brand:hover {
+  opacity: 0.9;
+}
+
+.logo-icon {
+  background: var(--color-accent);
+  color: #1e293b;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--font-black);
+  letter-spacing: -0.02em;
+}
+
+.brand-text {
+  font-size: var(--text-xl);
+  font-weight: var(--font-black);
+}
+
+/* ========================================
+   NAV TITLE (centre)
+   ======================================== */
+
+.nav-title {
+  font-size: var(--text-base);
+  color: #94a3b8;
+  font-weight: var(--font-medium);
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .nav-title {
+    display: block;
+  }
+}
+
+/* ========================================
+   NAV ACTIONS (droite)
+   ======================================== */
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.nav-link {
+  text-decoration: none;
+  color: #e2e8f0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: color var(--transition-fast);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--color-accent);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+/* Bouton impression */
+.btn-print {
+  background: #334155;
+  border: 1px solid #475569;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  font-size: var(--text-base);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.btn-print:hover {
+  background: #475569;
+  transform: translateY(-1px);
+}
+
+.btn-print:active {
+  transform: translateY(0);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 640px) {
+  .navbar-content {
+    padding: var(--space-2) var(--space-4);
+  }
+  
+  .brand-text {
+    display: none;
+  }
+  
+  .nav-actions {
+    gap: var(--space-2);
+  }
+  
+  .nav-link {
+    font-size: var(--text-xs);
+    padding: var(--space-2);
+  }
+  
+  .btn-print {
+    padding: var(--space-2);
+  }
+}
+
+/* ========================================
+   PRINT
+   ======================================== */
+
+@media print {
+  .main-navbar {
+    display: none;
+  }
+}

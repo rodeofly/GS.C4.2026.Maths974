@@ -4,13 +4,15 @@ import QRCode from './QRCode.astro';
 import Accordion from './Accordion.astro';
 
 const { entry } = Astro.props;
-const { data: fm } = entry; // Avec les collections, les métadonnées sont dans .data
+const { data: fm } = entry;
 
-// Rendu du contenu Markdown
 const { Content } = await entry.render();
 
 const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
+
+// NOUVEAU : Gérer full_width
+const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
 
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
@@ -18,7 +20,7 @@ const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
 const liens = Array.isArray(fm.liens) ? fm.liens : [];
 ---
 
-<article class={`etiquette ${formatClass}`} id={fm.id}>
+<article class={`etiquette ${formatClass} ${fullWidthClass}`} id={fm.id}>
   <header class="etiquette-header">
     <h2 class="etiquette-title">{fm.title ?? 'Étiquette'}</h2>
     <div class="etiquette-meta">
