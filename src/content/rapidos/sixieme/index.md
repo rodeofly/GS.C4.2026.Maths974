@@ -1,6 +1,4 @@
 ---
-title: "Rapidos 6ème"
+title: "Rapidos 6ème"   <-- Indispensable pour le menu
 niveau: "6ème"
-theme: "Entraînement"
 ---
-Exercices rapides pour la 6ème.

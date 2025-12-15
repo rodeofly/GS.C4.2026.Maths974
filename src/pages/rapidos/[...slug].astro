@@ -1,16 +1,75 @@
 ---
 import { getCollection } from 'astro:content';
-import RapidoLayout from '../../layouts/RapidoLayout.astro'; // Le nouveau layout
+import RapidoLayout from '../../layouts/RapidoLayout.astro';
+import A4Layout from '../../layouts/A4.astro'; // On réutilise le layout propre pour le menu
 
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
   return entries.map(entry => ({
-    params: { slug: entry.slug }, // On garde le slug tel quel
+    params: { slug: entry.slug.replace(/\/index$/, '') },
     props: { entry },
   }));
 }
 
 const { entry } = Astro.props;
+const { slug } = Astro.params;
+
+// Est-ce un index de niveau ? (ex: "sixieme" ou "sixieme/index")
+const isIndex = entry.id.endsWith('index.md');
+
+// Si c'est un index, on cherche ses enfants
+let children = [];
+if (isIndex) {
+  const allRapidos = await getCollection('rapidos');
+  children = allRapidos
+    .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
 ---
 
-<RapidoLayout info={entry} />
+{/* CAS 1 : C'est une fiche Rapido (P1-S1) -> Mode Projection */}
+{!isIndex && <RapidoLayout info={entry} />}
+
+{/* CAS 2 : Menu du niveau */}
+{isIndex && (
+  <A4Layout info={entry} title={entry.data.title} theme="Menu">
+    <div class="rapido-menu-grid">
+      {children.length > 0 ? children.map(child => (
+        <a href={`/rapidos/${child.slug}/`} class="rapido-link-card">
+          <span class="rapido-icon">⚡</span>
+          <span class="rapido-title">Rapido {child.data.numero}</span>
+        </a>
+      )) : (
+        <p>Aucun rapido disponible pour ce niveau.</p>
+      )}
+    </div>
+  </A4Layout>
+)}
+
+<style>
+  .rapido-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 2rem 0;
+  }
+  .rapido-link-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+  }
+  .rapido-link-card:hover {
+    transform: translateY(-2px);
+    border-color: #f59e0b;
+  }
+  .rapido-icon { font-size: 1.5rem; }
+  .rapido-title { font-weight: 600; }
+</style>

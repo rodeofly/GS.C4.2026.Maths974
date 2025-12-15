@@ -75,13 +75,13 @@ const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
         <span>⚡</span> Rapidos
       </div>
       <div class="grid">
-        {rapidos.length > 0 ? rapidos.sort(sortContent).map(r => (
+        {rapidos.length > 0 ? rapidos.map(r => (
           <a href={`/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
-            <h3>{r.data.title}</h3>
+            <h3>{r.data.title}</h3> 
             <p>Exercices d'échauffement</p>
           </a>
         )) : (
-          <p style="color: #64748b; font-style: italic;">Aucun rapido disponible pour le moment.</p>
+          <p style="color: #64748b;">Aucun rapido disponible.</p>
         )}
       </div>
     </div>
