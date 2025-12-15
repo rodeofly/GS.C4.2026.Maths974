@@ -47,9 +47,16 @@ const guideCollection = defineCollection({
   schema: schemaCommun,
 });
 
+// Ajoutez ou modifiez le schéma rapidos
 const rapidosCollection = defineCollection({
   type: 'content',
-  schema: schemaCommun,
+  schema: z.object({
+    title: z.string(),
+    niveau: z.string(),
+    periode: z.number().optional(), // Nouveau
+    semaine: z.number().optional(), // Nouveau
+    questions: z.array(z.string()).optional(), // La liste des 5 questions
+  }),
 });
 
 export const collections = {

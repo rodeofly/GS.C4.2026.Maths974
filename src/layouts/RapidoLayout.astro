@@ -1,0 +1,110 @@
+---
+import '../styles/main.css'; // On garde les polices et couleurs de base
+
+const { info } = Astro.props;
+const { title, periode, semaine } = info.data;
+const questions = info.data.questions || [];
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  
+  <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
+  <script is:inline>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
+
+  <style>
+    /* Style spécifique PROJECTION */
+    body {
+      background-color: #1e293b; /* Fond sombre pour reposer les yeux */
+      color: white;
+      height: 100vh;
+      overflow: hidden; /* Pas de scroll */
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #0f172a;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 4px solid var(--color-accent);
+    }
+
+    h1 { margin: 0; font-size: 1.8rem; color: var(--color-accent); }
+    .meta { font-size: 1.2rem; opacity: 0.8; font-family: monospace; }
+
+    main {
+      flex: 1;
+      padding: 2rem;
+      display: grid;
+      /* Grille : 2 colonnes, 3 lignes (la dernière centrée) ou liste verticale */
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .question-card {
+      background: white;
+      color: #1e293b;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      font-size: 1.5rem; /* Gros texte */
+      height: 100%;
+      display: flex;
+      align-items: center; /* Centrage vertical */
+      justify-content: flex-start;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .question-number {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      background: var(--color-accent);
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    /* La 5ème question prend toute la largeur en bas si on veut, ou reste en grille */
+    .question-card:last-child:nth-child(odd) {
+      grid-column: span 2;
+      justify-content: center;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/" style="color: white; text-decoration: none;">⬅ Accueil</a>
+    <h1>⚡ RAPIDO</h1>
+    <span class="meta">Période {periode} • Semaine {semaine}</span>
+  </header>
+
+  <main>
+    {questions.map((q, index) => (
+      <div class="question-card">
+        <div class="question-number">{index + 1}</div>
+        <div class="content">{q}</div>
+      </div>
+    ))}
+  </main>
+</body>
+</html>

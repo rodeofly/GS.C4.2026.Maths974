@@ -3,15 +3,16 @@ import BasePrintLayout from './BasePrintLayout.astro';
 import printA4StylesUrl from '../styles/print-A4.css?url';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
-
-// CORRECTION CRITIQUE :
-// Avec les collections, les données sont dans .data
-// On gère les deux cas (Collection ou Fichier classique) pour être sûr
 const fm = info?.data ?? info?.frontmatter ?? {};
 
-// On récupère les valeurs avec une cascade de sécurité
-const title = fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sous-thème';
-const themeLabel = fm.theme ?? theme ?? 'Thème';
+// LOGIQUE CORRIGÉE :
+// 1. Si le fichier a un "sous_theme" explicite, on le prend.
+// 2. Sinon, on prend le paramètre d'URL "sousTheme".
+// 3. Sinon, on prend le titre du fichier.
+const title = fm.sous_theme ?? sousTheme ?? fm.title ?? 'Sans titre';
+
+// Idem pour le thème
+const themeLabel = fm.theme ?? theme ?? 'Général';
 const niveauLabel = fm.niveau ?? niveau ?? '';
 ---
 

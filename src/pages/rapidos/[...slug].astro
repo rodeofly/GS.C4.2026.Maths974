@@ -1,31 +1,16 @@
 ---
 import { getCollection } from 'astro:content';
-import A4Layout from '../../layouts/A4.astro';
-import Etiquette from '../../components/Etiquette.astro';
+import RapidoLayout from '../../layouts/RapidoLayout.astro'; // Le nouveau layout
 
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
-  return entries
-    .filter(e => e.slug.endsWith('/index') || e.id.endsWith('/index.md'))
-    .map(entry => ({
-      params: { slug: entry.slug.replace(/\/index$/, '') },
-      props: { entry },
-    }));
+  return entries.map(entry => ({
+    params: { slug: entry.slug }, // On garde le slug tel quel
+    props: { entry },
+  }));
 }
 
 const { entry } = Astro.props;
-const { slug } = Astro.params;
-
-// Récupérer les enfants de ce dossier RAPIDOS
-const allRapidos = await getCollection('rapidos');
-const children = allRapidos
-  .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
-  .sort((a, b) => a.id.localeCompare(b.id));
 ---
 
-<A4Layout info={entry} niveau={entry.data.niveau} theme="Rapidos">
-  <div class="rapido-header">
-    <h2>⚡ Session Rapido</h2>
-  </div>
-  {children.map(child => <Etiquette entry={child} />)}
-</A4Layout>
+<RapidoLayout info={entry} />
