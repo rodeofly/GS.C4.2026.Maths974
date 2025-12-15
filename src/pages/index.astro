@@ -1,62 +1,73 @@
 ---
-import fs from 'node:fs/promises';
+// src/pages/index.astro
+import { getCollection } from 'astro:content';
 
-const toTitle = (slug: string) =>
+// Fonction utilitaire pour nettoyer les slugs si un titre manque
+const toTitle = (slug) =>
   slug
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toLocaleUpperCase('fr'))
     .replace(/\d+/g, (match) => match);
 
-const sortByName = <T extends { name: string }>(a: T, b: T) =>
+const sortByName = (a, b) =>
   a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' });
 
-const contentRoot = new URL('../../content/', import.meta.url);
-const niveauEntries = await fs.readdir(contentRoot, { withFileTypes: true });
+// 1. On récupère tout le contenu de la collection "guide"
+const allEntries = await getCollection('guide');
 
-const sommaire = (
-  await Promise.all(
-    niveauEntries
-      .filter((entry) => entry.isDirectory())
-      .map(async (niveau) => {
-        const niveauURL = new URL(`./${niveau.name}/`, contentRoot);
-        const themeEntries = await fs.readdir(niveauURL, { withFileTypes: true });
+// 2. On filtre pour ne garder que les fichiers "index.md" qui représentent les sous-thèmes
+// Le slug est typiquement : "terminale/analyse/limites/index"
+const subThemeEntries = allEntries.filter((entry) => entry.slug.endsWith('/index'));
 
-        const themes = (
-          await Promise.all(
-            themeEntries
-              .filter((entry) => entry.isDirectory())
-              .map(async (theme) => {
-                const themeURL = new URL(`./${theme.name}/`, niveauURL);
-                const sousEntries = await fs.readdir(themeURL, { withFileTypes: true });
+// 3. On reconstruit l'arborescence à partir des entrées trouvées
+const tree = {};
 
-                const sousThemes = sousEntries
-                  .filter((entry) => entry.isDirectory())
-                  .map((sousTheme) => ({
-                    name: toTitle(sousTheme.name),
-                    href: `/${niveau.name}/${theme.name}/${sousTheme.name}/`,
-                  }))
-                  .sort(sortByName);
+for (const entry of subThemeEntries) {
+  // On décompose le slug : [niveau, theme, sousTheme, 'index']
+  const parts = entry.slug.split('/');
+  if (parts.length < 4) continue;
 
-                return {
-                  name: toTitle(theme.name),
-                  href: `/${niveau.name}/${theme.name}/`,
-                  sousThemes,
-                };
-              }),
-          )
-        )
-          .filter((theme) => theme.sousThemes.length > 0)
-          .sort(sortByName);
+  const [niveauSlug, themeSlug, sousThemeSlug] = parts;
+  const { title, sous_theme, niveau, theme } = entry.data;
 
-        return {
-          name: toTitle(niveau.name),
-          href: `/${niveau.name}/`,
-          themes,
-        };
-      }),
-  )
-)
-  .filter((niveau) => niveau.themes.length > 0)
+  // Initialisation du niveau s'il n'existe pas
+  if (!tree[niveauSlug]) {
+    tree[niveauSlug] = {
+      name: niveau || toTitle(niveauSlug),
+      slug: niveauSlug,
+      themes: {},
+    };
+  }
+
+  // Initialisation du thème s'il n'existe pas
+  if (!tree[niveauSlug].themes[themeSlug]) {
+    tree[niveauSlug].themes[themeSlug] = {
+      name: theme || toTitle(themeSlug),
+      slug: themeSlug,
+      sousThemes: [],
+    };
+  }
+
+  // Ajout du sous-thème avec son lien et son titre "propre"
+  tree[niveauSlug].themes[themeSlug].sousThemes.push({
+    name: title || sous_theme || toTitle(sousThemeSlug),
+    href: `/${niveauSlug}/${themeSlug}/${sousThemeSlug}/`,
+  });
+}
+
+// 4. On transforme l'objet en tableau trié pour l'affichage (format attendu par le template)
+const sommaire = Object.values(tree)
+  .map((niveauItem) => ({
+    name: niveauItem.name,
+    href: `/${niveauItem.slug}/`, // Lien vers la page niveau (optionnel)
+    themes: Object.values(niveauItem.themes)
+      .map((themeItem) => ({
+        ...themeItem,
+        href: `/${niveauItem.slug}/${themeItem.slug}/`, // Lien vers la page thème (optionnel)
+        sousThemes: themeItem.sousThemes.sort(sortByName),
+      }))
+      .sort(sortByName),
+  }))
   .sort(sortByName);
 
 const heroHighlights = [
@@ -336,9 +347,8 @@ const heroHighlights = [
       <section class="hero">
         <h1>Votre base de secours en mathématiques</h1>
         <p>
-          Préparez vos séquences, ateliers et révisions en un clin d’œil. Explorez des fiches
-          synthétiques, des supports imprimables et des parcours prêts à l’emploi pour accompagner vos
-          élèves du lycée.
+          Préparez vos séquences, ateliers et révisions en un clin d’œil.
+          Explorez des fiches synthétiques, des supports imprimables et des parcours prêts à l’emploi pour accompagner vos élèves du lycée.
         </p>
         <div class="hero-actions">
           <a class="primary" href="#sommaire">Explorer le sommaire</a>
@@ -362,8 +372,8 @@ const heroHighlights = [
         <div>
           <h2>Sommaire guidé</h2>
           <p>
-            Naviguez dans les niveaux, thèmes et sous-thèmes disponibles. Chaque lien vous emmène vers
-            des fiches prêtes à l’emploi et des formats adaptés à vos besoins.
+            Naviguez dans les niveaux, thèmes et sous-thèmes disponibles.
+            Chaque lien vous emmène vers des fiches prêtes à l’emploi et des formats adaptés à vos besoins.
           </p>
         </div>
         <div class="sommaire-grid">
@@ -406,8 +416,7 @@ const heroHighlights = [
           <article class="resource-item">
             <h3>Formats prêts à imprimer</h3>
             <p>
-              Chaque sous-thème propose une mise en page A4 et A5 pour un usage immédiat en classe ou
-              en devoir surveillé.
+              Chaque sous-thème propose une mise en page A4 et A5 pour un usage immédiat en classe ou en devoir surveillé.
             </p>
           </article>
           <article class="resource-item">

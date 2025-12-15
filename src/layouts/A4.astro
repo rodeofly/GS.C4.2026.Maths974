@@ -1,133 +1,24 @@
 ---
-import '../styles/base.css';
+import BasePrintLayout from './BasePrintLayout.astro';
 import '../styles/print-A4.css';
 import printA4StylesUrl from '../styles/print-A4.css?url';
-import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
 const fm = info?.frontmatter ?? {};
+
 const title = fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sous-thème';
 const themeLabel = fm.theme ?? theme ?? 'Thème';
 const niveauLabel = fm.niveau ?? niveau ?? '';
 ---
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href={printA4StylesUrl} media="print" />
-    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
-    <script is:inline>
-      window.MathJax = {
-        tex: {
-          inlineMath: [
-            ['$', '$'],
-            ['\\(', '\\)'],
-          ],
-        },
-        svg: { fontCache: 'global' },
-      };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-    <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
-  </head>
-  <body class="layout layout-a4">
-    <header class="layout-header">
-      <div class="theme-badge">
-        <div class="theme-badge-meta">
-          <span class="niveau-label">{niveauLabel}</span>
-          <span class="theme-label">{themeLabel}</span>
-        </div>
-        <SubthemeInfo info={info} />
-      </div>
-      <div class="subtheme-heading">
-        <h1>{title}</h1>
-      </div>
-    </header>
-    <main class="etiquettes-grid">
-      <slot />
-    </main>
-    <footer>
-      <slot name="footer" />
-    </footer>
-    <script is:inline>
-      if (typeof window !== 'undefined') {
-        const convertTikzBlocks = () => {
-          document.querySelectorAll('.etiquette').forEach((container) => {
-            if (container.dataset.tikzProcessed === 'true') {
-              return;
-            }
 
-            let html = container.innerHTML;
-
-            if (!html || !html.includes('\\begin{tikzpicture}')) {
-              container.dataset.tikzProcessed = 'true';
-              return;
-            }
-
-            const tikzPattern = /\\\[(?:\s*\\require\{tikz\}\s*)?([\s\S]*?\\begin{tikzpicture}[\s\S]*?\\end{tikzpicture}[\s\S]*?)\\\]/g;
-
-            html = html.replace(tikzPattern, (_, tikz) => {
-              const cleaned = tikz.replace(/\\require\{tikz\}/g, '').trim();
-              return '<script type="text/tikz">' + cleaned + '</scr' + 'ipt>';
-            });
-
-            html = html.replace(/\\require\{tikz\}/g, '');
-            container.innerHTML = html;
-            container.dataset.tikzProcessed = 'true';
-          });
-        };
-
-        const openAll = () => {
-          document.querySelectorAll('details').forEach((detail) => {
-            detail.setAttribute('open', '');
-          });
-        };
-        window.addEventListener('beforeprint', openAll);
-
-        const renderTikz = () => {
-          if (window.tikzjax?.renderAll) {
-            window.tikzjax.renderAll();
-          }
-        };
-
-        const runMath = () => {
-          convertTikzBlocks();
-
-          if (window.MathJax?.typesetPromise) {
-            window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
-          } else {
-            renderTikz();
-          }
-        };
-
-        const onReady = () => {
-          if (window.MathJax?.startup?.promise) {
-            window.MathJax.startup.promise.then(runMath).catch(renderTikz);
-          } else {
-            runMath();
-          }
-        };
-
-        const resetTikzProcessing = () => {
-          document.querySelectorAll('.etiquette').forEach((container) => {
-            delete container.dataset.tikzProcessed;
-          });
-        };
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-          onReady();
-        } else {
-          document.addEventListener('DOMContentLoaded', onReady, { once: true });
-        }
-
-        document.addEventListener('astro:after-swap', () => {
-          resetTikzProcessing();
-          onReady();
-        });
-      }
-    </script>
-  </body>
-</html>
+<BasePrintLayout
+  info={info}
+  title={title}
+  layoutClass="layout-a4"
+  cssUrl={printA4StylesUrl}
+  niveauLabel={niveauLabel}
+  themeLabel={themeLabel}
+>
+  <slot />
+  <slot name="footer" slot="footer" />
+</BasePrintLayout>

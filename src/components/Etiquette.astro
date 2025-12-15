@@ -1,73 +1,34 @@
 ---
+// src/components/Etiquette.astro
 import QRCode from './QRCode.astro';
 import Accordion from './Accordion.astro';
 
 const { entry } = Astro.props;
-const fm = entry?.frontmatter ?? {};
-const Content = entry?.Content;
+const { data: fm } = entry; // Avec les collections, les métadonnées sont dans .data
+
+// Rendu du contenu Markdown
+const { Content } = await entry.render();
+
 const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
+
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
 const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
 const liens = Array.isArray(fm.liens) ? fm.liens : [];
 ---
+
 <article class={`etiquette ${formatClass}`} id={fm.id}>
   <header class="etiquette-header">
     <h2 class="etiquette-title">{fm.title ?? 'Étiquette'}</h2>
     <div class="etiquette-meta">
-      {fm.objectif ? (
-        <span class="meta-item">
-          <span class="meta-label">Objectif</span>
-          <span class="meta-value">{fm.objectif}</span>
-        </span>
-      ) : null}
-      {fm.sous_theme ? <span class="meta-item meta-subtheme">{fm.sous_theme}</span> : null}
-    </div>
+       </div>
   </header>
-  {contenus.length ? (
-    <section class="etiquette-section section-retain">
-      <h3 class="section-title">À retenir</h3>
-      <ul class="contenus">
-        {contenus.map((item) => (
-          <li>{item}</li>
-        ))}
-      </ul>
-    </section>
-  ) : null}
-  {fm.rappel ? (
-    <section class="etiquette-section section-rappel">
-      <h3 class="section-title">Rappel</h3>
-      <p>{fm.rappel}</p>
-    </section>
-  ) : null}
-  {erreurs.length ? (
-    <section class="etiquette-section section-erreurs">
-      <h3 class="section-title">Erreurs fréquentes</h3>
-      <ul>
-        {erreurs.map((item) => (
-          <li>{item}</li>
-        ))}
-      </ul>
-    </section>
-  ) : null}
+
   {Content ? (
     <section class="etiquette-section section-texte">
       <Content />
     </section>
   ) : null}
-  {accordions.length ? (
-    <section class="etiquette-section section-accordeons">
-      {accordions.map((item) => (
-        <Accordion titre={item.titre} contenu={item.contenu} />
-      ))}
-    </section>
-  ) : null}
-  {liens.length ? (
-    <div class="qr-collection">
-      {liens.map((lien) => (
-        <QRCode lien={lien} />
-      ))}
-    </div>
-  ) : null}
-</article>
+
+  </article>
