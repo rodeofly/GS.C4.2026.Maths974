@@ -1,12 +1,12 @@
 ---
 import BasePrintLayout from './BasePrintLayout.astro';
-import '../styles/print-A5.css';
 import printA5StylesUrl from '../styles/print-A5.css?url';
 
 const { info, niveau, theme, sousTheme } = Astro.props;
-const fm = info?.frontmatter ?? {};
 
-// Petite nuance : on ajoute "Format A5" au titre pour ce layout
+// CORRECTION CRITIQUE ICI AUSSI :
+const fm = info?.data ?? info?.frontmatter ?? {};
+
 const titleRaw = fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sous-thème';
 const title = `${titleRaw} — Format A5`;
 const themeLabel = fm.theme ?? theme ?? 'Thème';

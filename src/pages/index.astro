@@ -1,12 +1,18 @@
 ---
 import { getCollection } from 'astro:content';
 
-// On récupère juste les racines (les niveaux) de chaque collection
-const guides = await getCollection('guide', ({ slug }) => slug.split('/').length === 2 && slug.endsWith('/index'));
-const rapidos = await getCollection('rapidos', ({ slug }) => slug.split('/').length === 2 && slug.endsWith('/index'));
+// CORRECTION : On utilise 'id' au lieu de 'slug' pour être sûr de trouver les fichiers
+// On cherche les fichiers qui sont physiquement à la racine d'un dossier (ex: sixieme/index.md)
+const guides = await getCollection('guide', ({ id }) => {
+  return id.split('/').length === 2 && id.endsWith('index.md');
+});
+
+const rapidos = await getCollection('rapidos', ({ id }) => {
+  return id.split('/').length === 2 && id.endsWith('index.md');
+});
 
 // Fonction de tri
-const sortContent = (a, b) => a.slug.localeCompare(b.slug);
+const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
 ---
 
 <!DOCTYPE html>
