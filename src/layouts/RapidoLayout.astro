@@ -9,6 +9,12 @@ const numero = data.numero || "1";
 const niveau = data.niveau || "";
 const questions = data.questions || [];
 
+// 🆕 FONCTION pour convertir les retours à la ligne en <br>
+function nl2br(text) {
+  if (!text) return '';
+  return text.replace(/\n/g, '<br/>');
+}
+
 const pageTitle = `Rapido ${numero} - ${niveau}`;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
@@ -125,7 +131,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
    
            {q.variantes.map((v, vIndex) => (
             <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
-              <div class="content">{v.texte}</div>
+              {/* 🆕 CORRECTION : Utilisation de set:html pour interpréter les <br> */}
+              <div class="content" set:html={nl2br(v.texte)}></div>
             </div>
           ))}
         </article>
