@@ -23,6 +23,9 @@
 @import './layouts/print-a4.css' print;
 @import './layouts/print-a5.css' print;
 
+/* 4. Pages Specific Styles */
+@import './pages/search.css';
+
 /* ========================================
    CLASSES UTILITAIRES GLOBALES
    ======================================== */

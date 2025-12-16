@@ -1,23 +1,14 @@
 ---
 // src/pages/recherche/index.astro
+import Navbar from '../../components/Navbar.astro'; // Import Navbar
 import '../../styles/main.css';
 import { getCollection } from 'astro:content';
 
-// Récupérer TOUTES les étiquettes (pas les index)
-const allEtiquettes = await getCollection('guide', ({ id }) => {
-  return !id.endsWith('index.md');
-});
+const allEtiquettes = await getCollection('guide', ({ id }) => !id.endsWith('index.md'));
+const allIndex = await getCollection('guide', ({ id }) => id.endsWith('index.md'));
 
-// Récupérer tous les index pour avoir les infos de sous-thèmes
-const allIndex = await getCollection('guide', ({ id }) => {
-  return id.endsWith('index.md');
-});
-
-// Préparer les données pour le JS client
 const etiquettesData = allEtiquettes.map(e => {
   const { data } = e;
-  
-  // Trouver le sous-thème parent
   const sousThemeSlug = e.slug.substring(0, e.slug.lastIndexOf('/'));
   const sousTheme = allIndex.find(idx => idx.slug === sousThemeSlug);
   
@@ -36,13 +27,8 @@ const etiquettesData = allEtiquettes.map(e => {
   };
 });
 
-// Extraire tous les tags uniques
 const allTags = [...new Set(etiquettesData.flatMap(e => e.tags))].sort();
-
-// Extraire tous les niveaux uniques
 const allNiveaux = [...new Set(etiquettesData.map(e => e.niveau).filter(Boolean))].sort();
-
-// Extraire tous les thèmes uniques
 const allThemes = [...new Set(etiquettesData.map(e => e.theme).filter(Boolean))].sort();
 ---
 
@@ -53,399 +39,98 @@ const allThemes = [...new Set(etiquettesData.map(e => e.theme).filter(Boolean))]
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Recherche - Maths974</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  
-  <style>
-    /* Styles spécifiques à la page de recherche */
-    .search-page {
-      min-height: 100vh;
-      padding: var(--space-4);
-    }
-    
-    .search-container {
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    
-    /* Header avec logo et recherche */
-    .search-header {
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-      border-radius: var(--radius-xl);
-      padding: var(--space-6);
-      margin-bottom: var(--space-6);
-      box-shadow: var(--shadow-xl);
-    }
-    
-    .search-brand {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      margin-bottom: var(--space-4);
-    }
-    
-    .search-brand a {
-      text-decoration: none;
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-    }
-    
-    .logo-974 {
-      background: var(--color-accent);
-      color: #1e293b;
-      padding: var(--space-2) var(--space-3);
-      border-radius: var(--radius-md);
-      font-size: var(--text-base);
-      font-weight: var(--font-black);
-    }
-    
-    .brand-title {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-black);
-    }
-    
-    /* Barre de recherche */
-    .search-input-wrapper {
-      position: relative;
-      margin-bottom: var(--space-4);
-    }
-    
-    .search-input {
-      width: 100%;
-      padding: var(--space-4) var(--space-6);
-      padding-left: 3.5rem;
-      font-size: var(--text-lg);
-      border: 2px solid transparent;
-      border-radius: var(--radius-xl);
-      background: white;
-      transition: all var(--transition-base);
-    }
-    
-    .search-input:focus {
-      outline: none;
-      border-color: var(--color-accent);
-      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
-    }
-    
-    .search-icon {
-      position: absolute;
-      left: var(--space-4);
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: var(--text-2xl);
-      color: var(--color-gray-400);
-    }
-    
-    /* Filtres */
-    .filters-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-3);
-    }
-    
-    .filter-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-      align-items: center;
-    }
-    
-    .filter-label {
-      color: white;
-      font-size: var(--text-sm);
-      font-weight: var(--font-semibold);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.9;
-    }
-    
-    .filter-tag {
-      padding: var(--space-2) var(--space-4);
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      font-size: var(--text-sm);
-      user-select: none;
-    }
-    
-    .filter-tag:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-    
-    .filter-tag.active {
-      background: var(--color-accent);
-      border-color: var(--color-accent);
-      font-weight: var(--font-bold);
-    }
-    
-    /* Stats */
-    .search-stats {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--space-4);
-      background: white;
-      border-radius: var(--radius-lg);
-      margin-bottom: var(--space-4);
-      box-shadow: var(--shadow-sm);
-    }
-    
-    .stats-count {
-      font-size: var(--text-lg);
-      font-weight: var(--font-semibold);
-      color: var(--color-gray-700);
-    }
-    
-    .stats-count strong {
-      color: var(--color-guide-primary);
-      font-size: var(--text-2xl);
-    }
-    
-    .clear-filters {
-      padding: var(--space-2) var(--space-4);
-      background: transparent;
-      border: 1px solid var(--color-gray-300);
-      border-radius: var(--radius-md);
-      color: var(--color-gray-600);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-    }
-    
-    .clear-filters:hover {
-      background: var(--color-gray-100);
-      border-color: var(--color-gray-400);
-    }
-    
-    /* Grille de résultats */
-    .results-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: var(--space-4);
-    }
-    
-    .etiquette-card {
-      background: white;
-      border: 2px solid var(--color-gray-200);
-      border-radius: var(--radius-xl);
-      padding: var(--space-5);
-      text-decoration: none;
-      color: inherit;
-      transition: all var(--transition-base);
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-    }
-    
-    .etiquette-card:hover {
-      border-color: var(--color-guide-primary);
-      box-shadow: var(--shadow-guide);
-      transform: translateY(-4px);
-    }
-    
-    .card-header {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-    
-    .card-id {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--color-guide-primary), var(--color-guide-secondary));
-      color: white;
-      padding: var(--space-1) var(--space-3);
-      border-radius: var(--radius-full);
-      font-size: var(--text-xs);
-      font-weight: var(--font-bold);
-      width: fit-content;
-    }
-    
-    .card-title {
-      font-size: var(--text-lg);
-      font-weight: var(--font-bold);
-      color: var(--color-gray-900);
-      margin: 0;
-    }
-    
-    .card-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-      font-size: var(--text-xs);
-      color: var(--color-gray-600);
-    }
-    
-    .meta-badge {
-      padding: var(--space-1) var(--space-2);
-      background: var(--color-gray-100);
-      border-radius: var(--radius-sm);
-    }
-    
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-    }
-    
-    .card-tag {
-      padding: var(--space-1) var(--space-3);
-      background: var(--color-guide-light);
-      color: var(--color-guide-primary);
-      border-radius: var(--radius-full);
-      font-size: var(--text-xs);
-      font-weight: var(--font-semibold);
-    }
-    
-    /* Message vide */
-    .empty-state {
-      text-align: center;
-      padding: var(--space-12);
-      color: var(--color-gray-500);
-    }
-    
-    .empty-state-icon {
-      font-size: 4rem;
-      margin-bottom: var(--space-4);
-    }
-    
-    .empty-state-title {
-      font-size: var(--text-2xl);
-      font-weight: var(--font-bold);
-      color: var(--color-gray-700);
-      margin-bottom: var(--space-2);
-    }
-    
-    /* Responsive */
-    @media (max-width: 640px) {
-      .results-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .filters-container {
-        flex-direction: column;
-      }
-      
-      .search-stats {
-        flex-direction: column;
-        gap: var(--space-3);
-      }
-    }
-  </style>
 </head>
-<body class="search-page">
+<body>
   
-  <div class="search-container">
+  <Navbar title="Recherche" />
+
+  <main class="page-container">
     
-    <!-- Header avec recherche -->
-    <header class="search-header">
-      <div class="search-brand">
-        <a href="/">
-          <span class="logo-974">M974</span>
-          <span class="brand-title">Maths974</span>
-        </a>
-      </div>
-      
+    <header class="page-header">
+      <h1>Moteur de Recherche</h1>
+      <p>Trouvez rapidement une fiche, une définition ou une méthode.</p>
+
       <div class="search-input-wrapper">
         <span class="search-icon">🔍</span>
         <input 
           type="text" 
           class="search-input" 
           id="searchInput"
-          placeholder="Rechercher une étiquette par titre, contenu, tag..."
+          placeholder="Mots-clés, titres, tags..."
           autocomplete="off"
+          autofocus
         />
       </div>
-      
+
       <div class="filters-container">
-        <!-- Filtres Niveau -->
         <div class="filter-group">
-          <span class="filter-label">Niveau :</span>
+          <span class="filter-label">Niveau</span>
           {allNiveaux.map(niveau => (
-            <button class="filter-tag" data-filter="niveau" data-value={niveau}>
-              {niveau}
-            </button>
+            <button class="filter-tag" data-filter="niveau" data-value={niveau}>{niveau}</button>
           ))}
         </div>
         
-        <!-- Filtres Thème -->
         <div class="filter-group">
-          <span class="filter-label">Thème :</span>
+          <span class="filter-label">Thème</span>
           {allThemes.slice(0, 5).map(theme => (
-            <button class="filter-tag" data-filter="theme" data-value={theme}>
-              {theme}
-            </button>
+            <button class="filter-tag" data-filter="theme" data-value={theme}>{theme}</button>
           ))}
         </div>
       </div>
     </header>
     
-    <!-- Stats & Clear -->
     <div class="search-stats">
       <div class="stats-count">
-        <strong id="resultCount">{etiquettesData.length}</strong> étiquettes trouvées
+        <strong id="resultCount">{etiquettesData.length}</strong> résultats
       </div>
-      <button class="clear-filters" id="clearFilters">
-        Réinitialiser les filtres
-      </button>
+      <button class="clear-filters" id="clearFilters">Réinitialiser les filtres</button>
     </div>
     
-    <!-- Résultats -->
     <div class="results-grid" id="resultsGrid">
       {etiquettesData.map(etiq => (
-        <a href={etiq.url} class="etiquette-card" data-etiquette={JSON.stringify(etiq)}>
+        <a href={etiq.url} class="result-card" data-etiquette={JSON.stringify(etiq)}>
           <div class="card-header">
-            {etiq.id && <span class="card-id">{etiq.id}</span>}
-            <h2 class="card-title">{etiq.title}</h2>
+            {etiq.id ? <span class="card-id">{etiq.id}</span> : <span></span>}
           </div>
           
-          <div class="card-meta">
-            {etiq.niveau && <span class="meta-badge">📚 {etiq.niveau}</span>}
-            {etiq.theme && <span class="meta-badge">📂 {etiq.theme}</span>}
-          </div>
+          <h2 class="card-title">{etiq.title}</h2>
           
           {etiq.tags.length > 0 && (
             <div class="card-tags">
-              {etiq.tags.map(tag => (
+              {etiq.tags.slice(0, 3).map(tag => (
                 <span class="card-tag">{tag}</span>
               ))}
             </div>
           )}
+
+          <div class="card-meta">
+            {etiq.niveau && <span class="meta-badge">📚 {etiq.niveau}</span>}
+            {etiq.theme && <span class="meta-badge">📂 {etiq.theme}</span>}
+          </div>
         </a>
       ))}
     </div>
     
-    <!-- État vide -->
     <div class="empty-state" id="emptyState" style="display: none;">
-      <div class="empty-state-icon">🔍</div>
-      <h2 class="empty-state-title">Aucun résultat</h2>
-      <p>Essayez de modifier votre recherche ou vos filtres</p>
+      <span class="empty-icon">🕵️</span>
+      <h2 class="empty-title">Aucun résultat trouvé</h2>
+      <p class="empty-text">Essayez de modifier vos termes de recherche ou de désactiver les filtres.</p>
     </div>
     
-  </div>
+  </main>
   
   <script is:inline define:vars={{ etiquettesData }}>
-    // Données globales
     let allData = etiquettesData;
-    let currentFilters = {
-      search: '',
-      niveau: [],
-      theme: []
-    };
-    
-    // Éléments DOM
+    let currentFilters = { search: '', niveau: [], theme: [] };
+
     const searchInput = document.getElementById('searchInput');
     const resultsGrid = document.getElementById('resultsGrid');
     const emptyState = document.getElementById('emptyState');
     const resultCount = document.getElementById('resultCount');
     const clearFiltersBtn = document.getElementById('clearFilters');
     
-    // Fonction de filtrage
     function filterEtiquettes() {
       let filtered = allData;
-      
-      // Filtre recherche textuelle
       if (currentFilters.search) {
         const searchLower = currentFilters.search.toLowerCase();
         filtered = filtered.filter(e => {
@@ -457,96 +142,60 @@ const allThemes = [...new Set(etiquettesData.map(e => e.theme).filter(Boolean))]
           );
         });
       }
-      
-      // Filtre niveau
-      if (currentFilters.niveau.length > 0) {
-        filtered = filtered.filter(e => 
-          currentFilters.niveau.includes(e.niveau)
-        );
-      }
-      
-      // Filtre thème
-      if (currentFilters.theme.length > 0) {
-        filtered = filtered.filter(e => 
-          currentFilters.theme.includes(e.theme)
-        );
-      }
-      
+      if (currentFilters.niveau.length > 0) filtered = filtered.filter(e => currentFilters.niveau.includes(e.niveau));
+      if (currentFilters.theme.length > 0) filtered = filtered.filter(e => currentFilters.theme.includes(e.theme));
       return filtered;
     }
     
-    // Afficher résultats
     function displayResults() {
       const filtered = filterEtiquettes();
-      
-      // Mise à jour du compteur
       resultCount.textContent = filtered.length;
       
-      // Cacher tous les cards
-      const allCards = resultsGrid.querySelectorAll('.etiquette-card');
+      const allCards = resultsGrid.querySelectorAll('.result-card'); // Updated class name
       allCards.forEach(card => card.style.display = 'none');
       
-      // Afficher les cards filtrées
       if (filtered.length === 0) {
         emptyState.style.display = 'block';
       } else {
         emptyState.style.display = 'none';
-        
         filtered.forEach(etiq => {
+          // Find card by finding the link with matching href or dataset
           const card = Array.from(allCards).find(c => {
-            const data = JSON.parse(c.dataset.etiquette);
-            return data.slug === etiq.slug;
+             const data = JSON.parse(c.dataset.etiquette);
+             return data.slug === etiq.slug;
           });
-          if (card) card.style.display = 'flex';
+          if (card) card.style.display = 'flex'; // Flex for flex layout inside card
         });
       }
     }
     
-    // Event: Recherche textuelle
     searchInput.addEventListener('input', (e) => {
       currentFilters.search = e.target.value;
       displayResults();
     });
-    
-    // Event: Filtres tags
+
     document.querySelectorAll('.filter-tag').forEach(btn => {
       btn.addEventListener('click', () => {
         const filterType = btn.dataset.filter;
         const value = btn.dataset.value;
-        
-        // Toggle active
         btn.classList.toggle('active');
-        
-        // Mise à jour des filtres
         if (btn.classList.contains('active')) {
-          if (!currentFilters[filterType].includes(value)) {
-            currentFilters[filterType].push(value);
-          }
+           if (!currentFilters[filterType].includes(value)) currentFilters[filterType].push(value);
         } else {
           currentFilters[filterType] = currentFilters[filterType].filter(v => v !== value);
         }
-        
         displayResults();
       });
     });
-    
-    // Event: Clear filters
+
     clearFiltersBtn.addEventListener('click', () => {
-      // Reset filtres
       currentFilters = { search: '', niveau: [], theme: [] };
       searchInput.value = '';
-      
-      // Reset UI
-      document.querySelectorAll('.filter-tag').forEach(btn => {
-        btn.classList.remove('active');
-      });
-      
+      document.querySelectorAll('.filter-tag').forEach(btn => btn.classList.remove('active'));
       displayResults();
     });
     
-    // Init
     displayResults();
   </script>
-  
 </body>
 </html>

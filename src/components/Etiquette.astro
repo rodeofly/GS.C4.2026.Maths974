@@ -8,12 +8,16 @@ const { data: fm } = entry;
 
 const { Content } = await entry.render();
 
+// Calcul des classes de format
 const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
-
-// NOUVEAU : Gérer full_width
 const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
 
+// 🔗 Calcul de l'URL pour la vue isolée
+// On retire '/index' à la fin si présent pour avoir une URL propre
+const etiquetteUrl = `/guide/${entry.slug.replace(/\/index$/, '')}/`;
+
+// Récupération des données
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
 const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
@@ -22,15 +26,145 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
 
 <article class={`etiquette ${formatClass} ${fullWidthClass}`} id={fm.id}>
   <header class="etiquette-header">
-    <h2 class="etiquette-title">{fm.title ?? 'Étiquette'}</h2>
+    <div class="header-top">
+      {/* 1. Titre cliquable */}
+      <h2 class="etiquette-title">
+        <a href={etiquetteUrl} class="title-link">{fm.title ?? 'Étiquette'}</a>
+      </h2>
+      
+      {/* 2. Bouton d'isolation explicite (visible au survol ou tout le temps) */}
+      <a href={etiquetteUrl} class="isolate-btn no-print" title="Isoler cette fiche" aria-label="Vue détaillée">
+        ⤢
+      </a>
+    </div>
+
     <div class="etiquette-meta">
-       </div>
+      {/* Affichage de l'ID si présent */}
+      {fm.id && <span class="etiquette-id">{fm.id}</span>}
+    </div>
   </header>
 
+  {/* CONTENU PRINCIPAL */}
   {Content ? (
     <section class="etiquette-section section-texte">
       <Content />
     </section>
   ) : null}
 
-  </article>
+  {/* LISTE DES CONTENUS (Points clés) */}
+  {contenus.length > 0 && (
+    <section class="etiquette-section section-retain">
+      <ul class="contenus">
+        {contenus.map((item) => (
+          <li set:html={item}></li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {/* ERREURS FRÉQUENTES */}
+  {erreurs.length > 0 && (
+    <section class="etiquette-section section-erreurs">
+      <h3 class="section-erreurs-title">Erreurs à éviter</h3>
+      <ul>
+        {erreurs.map((err) => (
+          <li set:html={err}></li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  {/* ACCORDÉONS (Détails, Exemples) */}
+  {accordions.length > 0 && (
+    <div class="accordion-container no-print">
+      {accordions.map((acc) => (
+        <Accordion titre={acc.titre} contenu={acc.contenu} />
+      ))}
+    </div>
+  )}
+
+  {/* SECTION LIENS / QR CODES (Footer) */}
+  {(liens.length > 0 || fm.rappel) && (
+    <footer class="etiquette-footer">
+      {fm.rappel && (
+        <div class="section-rappel">
+          <p set:html={fm.rappel}></p>
+        </div>
+      )}
+      
+      {liens.length > 0 && (
+        <div class="qr-collection">
+          {liens.map((lien) => (
+            <QRCode lien={lien} />
+          ))}
+        </div>
+      )}
+    </footer>
+  )}
+</article>
+
+<style>
+  /* Mise en page du header pour aligner Titre et Bouton */
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    position: relative;
+  }
+
+  /* Lien sur le titre : discret mais interactif */
+  .title-link {
+    text-decoration: none;
+    color: inherit;
+    background-image: linear-gradient(transparent 90%, var(--color-guide-primary) 90%);
+    background-size: 0% 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.3s ease, color 0.3s ease;
+  }
+
+  .title-link:hover {
+    color: var(--color-guide-primary);
+    background-size: 100% 100%;
+  }
+
+  /* Bouton d'isolation (flèche diagonale) */
+  .isolate-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-600);
+    text-decoration: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .etiquette:hover .isolate-btn {
+    opacity: 1;
+  }
+
+  .isolate-btn:hover {
+    background-color: var(--color-guide-primary);
+    color: white;
+    transform: scale(1.1);
+  }
+
+  /* Ajustement de l'ID pour qu'il soit bien placé */
+  .etiquette-id {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    background: var(--color-guide-primary);
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-top: 0.5rem;
+  }
+</style>

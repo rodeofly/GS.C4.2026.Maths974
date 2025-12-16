@@ -1,8 +1,11 @@
 ---
+// src/pages/index.astro
 import { getCollection } from 'astro:content';
+import Navbar from '../components/Navbar.astro';
+import '../styles/main.css';
+import '../styles/pages/home.css';
 
-// CORRECTION : On utilise 'id' au lieu de 'slug' pour être sûr de trouver les fichiers
-// On cherche les fichiers qui sont physiquement à la racine d'un dossier (ex: sixieme/index.md)
+// Récupération des collections
 const guides = await getCollection('guide', ({ id }) => {
   return id.split('/').length === 2 && id.endsWith('index.md');
 });
@@ -11,7 +14,7 @@ const rapidos = await getCollection('rapidos', ({ id }) => {
   return id.split('/').length === 2 && id.endsWith('index.md');
 });
 
-// Fonction de tri
+// Tri alphabétique
 const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
 ---
 
@@ -21,40 +24,18 @@ const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Maths974 - Accueil</title>
-  <style>
-    body { font-family: system-ui; margin: 0; background: #f1f5f9; color: #1e293b; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    .container { max-width: 900px; width: 100%; padding: 2rem; }
-    h1 { text-align: center; color: #0f172a; font-size: 2.5rem; margin-bottom: 3rem; }
-    
-    .menu-section { margin-bottom: 3rem; }
-    .section-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-    .guide-color { color: #0b4f6c; }
-    .rapido-color { color: #d97706; }
-
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
-    
-    .card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 0.75rem;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
-      border: 1px solid transparent;
-    }
-    .card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    
-    .guide-card:hover { border-color: #0b4f6c; }
-    .rapido-card:hover { border-color: #d97706; }
-
-    .card h3 { margin: 0; font-size: 1.25rem; }
-    .card p { margin: 0.5rem 0 0; font-size: 0.9rem; color: #64748b; }
-  </style>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 </head>
 <body>
-  <div class="container">
-    <h1>Maths974</h1>
+  
+  <Navbar title="Accueil" />
+
+  <div class="home-container">
+    
+    <header class="home-header">
+      <h1 class="home-title">Maths974</h1>
+      <p class="home-subtitle">Ressources, fiches de révision et exercices rapides pour le collège et le lycée.</p>
+    </header>
 
     <div class="menu-section">
       <div class="section-title guide-color">
@@ -75,13 +56,15 @@ const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
         <span>⚡</span> Rapidos
       </div>
       <div class="grid">
-        {rapidos.length > 0 ? rapidos.map(r => (
-          <a href={`/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
-            <h3>{r.data.title}</h3> 
-            <p>Exercices d'échauffement</p>
-          </a>
-        )) : (
-          <p style="color: #64748b;">Aucun rapido disponible.</p>
+        {rapidos.length > 0 ? (
+          rapidos.map(r => (
+            <a href={`/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
+              <h3>{r.data.title}</h3> 
+              <p>Exercices d'échauffement & rituels</p>
+            </a>
+          ))
+        ) : (
+          <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
         )}
       </div>
     </div>
