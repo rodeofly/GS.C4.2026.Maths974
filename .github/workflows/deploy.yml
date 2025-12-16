@@ -1,0 +1,44 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Déclenche le déploiement à chaque "push" sur la branche principale
+  push:
+    branches: [ main ]
+  # Permet de lancer le déploiement manuellement depuis l'interface GitHub si besoin
+  workflow_dispatch:
+
+# Permissions nécessaires pour que l'action puisse écrire sur GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Empêche plusieurs déploiements de se marcher dessus
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repository using git
+        uses: actions/checkout@v4
+
+      - name: Install, build, and upload your site
+        uses: withastro/action@v2
+        with:
+            # Astro détectera automatiquement npm/pnpm/yarn
+            # Assure-toi juste d'avoir ton package-lock.json ou pnpm-lock.yaml commité
+            package-manager: npm
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
