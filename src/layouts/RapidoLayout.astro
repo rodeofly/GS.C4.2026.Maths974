@@ -4,12 +4,11 @@ import '../styles/main.css';
 
 const { info } = Astro.props;
 const data = info.data || {};
-// Données sécurisées
+
 const numero = data.numero || "1";
 const niveau = data.niveau || "";
 const questions = data.questions || [];
 
-// Titre de la page HTML
 const pageTitle = `Rapido ${numero} - ${niveau}`;
 ---
 
@@ -92,54 +91,42 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       display: flex;
       flex-direction: column;
       align-items: center;
-      position: relative; /* Pour positionner les éléments déco */
+      position: relative;
     }
 
-    /* === AJUSTEMENT DÉCO : VOLCAN & COPYRIGHT === */
+    /* === DÉCO : VOLCAN & COPYRIGHT === */
     .deco-area {
       width: 100%;
       position: relative;
-      /* On laisse la hauteur automatique pour ne pas brider le positionnement */
       margin-top: 1rem;
       display: flex;
       align-items: flex-end;
-      /* Le padding-bottom réserve la place pour le lambrequin */
-      padding-bottom: 0; 
+      padding-bottom: 0;
     }
 
     .deco-volcan-wrapper {
       position: absolute;
-      left: -20px; /* Légèrement décalé à gauche pour toucher le bord de l'écran */
-      
-      /* Le lambrequin fait 3rem. 
-         bottom: 1.5rem fait descendre le volcan "derrière" la moitié haute du lambrequin.
-         Ajustez cette valeur si vous voulez qu'il soit plus haut ou plus bas. */
+      left: -20px;
       bottom: 3rem; 
-      
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 5; /* Derrière le lambrequin (z-index 10) */
-      pointer-events: none; /* Pour cliquer au travers si besoin */
+      z-index: 5;
+      pointer-events: none;
     }
 
     .deco-volcan {
-      /* Taille demandée */
-      width: 300px; 
-      max-width: 35vw; /* Responsive : max 35% de la largeur sur petits écrans */
+      width: 300px;
+      max-width: 35vw;
       height: auto;
       filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
     }
 
     .copyright {
       color: white;
-      /* Taille demandée */
-      font-size: 1.5rem; 
+      font-size: 1rem; 
       font-weight: 800;
-      
-      /* On remonte fortement le texte pour qu'il soit DANS le pied du volcan */
-      margin-top: -40px; 
-      
+      margin-top: -25px;
       text-shadow: 0 2px 4px rgba(0,0,0,0.8);
       font-family: var(--font-sans);
       letter-spacing: 0.05em;
@@ -156,10 +143,10 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
         background-position: top center;
         opacity: 1;
         position: relative;
-        z-index: 10; /* Le lambrequin passe DEVANT le bas du volcan */
+        z-index: 10;
     }
 
-    /* Le reste du titre */
+    /* TITRE */
     .title-wrapper {
       display: flex;
       align-items: center;
@@ -209,7 +196,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
     .deco-margouillat {
       position: absolute;
       top: 20px;
-      right: 20%; /* Changé à droite pour équilibrer avec le volcan à gauche */
+      right: 20%;
       width: 8vw;
       max-width: 100px;
       z-index: 2;
@@ -230,15 +217,14 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
     .q-card {
       background: rgba(255, 255, 255, 0.95);
       border-radius: 1.5rem;
-      padding: 1.5rem;
+      /* Padding ajusté pour laisser la place aux contrôles en haut */
+      padding: 3rem 1.5rem 1.5rem 1.5rem;
       position: relative;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #334155;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(8px);
       border: 2px solid rgba(255, 255, 255, 0.8);
@@ -248,20 +234,6 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       grid-column: 1 / -1;
       width: 70%;
       margin: 0 auto;
-    }
-
-    .gs-ref {
-      position: absolute;
-      top: 0;
-      left: 0;
-      background: #0f766e;
-      color: white;
-      font-size: 0.85rem;
-      font-weight: 800;
-      padding: 0.4rem 0.8rem;
-      border-top-left-radius: 1.3rem;
-      border-bottom-right-radius: 1rem;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
 
     .q-num {
@@ -280,16 +252,102 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       font-size: 1.2rem;
       box-shadow: 0 4px 6px rgba(0,0,0,0.2);
       border: 3px solid white;
+      z-index: 20;
     }
 
+    /* --- CONTROLES (GS + Slider) --- */
+    .card-header-controls {
+        position: absolute;
+        top: 10px;
+        left: 0; /* On colle à gauche pour que le badge dépasse légèrement si on veut, ou aligné */
+        width: 100%;
+        padding: 0 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        z-index: 30;
+    }
+
+    /* Badge GS (Vert, à gauche) */
+    .gs-ref-badge {
+      display: none;
+      background: #0f766e;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px 12px 12px 2px; /* Petit style onglet */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      cursor: default;
+      /* Animation douce */
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .gs-ref-badge.active { display: block; }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* Slider Discret */
+    .bullets-nav {
+      display: flex;
+      gap: 6px;
+      background: rgba(0,0,0,0.03); /* Fond ultra léger pour lier les points */
+      padding: 4px 6px;
+      border-radius: 10px;
+    }
+
+    .bullet {
+      /* IMPORTANT : Override global CSS qui force 44px */
+      min-width: auto !important;
+      min-height: auto !important;
+      
+      width: 10px;  /* Taille demandée : petit */
+      height: 10px;
+      border-radius: 50%;
+      background-color: #cbd5e1; /* Gris clair */
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Zone de clic invisible pour le tactile */
+    .bullet::after {
+        content: '';
+        position: absolute;
+        top: -10px; bottom: -10px; left: -10px; right: -10px;
+    }
+
+    .bullet:hover { background-color: #94a3b8; }
+    
+    .bullet.active { 
+        background-color: #f59e0b; /* Orange */
+        transform: scale(1.1); 
+    }
+
+    /* Contenu de la question */
+    .variant-content {
+      display: none;
+      width: 100%;
+      animation: fadeIn 0.3s ease;
+    }
+    .variant-content.active { display: block; }
+    
     .content {
       display: inline-block;
       line-height: 1.5;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #334155;
     }
     
     .content :global(mjx-container) {
       vertical-align: middle !important;
       margin: 0 0.2em !important;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
   </style>
@@ -312,7 +370,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 
       {/* ZONE DÉCO : Volcan + Lambrequin */}
       <div class="deco-area">
-        <div class="deco-volcan-wrapper">
+         <div class="deco-volcan-wrapper">
           <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
           <div class="copyright">© maths974</div>
         </div>
@@ -322,15 +380,72 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
     </header>
     
     <div class="questions-grid">
-      {questions.map((item, index) => (
-        <article class="q-card">
-          {item.gs && <div class="gs-ref">{item.gs}</div>}
-          <div class="q-num">{index + 1}</div>
-          <div class="content">{item.texte}</div>
+      {questions.map((q, qIndex) => (
+        <article class="q-card" id={`card-${qIndex}`}>
+          <div class="q-num">{qIndex + 1}</div>
+          
+          {/* En-tête : Badge GS à gauche, puis Slider */}
+          <div class="card-header-controls">
+            
+            {/* 1. Badge GS */}
+            {q.variantes.map((v, vIndex) => (
+               v.gs && <div class={`gs-ref-badge ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>{v.gs}</div>
+            ))}
+            
+            {/* 2. Slider */}
+            <div class="bullets-nav">
+              {q.variantes.map((_, vIndex) => (
+                <button 
+                  class={`bullet ${vIndex === 0 ? 'active' : ''}`} 
+                  aria-label={`Variante ${vIndex + 1}`}
+                  data-card={qIndex}
+                  data-variant={vIndex}
+                ></button>
+              ))}
+            </div>
+            
+          </div>
+
+          {/* Contenu */}
+          {q.variantes.map((v, vIndex) => (
+            <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
+              <div class="content">{v.texte}</div>
+            </div>
+          ))}
         </article>
       ))}
     </div>
   </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const bullets = document.querySelectorAll('.bullet');
+
+      bullets.forEach(bullet => {
+        bullet.addEventListener('click', (e) => {
+          const target = e.target;
+          const cardIndex = target.dataset.card;
+          const variantIndex = target.dataset.variant;
+          const card = document.getElementById(`card-${cardIndex}`);
+          if (!card) return;
+
+          // 1. Changer le contenu visible
+          card.querySelectorAll('.variant-content').forEach(c => {
+            c.classList.toggle('active', c.dataset.index === variantIndex);
+          });
+
+          // 2. Changer le badge GS visible
+          card.querySelectorAll('.gs-ref-badge').forEach(b => {
+            b.classList.toggle('active', b.dataset.index === variantIndex);
+          });
+
+          // 3. Mettre à jour les bullets
+          card.querySelectorAll('.bullet').forEach(b => b.classList.remove('active'));
+          target.classList.add('active');
+        });
+      });
+    });
+  </script>
 
 </body>
 </html>

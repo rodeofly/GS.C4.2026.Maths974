@@ -1,6 +1,6 @@
 ---
-title: "Rapidos 5ème"
-niveau: "5ème"
+title: "Rapidos CM2"
+niveau: "cm2"
 ---
 
 **Rapidos de 5ème** : 32 séries de 5 questions pour s'entraîner rapidement.
