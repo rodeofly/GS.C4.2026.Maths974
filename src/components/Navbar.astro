@@ -1,11 +1,14 @@
 ---
 // src/components/Navbar.astro
 const { title = "Guide de Survie" } = Astro.props;
+
+// 🛠️ BASE URL
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <nav class="main-navbar no-print">
   <div class="navbar-content">
-    <a href="/" class="brand">
+    <a href={`${base}/`} class="brand">
       <span class="logo-icon">M974</span>
       <span class="brand-text">Maths974</span>
     </a>
@@ -13,15 +16,16 @@ const { title = "Guide de Survie" } = Astro.props;
     <div class="nav-title">{title}</div>
 
     <div class="nav-actions">
-      <a href="/recherche/" class="nav-link nav-link-primary">
+      <a href={`${base}/recherche/`} class="nav-link nav-link-primary">
         <span class="nav-icon">🔍</span>
         <span class="nav-text">Recherche</span>
       </a>
-      <a href="/recherche/favoris/" class="nav-link">
+      <a href={`${base}/recherche/favoris/`} class="nav-link">
         <span class="nav-icon">⭐</span>
         <span class="nav-text">Favoris</span>
       </a>
-      <a href="/" class="nav-link">Accueil</a>
+      <a href={`${base}/`} class="nav-link">Accueil</a>
+      
       <button onclick="window.print()" class="btn-print" aria-label="Imprimer cette page">
         🖨️
       </button>

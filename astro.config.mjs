@@ -5,9 +5,7 @@ export default defineConfig({
   root: '.',
   // URL de ton site GitHub Pages
   site: 'https://rodeofly.github.io',
-  
-  // Nom de ton dépôt (attention à la casse, c'est important !)
-  base: '/GS.C4.2026.Maths974',
+  base: '/GS.C4.2026.Maths974', // ⚠️ Vérifie que c'est bien écrit comme sur GitHub
 
   server: {
     host: true,

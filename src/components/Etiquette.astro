@@ -13,11 +13,12 @@ const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
 const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
 
-// 🔗 Calcul de l'URL pour la vue isolée
-// On retire '/index' à la fin si présent pour avoir une URL propre
-const etiquetteUrl = `/guide/${entry.slug.replace(/\/index$/, '')}/`;
+// 🛠️ CORRECTION URL : On ajoute la base
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+// On construit l'URL avec la base
+const etiquetteUrl = `${base}/guide/${entry.slug.replace(/\/index$/, '')}/`;
 
-// Récupération des données
+// Récupération des données... (reste inchangé)
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
 const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
@@ -119,7 +120,32 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
     color: inherit;
     background-image: linear-gradient(transparent 90%, var(--color-guide-primary) 90%);
     background-size: 0% 100%;
-    background-repeat: no-repeat;
+    background-repeat: no-r---
+// src/components/Etiquette.astro
+import QRCode from './QRCode.astro';
+import Accordion from './Accordion.astro';
+
+const { entry } = Astro.props;
+const { data: fm } = entry;
+
+const { Content } = await entry.render();
+
+// Calcul des classes de format
+const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
+const formatClass = `format-${formatRaw}`;
+const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
+
+// 🛠️ CORRECTION URL : On ajoute la base
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+// On construit l'URL avec la base
+const etiquetteUrl = `${base}/guide/${entry.slug.replace(/\/index$/, '')}/`;
+
+// Récupération des données... (reste inchangé)
+const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
+const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
+const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
+const liens = Array.isArray(fm.liens) ? fm.liens : [];
+---epeat;
     transition: background-size 0.3s ease, color 0.3s ease;
   }
 
