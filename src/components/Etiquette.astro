@@ -13,12 +13,13 @@ const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
 const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
 
-// 🛠️ CORRECTION URL : On ajoute la base
+// 🛠️ CORRECTION URL : Gestion du sous-dossier GitHub Pages
+// On nettoie le slash de fin pour éviter les doubles //
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-// On construit l'URL avec la base
+// On construit l'URL correcte
 const etiquetteUrl = `${base}/guide/${entry.slug.replace(/\/index$/, '')}/`;
 
-// Récupération des données... (reste inchangé)
+// Récupération des données
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
 const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
@@ -33,7 +34,7 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
         <a href={etiquetteUrl} class="title-link">{fm.title ?? 'Étiquette'}</a>
       </h2>
       
-      {/* 2. Bouton d'isolation explicite (visible au survol ou tout le temps) */}
+      {/* 2. Bouton d'isolation explicite */}
       <a href={etiquetteUrl} class="isolate-btn no-print" title="Isoler cette fiche" aria-label="Vue détaillée">
         ⤢
       </a>
@@ -120,32 +121,7 @@ const liens = Array.isArray(fm.liens) ? fm.liens : [];
     color: inherit;
     background-image: linear-gradient(transparent 90%, var(--color-guide-primary) 90%);
     background-size: 0% 100%;
-    background-repeat: no-r---
-// src/components/Etiquette.astro
-import QRCode from './QRCode.astro';
-import Accordion from './Accordion.astro';
-
-const { entry } = Astro.props;
-const { data: fm } = entry;
-
-const { Content } = await entry.render();
-
-// Calcul des classes de format
-const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
-const formatClass = `format-${formatRaw}`;
-const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
-
-// 🛠️ CORRECTION URL : On ajoute la base
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-// On construit l'URL avec la base
-const etiquetteUrl = `${base}/guide/${entry.slug.replace(/\/index$/, '')}/`;
-
-// Récupération des données... (reste inchangé)
-const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
-const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
-const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
-const liens = Array.isArray(fm.liens) ? fm.liens : [];
----epeat;
+    background-repeat: no-repeat;
     transition: background-size 0.3s ease, color 0.3s ease;
   }
 
