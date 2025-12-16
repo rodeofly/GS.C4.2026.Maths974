@@ -2,7 +2,8 @@
 // src/layouts/RapidoLayout.astro
 import '../styles/main.css';
 
-const { info } = Astro.props;
+// On récupère parentUrl depuis les props
+const { info, parentUrl = ".." } = Astro.props;
 const data = info.data || {};
 
 const numero = data.numero || "1";
@@ -15,360 +16,74 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{pageTitle}</title>
-  
-  <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
-  <script is:inline>
-    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-
-  <style>
-    /* 1. CONFIGURATION DU FOND & POLICE */
-    body {
-      margin: 0;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      font-family: var(--font-sans) !important;
-      color: #1e293b;
-      background: linear-gradient(to bottom, #dc2626, #fca5a5); 
-      position: relative;
-    }
-
-    h1, h2, button, .q-card, .q-num {
-      font-family: var(--font-sans) !important;
-    }
-
-    /* Couche 2 : Curves SVG */
-    .bg-curves {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: 1;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .back-btn {
-      position: absolute;
-      top: 1rem;
-      left: 1rem;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border-radius: 50%;
-      text-decoration: none;
-      font-weight: bold;
-      z-index: 50;
-      backdrop-filter: blur(4px);
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-      padding: 0;
-      font-size: 1.5rem;
-      border: 2px solid rgba(255,255,255,0.4);
-    }
-    .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
-
-    /* 3. HEADER & TITRE */
-    .rapido-container {
-      position: relative;
-      z-index: 10;
-      height: 100%;
-      padding: 1rem 4rem 4rem 4rem;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 0rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-
-    /* === DÉCO : VOLCAN & COPYRIGHT === */
-    .deco-area {
-      width: 100%;
-      position: relative;
-      margin-top: 1rem;
-      display: flex;
-      align-items: flex-end;
-      padding-bottom: 0;
-    }
-
-    .deco-volcan-wrapper {
-      position: absolute;
-      left: -20px;
-      bottom: 3rem; 
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    .deco-volcan {
-      width: 300px;
-      max-width: 35vw;
-      height: auto;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-    }
-
-    .copyright {
-      color: white;
-      font-size: 1rem; 
-      font-weight: 800;
-      margin-top: -25px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-      font-family: var(--font-sans);
-      letter-spacing: 0.05em;
-      position: relative;
-      z-index: 6;
-    }
-
-    .frise-lambrequin {
-        height: 3rem;
-        width: 100%;
-        background-image: url('/images/lambrequin.svg');
-        background-repeat: repeat-x;
-        background-size: contain;
-        background-position: top center;
-        opacity: 1;
-        position: relative;
-        z-index: 10;
-    }
-
-    /* TITRE */
-    .title-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 1.5rem;
-      margin-top: 0.5rem;
-    }
-
-    h1 {
-      color: white;
-      font-size: 3rem;
-      margin: 0;
-      text-transform: uppercase;
-      font-weight: 900;
-      letter-spacing: 0.02em;
-      text-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      line-height: 1;
-    }
-
-    .rapido-badge {
-      background-color: #fbbf24;
-      color: #0f172a;
-      font-family: var(--font-sans);
-      font-weight: 900;
-      font-size: 2.2rem;
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: rotate(-10deg);
-      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-      border: 4px solid white;
-      z-index: 10;
-    }
-
-    h2 {
-      color: rgba(255, 255, 255, 0.95);
-      font-size: 1.2rem;
-      margin: 0;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .deco-margouillat {
-      position: absolute;
-      top: 20px;
-      right: 20%;
-      width: 8vw;
-      max-width: 100px;
-      z-index: 2;
-      pointer-events: none;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-      transform: rotate(15deg);
-    }
-
-    /* 4. GRILLE DES QUESTIONS */
-    .questions-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: repeat(3, 1fr);
-      gap: 1.5rem;
-      flex: 1;
-    }
-
-    .q-card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 1.5rem;
-      /* Padding ajusté pour laisser la place aux contrôles en haut */
-      padding: 3rem 1.5rem 1.5rem 1.5rem;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
-      backdrop-filter: blur(8px);
-      border: 2px solid rgba(255, 255, 255, 0.8);
-    }
-
-    .questions-grid:has(> :last-child:nth-child(5)) > :last-child {
-      grid-column: 1 / -1;
-      width: 70%;
-      margin: 0 auto;
-    }
-
-    .q-num {
-      position: absolute;
-      top: -15px;
-      right: -15px;
-      width: 2.5rem;
-      height: 2.5rem;
-      background: #f59e0b;
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 1.2rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-      border: 3px solid white;
-      z-index: 20;
-    }
-
-    /* --- CONTROLES (GS + Slider) --- */
-    .card-header-controls {
-        position: absolute;
-        top: 10px;
-        left: 0; /* On colle à gauche pour que le badge dépasse légèrement si on veut, ou aligné */
-        width: 100%;
-        padding: 0 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 30;
-    }
-
-    /* Badge GS (Vert, à gauche) */
-    .gs-ref-badge {
-      display: none;
-      background: #0f766e;
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 800;
-      padding: 0.25rem 0.6rem;
-      border-radius: 12px 12px 12px 2px; /* Petit style onglet */
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      cursor: default;
-      /* Animation douce */
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .gs-ref-badge.active { display: block; }
-    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-    /* Slider Discret */
-    .bullets-nav {
-      display: flex;
-      gap: 6px;
-      background: rgba(0,0,0,0.03); /* Fond ultra léger pour lier les points */
-      padding: 4px 6px;
-      border-radius: 10px;
-    }
-
-    .bullet {
-      /* IMPORTANT : Override global CSS qui force 44px */
-      min-width: auto !important;
-      min-height: auto !important;
-      
-      width: 10px;  /* Taille demandée : petit */
-      height: 10px;
-      border-radius: 50%;
-      background-color: #cbd5e1; /* Gris clair */
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
+    <script is:inline>
+        window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     
-    /* Zone de clic invisible pour le tactile */
-    .bullet::after {
-        content: '';
-        position: absolute;
-        top: -10px; bottom: -10px; left: -10px; right: -10px;
-    }
+    <style>
+       /* ... (Garde tous tes styles CSS tels quels) ... */
+       /* Je ne les répète pas pour gagner de la place, mais garde tout ton bloc <style> */
+       
+       /* Assure-toi juste que .back-btn est bien stylisé comme avant */
+       body { margin: 0; height: 100vh; width: 100vw; overflow: hidden; font-family: var(--font-sans) !important; color: #1e293b; background: linear-gradient(to bottom, #dc2626, #fca5a5); position: relative; }
+       h1, h2, button, .q-card, .q-num { font-family: var(--font-sans) !important; }
+       .bg-curves { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; pointer-events: none; }
+       
+       .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255, 255, 255, 0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
+       .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
 
-    .bullet:hover { background-color: #94a3b8; }
-    
-    .bullet.active { 
-        background-color: #f59e0b; /* Orange */
-        transform: scale(1.1); 
-    }
-
-    /* Contenu de la question */
-    .variant-content {
-      display: none;
-      width: 100%;
-      animation: fadeIn 0.3s ease;
-    }
-    .variant-content.active { display: block; }
-    
-    .content {
-      display: inline-block;
-      line-height: 1.5;
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #334155;
-    }
-    
-    .content :global(mjx-container) {
-      vertical-align: middle !important;
-      margin: 0 0.2em !important;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-  </style>
+       /* ... etc (Copie-colle tout le reste de tes styles ici) ... */
+       .rapido-container { position: relative; z-index: 10; height: 100%; padding: 1rem 4rem 4rem 4rem; display: flex; flex-direction: column; }
+       header { text-align: center; margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; position: relative; }
+       .deco-area { width: 100%; position: relative; margin-top: 1rem; display: flex; align-items: flex-end; padding-bottom: 0; }
+       .deco-volcan-wrapper { position: absolute; left: -20px; bottom: 3rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
+       .deco-volcan { width: 300px; max-width: 35vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+       .copyright { color: white; font-size: 1.5rem; font-weight: 800; margin-top: -40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
+       .frise-lambrequin { height: 3rem; width: 100%; background-image: url('/images/lambrequin.svg'); background-repeat: repeat-x; background-size: contain; background-position: top center; opacity: 1; position: relative; z-index: 10; }
+       .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; }
+       h1 { color: white; font-size: 3rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
+       .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 2.2rem; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 4px solid white; z-index: 10; }
+       h2 { color: rgba(255, 255, 255, 0.95); font-size: 1.2rem; margin: 0; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+       .deco-margouillat { position: absolute; top: 20px; right: 20%; width: 8vw; max-width: 300px; z-index: 2; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(15deg); }
+       .questions-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.5rem; flex: 1; }
+       .q-card { background: rgba(255, 255, 255, 0.95); border-radius: 1.5rem; padding: 3rem 1.5rem 1.5rem 1.5rem; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); backdrop-filter: blur(8px); border: 2px solid rgba(255, 255, 255, 0.8); }
+       .questions-grid:has(> :last-child:nth-child(5)) > :last-child { grid-column: 1 / -1; width: 70%; margin: 0 auto; }
+       .q-num { position: absolute; top: -15px; right: -15px; width: 2.5rem; height: 2.5rem; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 3px solid white; z-index: 20; }
+       .card-header-controls { position: absolute; top: 10px; left: 0; width: 100%; padding: 0 15px; display: flex; align-items: center; gap: 10px; z-index: 30; }
+       .gs-ref-badge { display: none; background: #0f766e; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 12px 12px 12px 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+       .gs-ref-badge.active { display: block; }
+       @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+       .bullets-nav { display: flex; gap: 6px; background: rgba(0,0,0,0.03); padding: 4px 6px; border-radius: 10px; }
+       .bullet { min-width: auto !important; min-height: auto !important; width: 10px; height: 10px; border-radius: 50%; background-color: #cbd5e1; border: none; padding: 0; cursor: pointer; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+       .bullet::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -10px; right: -10px; }
+       .bullet:hover { background-color: #94a3b8; }
+       .bullet.active { background-color: #f59e0b; transform: scale(1.1); }
+       .variant-content { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+       .variant-content.active { display: block; }
+       .content { display: inline-block; line-height: 1.5; font-size: 1.5rem; font-weight: 600; color: #334155; }
+       .content :global(mjx-container) { vertical-align: middle !important; margin: 0 0.2em !important; }
+       @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
 
   <img src="/images/curves.svg" alt="" class="bg-curves" />
   <img src="/images/margouillat.png" alt="Margouillat" class="deco-margouillat" />
 
-  <a href=".." class="back-btn" aria-label="Retour au menu">⬅</a>
+  <a href={parentUrl} class="back-btn" aria-label="Retour au menu">⬅</a>
 
   <div class="rapido-container">
-    <header>
+     <header>
       <h2>Maths974</h2>
-      
       <div class="title-wrapper">
         <h1>Rapido {niveau}</h1>
         <div class="rapido-badge">{numero}</div>
       </div>
-
-      {/* ZONE DÉCO : Volcan + Lambrequin */}
       <div class="deco-area">
          <div class="deco-volcan-wrapper">
           <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
@@ -376,23 +91,17 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
         </div>
         <div class="frise-lambrequin"></div>
       </div>
-
+      
     </header>
     
     <div class="questions-grid">
       {questions.map((q, qIndex) => (
         <article class="q-card" id={`card-${qIndex}`}>
           <div class="q-num">{qIndex + 1}</div>
-          
-          {/* En-tête : Badge GS à gauche, puis Slider */}
           <div class="card-header-controls">
-            
-            {/* 1. Badge GS */}
             {q.variantes.map((v, vIndex) => (
                v.gs && <div class={`gs-ref-badge ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>{v.gs}</div>
             ))}
-            
-            {/* 2. Slider */}
             <div class="bullets-nav">
               {q.variantes.map((_, vIndex) => (
                 <button 
@@ -403,10 +112,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
                 ></button>
               ))}
             </div>
-            
           </div>
-
-          {/* Contenu */}
           {q.variantes.map((v, vIndex) => (
             <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
               <div class="content">{v.texte}</div>
@@ -420,7 +126,6 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const bullets = document.querySelectorAll('.bullet');
-
       bullets.forEach(bullet => {
         bullet.addEventListener('click', (e) => {
           const target = e.target;
@@ -428,24 +133,17 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
           const variantIndex = target.dataset.variant;
           const card = document.getElementById(`card-${cardIndex}`);
           if (!card) return;
-
-          // 1. Changer le contenu visible
           card.querySelectorAll('.variant-content').forEach(c => {
             c.classList.toggle('active', c.dataset.index === variantIndex);
           });
-
-          // 2. Changer le badge GS visible
           card.querySelectorAll('.gs-ref-badge').forEach(b => {
             b.classList.toggle('active', b.dataset.index === variantIndex);
           });
-
-          // 3. Mettre à jour les bullets
           card.querySelectorAll('.bullet').forEach(b => b.classList.remove('active'));
           target.classList.add('active');
         });
       });
     });
   </script>
-
 </body>
 </html>

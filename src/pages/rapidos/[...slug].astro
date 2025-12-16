@@ -7,15 +7,10 @@ import A4Layout from '../../layouts/A4.astro';
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
   return entries.map(entry => {
-    // 1. Nettoyage du slug
     let cleanSlug = entry.slug.replace(/\/index$/, '');
-    
-    // 2. GESTION DE LA RACINE : Si le slug est 'index', on le transforme en undefined
-    // Cela permet à cette route de répondre à l'URL /rapidos/
     if (cleanSlug === 'index') {
         cleanSlug = undefined;
     }
-    
     return {
       params: { slug: cleanSlug },
       props: { entry },
@@ -26,36 +21,48 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { slug } = Astro.params;
 
-// Est-ce un index de niveau ? (ex: "sixieme" ou la racine "index")
 const isIndex = entry.id.endsWith('index.md');
 
-// Si c'est un index, on cherche ses enfants (les Rapidos)
-let children = [];
-if (isIndex) {
-  const allRapidos = await getCollection('rapidos');
-  // On récupère les Rapidos qui commencent par le slug courant
-  // Si slug est undefined (racine), on prend tout ce qui n'est pas un index
-  const prefix = slug ? slug + '/' : '';
-  
-  children = allRapidos
-    .filter(e => {
-        // On exclut les fichiers index (dossiers)
-        if (e.id.endsWith('index.md')) return false;
-        // On garde ceux qui sont dans le dossier courant
-        return e.slug.startsWith(prefix);
-    })
-    .sort((a, b) => a.id.localeCompare(b.id)); // Tri par ID (ex: 1.1, 1.2...)
+// Logique pour trouver le parent valide (pour le bouton retour)
+const allRapidos = await getCollection('rapidos');
+let parentUrl = '/rapidos/'; 
+
+if (!isIndex) {
+  const parts = entry.slug.split('/');
+  parts.pop(); 
+  while (parts.length > 0) {
+    const candidateSlug = parts.join('/');
+    const parentEntry = allRapidos.find(e => {
+        const eSlug = e.slug.replace(/\/index$/, '');
+        return eSlug === candidateSlug && e.id.endsWith('index.md');
+    });
+    if (parentEntry) {
+      parentUrl = `/rapidos/${candidateSlug}/`;
+      break; 
+    }
+    parts.pop(); 
+  }
 }
 
-// Préparer le contenu de l'index
+let children = [];
+if (isIndex) {
+  const prefix = slug ? slug + '/' : '';
+  children = allRapidos
+    .filter(e => {
+        if (e.id.endsWith('index.md')) return false;
+        return e.slug.startsWith(prefix);
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
+}
+
 const { Content: IndexContent } = await entry.render();
 const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 ---
 
-{/* CAS 1 : C'est une fiche Rapido -> Mode Projection */}
-{!isIndex && <RapidoLayout info={entry} />}
+{/* CAS 1 : Fiche Rapido */}
+{!isIndex && <RapidoLayout info={entry} parentUrl={parentUrl} />}
 
-{/* CAS 2 : Menu (Racine ou Niveau) -> Mode Liste */}
+{/* CAS 2 : Menu / Index */}
 {isIndex && (
   <A4Layout 
     info={entry} 
@@ -63,7 +70,6 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     theme="Rapidos"
     indexContent={hasIndexContent ? IndexContent : null}
   >
-    
     <div class="rapido-menu-grid">
       {children.length > 0 ? children.map(child => (
         <a href={`/rapidos/${child.slug}/`} class="card rapido-card-link">
@@ -71,22 +77,29 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
             <span class="rapido-icon">⚡</span>
             <span class="rapido-number">Rapido {child.data.numero}</span>
           </div>
-          {child.data.questions && (
-             <p class="rapido-preview">
-               {child.data.questions.length} questions • Semaine {child.data.semaine}
-             </p>
-          )}
+          
+          {/* MODIFICATION ICI : Ajout du niveau */}
+          <div class="rapido-meta">
+            {child.data.questions && (
+               <span>{child.data.questions.length} questions</span>
+            )}
+            {child.data.semaine && (
+               <span>• Semaine {child.data.semaine}</span>
+            )}
+            {child.data.niveau && (
+               <span class="niveau-badge">• {child.data.niveau}</span>
+            )}
+          </div>
+
         </a>
       )) : (
         <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
       )}
     </div>
-    
   </A4Layout>
 )}
 
 <style>
-  /* Grille responsive */
   .rapido-menu-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -95,7 +108,6 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     grid-column: 1 / -1;
   }
   
-  /* Style harmonisé avec l'accueil (Carte blanche + Bordure) */
   .card {
     background: white;
     border-radius: var(--radius-xl);
@@ -110,7 +122,6 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     box-shadow: var(--shadow-sm);
   }
 
-  /* Effet Hover Rapido (Orange/Rouge) */
   .rapido-card-link:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
@@ -133,6 +144,7 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    flex-shrink: 0;
   }
   
   .rapido-number { 
@@ -141,11 +153,19 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     color: var(--color-gray-900);
   }
 
-  .rapido-preview {
+  .rapido-meta {
     margin: 0;
     font-size: var(--text-sm);
     color: var(--color-gray-500);
     padding-left: calc(40px + var(--space-3)); /* Alignement sous le texte */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  
+  .niveau-badge {
+    color: var(--color-rapido-primary);
+    font-weight: var(--font-bold);
   }
 
   .empty-msg {

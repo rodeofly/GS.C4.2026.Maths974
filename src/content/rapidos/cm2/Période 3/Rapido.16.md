@@ -1,8 +1,8 @@
 ---
-numero: "1.1"
+numero: "16"
 niveau: "cm2"
-periode: 1
-semaine: 1
+periode: 3
+semaine: 16
 questions:
   - variantes:
       - texte: "$5 + 3 = \\dots$"
