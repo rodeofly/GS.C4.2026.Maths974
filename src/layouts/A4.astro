@@ -1,7 +1,9 @@
 ---
+// src/layouts/A4.astro
 import BasePrintLayout from './BasePrintLayout.astro';
 
-const { info, niveau, theme, sousTheme } = Astro.props;
+// Récupération de indexContent ici aussi
+const { info, niveau, theme, sousTheme, indexContent } = Astro.props;
 const fm = info?.data ?? info?.frontmatter ?? {};
 
 const title = fm.sous_theme ?? sousTheme ?? fm.title ?? 'Sans titre';
@@ -15,6 +17,7 @@ const niveauLabel = fm.niveau ?? niveau ?? '';
   layoutClass="layout-a4"
   niveauLabel={niveauLabel}
   themeLabel={themeLabel}
+  indexContent={indexContent}
 >
   <slot />
   <slot name="footer" slot="footer" />

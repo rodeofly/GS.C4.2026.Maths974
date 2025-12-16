@@ -6,31 +6,37 @@ import Etiquette from '../../components/Etiquette.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('guide');
-  return entries.map(entry => ({
-    params: { slug: entry.slug.replace(/\/index$/, '') },
-    props: { entry },
-  }));
+  return entries.map(entry => {
+    let cleanSlug = entry.slug;
+    // Gestion de la racine /guide/
+    if (cleanSlug === 'index') {
+      cleanSlug = undefined;
+    } else {
+      cleanSlug = cleanSlug.replace(/\/index$/, '');
+    }
+    return {
+      params: { slug: cleanSlug },
+      props: { entry },
+    };
+  });
 }
 
 const { entry } = Astro.props;
 const { slug } = Astro.params;
 
-// Données pour le script client (Sauvegarde Favoris/Histo)
+// Données pour le script client
 const etiquetteData = {
   slug: entry.slug.replace(/\/index$/, ''),
   title: entry.data.title,
   id: entry.data.id || '',
   niveau: entry.data.niveau || '',
   theme: entry.data.theme || '',
-  // Construction de l'URL absolue ou relative correcte
   url: `/guide/${entry.slug.replace(/\/index$/, '')}/`
 };
 
-// 1. DÉTECTION TYPE DE PAGE
 const isIndex = entry.id.endsWith('index.md') || entry.slug.endsWith('/index');
-
-// 2. LOGIQUE VUE DOSSIER
 const allGuides = await getCollection('guide');
+
 let directChildren = [];
 let subfolders = [];
 let IndexContent = null;
@@ -40,48 +46,54 @@ if (isIndex) {
   const currentSlug = slug || '';
   const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
 
-  // A. Récupérer les étiquettes (fiches) directes
-  // On garde la logique stricte ici : une fiche doit appartenir directement à ce dossier
+  // A. ÉTIQUETTES (Enfants directs uniquement)
   directChildren = allGuides.filter(e => {
-    const eSlug = e.slug.replace(/\/index$/, '');
-    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
-    if (e.id.endsWith('index.md')) return false; // Pas les dossiers
+    // Nettoyage robuste du slug
+    const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
     
-    // Vérifier profondeur exacte (Enfant direct)
-    // Sauf si on est à la racine (slug vide), profondeur = 1
+    // Doit commencer par le dossier courant
+    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
+    // Ne doit pas être un dossier (index)
+    if (e.id.endsWith('index.md')) return false;
+    
+    // Doit être un enfant direct (profondeur + 1)
     const childDepth = eSlug.split('/').length;
     return childDepth === slugDepth + 1;
   }).sort((a, b) => a.id.localeCompare(b.id));
 
-  // B. Récupérer les sous-thèmes (Intelligent)
-  // 1. Trouver TOUS les index qui sont des descendants (plus profonds)
+
+  // B. SOUS-DOSSIERS (Navigation)
   const allDescendantIndices = allGuides.filter(e => {
-    const eSlug = e.slug.replace(/\/index$/, '');
-    if (eSlug === currentSlug) return false; // Pas soi-même
+    // CORRECTION ICI : Si le slug est juste "index", on le vide pour qu'il soit égal à la racine
+    const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
     
-    // Doit commencer par le chemin actuel
+    // 1. Exclure soi-même
+    if (eSlug === currentSlug) return false;
+    
+    // 2. Doit être un descendant
+    // Si on est à la racine (currentSlug vide), tout (sauf soi-même) est descendant
+    // Sinon, on vérifie le préfixe
     if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
     
-    // Doit être un index
+    // 3. Doit être un index
     if (!e.id.endsWith('index.md')) return false;
     
     return true;
   });
 
-  // 2. Filtrer pour ne garder que les "plus proches"
-  // On garde un candidat SEULEMENT SI aucun de ses parents n'est déjà dans la liste
+  // Filtrer pour ne garder que les enfants les plus proches
   subfolders = allDescendantIndices.filter(candidate => {
-     const candidateSlug = candidate.slug.replace(/\/index$/, '');
+     const candidateSlug = candidate.slug === 'index' ? '' : candidate.slug.replace(/\/index$/, '');
      
      const hasParentInList = allDescendantIndices.some(other => {
-        const otherSlug = other.slug.replace(/\/index$/, '');
-        if (otherSlug === candidateSlug) return false;
+        const otherSlug = other.slug === 'index' ? '' : other.slug.replace(/\/index$/, '');
+        
+        if (otherSlug === candidateSlug) return false; // Pas soi-même
+        // Le candidat commence-t-il par l'autre + '/' ?
+        const prefix = otherSlug ? otherSlug + '/' : ''; 
         return candidateSlug.startsWith(otherSlug + '/');
      });
      
-     // Si 'hasParentInList' est vrai, c'est que ce candidat est un "petit-fils", 
-     // donc on le cache (c'est le parent qui l'affichera).
-     // Sinon, c'est un enfant direct ou le prochain disponible.
      return !hasParentInList;
   }).sort((a, b) => a.id.localeCompare(b.id));
 
@@ -90,7 +102,7 @@ if (isIndex) {
   hasIndexContent = entry.body && entry.body.trim().length > 0;
 }
 
-// 3. LOGIQUE VUE ÉTIQUETTE (Parent)
+// 3. NAVIGATION PARENT
 let parentUrl = '/';
 let parentTitle = 'Accueil';
 
@@ -99,6 +111,7 @@ if (!isIndex) {
   parts.pop();
   const parentSlug = parts.join('/');
   
+  // Chercher le parent exact
   const parentEntry = allGuides.find(e => {
     const cleanEntrySlug = e.slug.replace(/\/index$/, '');
     return cleanEntrySlug === parentSlug && e.id.endsWith('index.md');
@@ -107,6 +120,10 @@ if (!isIndex) {
   if (parentEntry) {
     parentUrl = `/guide/${parentSlug}/`;
     parentTitle = parentEntry.data.sous_theme || parentEntry.data.title;
+  } else if (slug) {
+     // Fallback si pas d'index parent trouvé (ex: retour racine)
+     parentUrl = '/guide/';
+     parentTitle = 'Sommaire';
   }
 }
 ---
@@ -116,53 +133,39 @@ if (!isIndex) {
   niveau={entry.data.niveau} 
   theme={entry.data.theme}
   title={entry.data.title}
+  indexContent={hasIndexContent ? IndexContent : null}
 >
 
-  {/* =========================================
-      VUE FOCUS (Étiquette seule)
-      ========================================= */}
+  {/* VUE FOCUS */}
   {!isIndex && (
     <div class="single-etiquette-view">
-      
-      {/* Barre d'outils : Retour + Favoris */}
       <div class="toolbar">
         <a href={parentUrl} class="btn-tool btn-back">
           <span class="icon">⬅</span>
           <span class="text">Retour à : {parentTitle}</span>
         </a>
-
         <button id="fav-btn" class="btn-tool btn-fav" aria-label="Ajouter aux favoris">
           <span class="icon">☆</span>
           <span class="text">Ajouter aux favoris</span>
         </button>
       </div>
-
       <div class="focus-container">
         <Etiquette entry={entry} />
       </div>
     </div>
   )}
 
-  {/* =========================================
-      VUE DOSSIER (Index)
-      ========================================= */}
+  {/* VUE DOSSIER */}
   {isIndex && (
     <>
-      {slug !== '' && (
+      {/* Bouton retour (sauf si on est à la racine absolue du guide) */}
+      {slug !== undefined && slug !== '' && (
          <a href=".." class="back-button-simple">← Niveau supérieur</a>
       )}
 
-      {hasIndexContent && (
-        <article class="etiquette etiquette-full-width etiquette-index format-1_1">
-          <header class="etiquette-header">
-            <h2 class="etiquette-title">{entry.data.sous_theme || entry.data.title}</h2>
-          </header>
-          <section class="etiquette-section section-texte">
-            <IndexContent />
-          </section>
-        </article>
-      )}
+      {/* SUPPRESSION DE L'ARTICLE INDEX ICI - Contenu déplacé dans le layout */}
 
+      {/* Grille des sous-dossiers */}
       {subfolders.length > 0 && (
         <div class="subthemes-grid">
           {subfolders.map(subfolder => (
@@ -174,28 +177,22 @@ if (!isIndex) {
         </div>
       )}
 
+      {/* Grille des fiches (étiquettes) */}
       {directChildren.map((child) => <Etiquette entry={child} />)}
     </>
   )}
 
 </A4Layout>
 
-{/* SCRIPT CLIENT : Gestion Historique & Favoris */}
+{/* SCRIPT CLIENT */}
 <script define:vars={{ etiquetteData, isIndex }}>
-  // Import dynamique pour être sûr de charger le module
   import('/src/utils/storage.js').then(({ Favoris, Historique }) => {
-    
-    // 1. Ajouter à l'historique (seulement si c'est une fiche, pas un dossier)
-    if (!isIndex) {
-      Historique.add(etiquetteData);
-    }
+    if (!isIndex) Historique.add(etiquetteData);
 
-    // 2. Gestion du bouton Favoris
     const favBtn = document.getElementById('fav-btn');
     if (favBtn) {
       const icon = favBtn.querySelector('.icon');
       const text = favBtn.querySelector('.text');
-
       const updateUI = () => {
         const isFav = Favoris.isFavori(etiquetteData.slug);
         if (isFav) {
@@ -208,7 +205,6 @@ if (!isIndex) {
           text.textContent = 'Ajouter aux favoris';
         }
       };
-
       favBtn.addEventListener('click', () => {
         if (Favoris.isFavori(etiquetteData.slug)) {
           Favoris.remove(etiquetteData.slug);
@@ -217,15 +213,12 @@ if (!isIndex) {
         }
         updateUI();
       });
-
-      // Init state
       updateUI();
     }
   });
 </script>
 
 <style>
-  /* Layout global Focus */
   .single-etiquette-view {
     grid-column: 1 / -1;
     display: flex;
@@ -235,14 +228,11 @@ if (!isIndex) {
     margin: 0 auto;
     width: 100%;
   }
-
-  /* Barre d'outils (Retour + Fav) */
   .toolbar {
     display: flex;
     gap: var(--space-4);
     flex-wrap: wrap;
   }
-
   .btn-tool {
     display: flex;
     align-items: center;
@@ -258,40 +248,30 @@ if (!isIndex) {
     cursor: pointer;
     font-size: var(--text-base);
   }
-
   .btn-tool:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
   }
-
-  /* Style bouton Retour */
   .btn-back:hover {
     border-color: var(--color-gray-400);
     background: var(--color-gray-50);
   }
-
-  /* Style bouton Favoris */
   .btn-fav {
-    margin-left: auto; /* Pousse à droite */
+    margin-left: auto;
     color: var(--color-guide-primary);
   }
-
   .btn-fav:hover {
     border-color: var(--color-guide-primary);
     background: var(--color-guide-bg);
   }
-
   .btn-fav.active {
     background: var(--color-guide-primary);
     color: white;
     border-color: var(--color-guide-primary);
   }
-
   .btn-fav.active:hover {
     background: var(--color-guide-secondary);
   }
-
-  /* Styles Vue Dossier */
   .back-button-simple {
     display: inline-block;
     padding: var(--space-2) var(--space-4);
@@ -305,7 +285,6 @@ if (!isIndex) {
     margin-bottom: var(--space-4);
     grid-column: 1 / -1;
   }
-
   .subthemes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -313,7 +292,6 @@ if (!isIndex) {
     grid-column: 1 / -1;
     margin-top: var(--space-4);
   }
-  
   .subtheme-card {
     background: white;
     border: 2px solid var(--color-guide-light);
@@ -326,28 +304,23 @@ if (!isIndex) {
     flex-direction: column;
     gap: var(--space-3);
   }
-  
   .subtheme-card:hover {
     border-color: var(--color-guide-primary);
     box-shadow: var(--shadow-guide);
     transform: translateY(-4px);
   }
-
   .subtheme-title {
     margin: 0;
     font-size: var(--text-xl);
     font-weight: var(--font-bold);
     color: var(--color-guide-primary);
   }
-
   .subtheme-objectif {
     margin: 0;
     font-size: var(--text-sm);
     color: var(--color-gray-600);
     line-height: var(--leading-relaxed);
   }
-
-  /* Responsive */
   @media (max-width: 640px) {
     .toolbar {
       flex-direction: column;
@@ -359,4 +332,3 @@ if (!isIndex) {
     }
   }
 </style>
-

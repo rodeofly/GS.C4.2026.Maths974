@@ -1,6 +1,7 @@
 ---
 title: "Sixième"
-resume: "Cycle 3 : Consolidation et nouveautés."
+niveau: "6e"
+objectif: "Maitriser à l'ensemble des fiches de révision classées par niveau."
 ---
 
 Bienvenue dans les fiches de révision de **6ème**.

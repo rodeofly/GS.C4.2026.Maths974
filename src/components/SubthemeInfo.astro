@@ -1,62 +1,81 @@
 ---
-const { info, dialogId = 'subtheme-info' } = Astro.props;
-const fm = info?.frontmatter ?? {};
-const Content = info?.Content;
+// src/components/SubthemeInfo.astro
+const { info, dialogId = 'subtheme-info', Content } = Astro.props;
+const fm = info?.data ?? info?.frontmatter ?? {};
+
 const dialogTitle = fm.title ?? fm.sous_theme ?? 'Informations';
 const competences = Array.isArray(fm.competences) ? fm.competences : [];
 const tags = Array.isArray(fm.tags) ? fm.tags : [];
 const liens = Array.isArray(fm.liens) ? fm.liens : [];
 const objectif = fm.objectif ?? fm.resume ?? '';
-const hasMeta = objectif || competences.length > 0 || tags.length > 0;
+
+const hasMeta = objectif || competences.length > 0 || tags.length > 0 || Content;
 ---
+
 {info ? (
   <>
-    <div class="info-trigger">
+    {/* Le bouton est maintenant un simple inline-block */}
+    <span class="info-trigger-wrapper">
       <button
-        class="info-btn"
+        class="info-btn-mini"
         type="button"
-        aria-label="Informations"
+        aria-label="Plus d'informations"
         aria-haspopup="dialog"
         aria-controls={dialogId}
         data-dialog={dialogId}
+        title="Voir le résumé et les objectifs"
       >
-        <span aria-hidden="true">i</span>
+        i
       </button>
-    </div>
+    </span>
+    
     <dialog id={dialogId} class="subtheme-dialog" data-print>
-        <article>
-          <header>
-            <h2>{dialogTitle}</h2>
-            <button type="button" class="close-btn" data-close>Fermer</button>
-          </header>
-          <div class="dialog-body">
-            {hasMeta ? (
-              <div class="info-meta">
-                {objectif ? <p class="objectif">{objectif}</p> : null}
-                {competences.length ? (
-                  <div class="meta-group">
-                    <h3>Compétences mobilisées</h3>
-                    <ul class="info-chips">
-                      {competences.map((item) => (
-                        <li class="info-chip">{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                {tags.length ? (
-                  <div class="meta-group">
-                    <h3>Mots-clés</h3>
-                    <ul class="info-chips">
-                      {tags.map((item) => (
-                        <li class="info-chip tag">{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-            {Content ? <Content /> : null}
-            {liens.length ? (
+      <article>
+        <header>
+          <h2>{dialogTitle}</h2>
+          <button type="button" class="close-btn" data-close aria-label="Fermer">✕</button>
+        </header>
+        
+        <div class="dialog-body">
+          {(objectif || competences.length > 0 || tags.length > 0) && (
+            <div class="info-meta">
+              {objectif ? (
+                <div class="meta-block">
+                  <h3>🎯 Objectif</h3>
+                  <p class="objectif">{objectif}</p>
+                </div>
+              ) : null}
+              
+              {competences.length ? (
+                <div class="meta-block">
+                  <h3>🧠 Compétences</h3>
+                  <ul class="info-chips">
+                    {competences.map((item) => <li class="info-chip">{item}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              
+              {tags.length ? (
+                <div class="meta-block">
+                  <h3>🏷️ Mots-clés</h3>
+                  <ul class="info-chips">
+                    {tags.map((item) => <li class="info-chip tag">{item}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {Content ? (
+            <div class="dialog-content">
+              {(objectif || competences.length > 0) && <hr class="separator" />}
+              <Content />
+            </div>
+          ) : null}
+
+          {liens.length ? (
+            <div class="meta-block">
+              <h3>🔗 Ressources liées</h3>
               <ul class="info-links">
                 {liens.map((lien) => (
                   <li>
@@ -66,52 +85,12 @@ const hasMeta = objectif || competences.length > 0 || tags.length > 0;
                   </li>
                 ))}
               </ul>
-            ) : null}
-          </div>
-        </article>
-      </dialog>
-      <section class="print-only">
-        <h2>{dialogTitle}</h2>
-        <div class="dialog-body">
-          {hasMeta ? (
-            <div class="info-meta">
-              {objectif ? <p class="objectif">{objectif}</p> : null}
-              {competences.length ? (
-                <div class="meta-group">
-                  <h3>Compétences mobilisées</h3>
-                  <ul class="info-chips">
-                    {competences.map((item) => (
-                      <li class="info-chip">{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {tags.length ? (
-                <div class="meta-group">
-                  <h3>Mots-clés</h3>
-                  <ul class="info-chips">
-                    {tags.map((item) => (
-                      <li class="info-chip tag">{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
             </div>
           ) : null}
-          {Content ? <Content /> : null}
-          {liens.length ? (
-            <ul class="info-links">
-              {liens.map((lien) => (
-                <li>
-                  <a href={lien.url} target="_blank" rel="noreferrer noopener">
-                    {lien.label ?? lien.type ?? lien.url}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </div>
-      </section>
+      </article>
+    </dialog>
+
     <script is:inline data-dialog={dialogId}>
       (() => {
         if (typeof window === 'undefined') return;
@@ -123,22 +102,84 @@ const hasMeta = objectif || competences.length > 0 || tags.length > 0;
 
         const closeDialog = () => dialog.close();
         trigger.addEventListener('click', () => {
-          if (dialog.open) {
-            closeDialog();
-          } else {
-            dialog.showModal();
-          }
+          if (dialog.open) { closeDialog(); } else { dialog.showModal(); }
         });
         dialog.addEventListener('click', (event) => {
           const target = event.target;
-          if (target instanceof HTMLElement && (target.dataset.close !== undefined || target === dialog)) {
+          if (target === dialog || target.closest('[data-close]')) {
             closeDialog();
           }
-        });
-        dialog.querySelectorAll('[data-close]').forEach((btn) => {
-          btn.addEventListener('click', closeDialog);
         });
       })();
     </script>
   </>
 ) : null}
+
+<style>
+  /* === STYLE DU BOUTON MINI (Style Breadcrumb) === */
+  .info-trigger-wrapper {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.5rem; /* Espace entre le texte et le bouton */
+    vertical-align: middle;
+    height: 1em; /* S'assure qu'il ne décale pas la ligne */
+  }
+
+  .info-btn-mini {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* On réduit légèrement la taille pour matcher le texte du breadcrumb */
+    width: 20px; 
+    height: 20px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid var(--color-gray-400); /* Bordure plus fine */
+    color: var(--color-gray-500);
+    
+    font-family: serif; /* Une police serif rend le 'i' plus joli */
+    font-size: 12px;
+    font-weight: bold;
+    font-style: italic;
+    line-height: 1;
+    
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  /* Effet au survol : devient coloré */
+  .info-btn-mini:hover {
+    background: var(--color-guide-light); /* Fond léger */
+    border-color: var(--color-guide-primary);
+    color: var(--color-guide-primary);
+    transform: scale(1.1);
+  }
+
+  /* === RESTE DU STYLE (MODALE) INCHANGÉ === */
+  .subtheme-dialog {
+    border: none;
+    border-radius: 1rem;
+    padding: 0;
+    max-width: 600px;
+    width: 90vw;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
+  .subtheme-dialog::backdrop { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+  .subtheme-dialog article { padding: 2rem; max-height: 85vh; overflow-y: auto; }
+  .subtheme-dialog header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb; }
+  .subtheme-dialog h2 { margin: 0; font-size: 1.5rem; color: #111827; }
+  .close-btn { background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: #6b7280; padding: 0.5rem; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .close-btn:hover { background: #f3f4f6; color: #111827; }
+  .meta-block { margin-bottom: 1.5rem; }
+  .meta-block h3 { font-size: 0.85rem; text-transform: uppercase; color: #6b7280; font-weight: 700; margin: 0 0 0.5rem 0; letter-spacing: 0.05em; }
+  .separator { border: 0; border-top: 1px dashed #e5e7eb; margin: 2rem 0; }
+  .dialog-content { color: #374151; line-height: 1.6; }
+  .dialog-content :global(p) { margin-bottom: 1rem; }
+  .dialog-content :global(ul) { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+  .dialog-content :global(strong) { color: var(--color-guide-primary); }
+  
+  @media print {
+    .info-trigger-wrapper { display: none; }
+  }
+</style>

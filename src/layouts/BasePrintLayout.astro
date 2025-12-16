@@ -4,7 +4,12 @@ import '../styles/main.css';
 import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
-const { info, title, layoutClass, niveauLabel, themeLabel } = Astro.props;
+const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
+
+// Construction des liens du fil d'ariane
+const slug = info?.slug || '';
+// On récupère la racine du niveau (ex: "sixieme") depuis le slug
+const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
 <html lang="fr">
@@ -17,27 +22,41 @@ const { info, title, layoutClass, niveauLabel, themeLabel } = Astro.props;
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
     
     <script is:inline>
-      window.MathJax = {
-        tex: {
-          inlineMath: [['$', '$'], ['\\(', '\\)']],
-        },
-        svg: { fontCache: 'global' },
-      };
+      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
   <body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
-    <header class="layout-header">
-      <div class="theme-badge">
-        <div class="theme-badge-meta">
-          <span class="niveau-label">{niveauLabel}</span>
-          <span class="theme-label">{themeLabel}</span>
-        </div>
-        <SubthemeInfo info={info} />
-      </div>
-      <div class="subtheme-heading">
+    
+    <header class="layout-header-simple">
+      
+      {/* --- NOUVEAU : FIL D'ARIANE (BREADCRUMB) --- */}
+      <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
+        <ol>
+          <li><a href="/">Accueil</a></li>
+          <li class="separator">/</li>
+          <li><a href="/guide/">Guide</a></li>
+          
+          {/* Lien vers le niveau (si ce n'est pas la page du niveau elle-même) */}
+          {niveauLabel && niveauSlug && slug !== niveauSlug && slug !== `${niveauSlug}/index` ? (
+            <>
+              <li class="separator">/</li>
+              <li><a href={`/guide/${niveauSlug}/`}>{niveauLabel}</a></li>
+            </>
+          ) : null}
+          
+          <li class="separator">/</li>
+          <li class="current" aria-current="page">
+            {title}
+            {/* Le bouton (i) est collé ici */}
+            <SubthemeInfo info={info} Content={indexContent} />
+          </li>
+        </ol>
+      </nav>
+
+      <div class="header-main">
         <h1>{title}</h1>
       </div>
     </header>
@@ -50,18 +69,14 @@ const { info, title, layoutClass, niveauLabel, themeLabel } = Astro.props;
       <slot name="footer" />
     </footer>
 
+    {/* ... (Script MathJax inchangé) ... */}
     <script is:inline>
       if (typeof window !== 'undefined') {
         const convertTikzBlocks = () => {
           document.querySelectorAll('.etiquette').forEach((container) => {
             if (container.dataset.tikzProcessed === 'true') return;
-
             let html = container.innerHTML;
-            if (!html || !html.includes('\\begin{tikzpicture}')) {
-              container.dataset.tikzProcessed = 'true';
-              return;
-            }
-
+            if (!html || !html.includes('\\begin{tikzpicture}')) { container.dataset.tikzProcessed = 'true'; return; }
             const tikzPattern = /\\\[(?:\s*\\require\{tikz\}\s*)?([\s\S]*?\\begin{tikzpicture}[\s\S]*?\\end{tikzpicture}[\s\S]*?)\\\]/g;
             html = html.replace(tikzPattern, (_, tikz) => {
               const cleaned = tikz.replace(/\\require\{tikz\}/g, '').trim();
@@ -72,53 +87,83 @@ const { info, title, layoutClass, niveauLabel, themeLabel } = Astro.props;
             container.dataset.tikzProcessed = 'true';
           });
         };
-
-        const renderTikz = () => {
-          if (window.tikzjax?.renderAll) window.tikzjax.renderAll();
-        };
-
+        const renderTikz = () => { if (window.tikzjax?.renderAll) window.tikzjax.renderAll(); };
         const runMath = () => {
           convertTikzBlocks();
-          if (window.MathJax?.typesetPromise) {
-            window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
-          } else {
-            renderTikz();
-          }
+          if (window.MathJax?.typesetPromise) { window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz); } else { renderTikz(); }
         };
+        const onReady = () => { if (window.MathJax?.startup?.promise) { window.MathJax.startup.promise.then(runMath).catch(renderTikz); } else { runMath(); } };
+        const resetTikzProcessing = () => { document.querySelectorAll('.etiquette').forEach((container) => { delete container.dataset.tikzProcessed; }); };
+        const openAll = () => { document.querySelectorAll('details').forEach((detail) => { detail.setAttribute('open', ''); }); };
 
-        const onReady = () => {
-          if (window.MathJax?.startup?.promise) {
-            window.MathJax.startup.promise.then(runMath).catch(renderTikz);
-          } else {
-            runMath();
-          }
-        };
-
-        const resetTikzProcessing = () => {
-          document.querySelectorAll('.etiquette').forEach((container) => {
-            delete container.dataset.tikzProcessed;
-          });
-        };
-
-        const openAll = () => {
-          document.querySelectorAll('details').forEach((detail) => {
-            detail.setAttribute('open', '');
-          });
-        };
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-          onReady();
-        } else {
-          document.addEventListener('DOMContentLoaded', onReady, { once: true });
-        }
-
-        document.addEventListener('astro:after-swap', () => {
-          resetTikzProcessing();
-          onReady();
-        });
-
+        if (document.readyState === 'complete' || document.readyState === 'interactive') { onReady(); } else { document.addEventListener('DOMContentLoaded', onReady, { once: true }); }
+        document.addEventListener('astro:after-swap', () => { resetTikzProcessing(); onReady(); });
         window.addEventListener('beforeprint', openAll);
       }
     </script>
   </body>
 </html>
+
+<style>
+  /* Structure Header simplifiée */
+  .layout-header-simple {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+
+  /* Style du Breadcrumb */
+  .breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+  }
+
+  .breadcrumb a {
+    color: var(--color-gray-600);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .breadcrumb a:hover {
+    color: var(--color-guide-primary);
+    text-decoration: underline;
+  }
+
+  .breadcrumb .separator {
+    margin: 0 var(--space-2);
+    color: var(--color-gray-400);
+    font-size: 0.8em;
+  }
+
+  .breadcrumb .current {
+    font-weight: var(--font-bold);
+    color: var(--color-gray-900);
+    display: flex;
+    align-items: center; /* Aligne le texte et le bouton (i) */
+  }
+
+  /* Titre Principal H1 */
+  .header-main h1 {
+    margin: 0;
+    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
+    font-weight: var(--font-black);
+    color: var(--color-guide-primary);
+    line-height: var(--leading-tight);
+  }
+
+  @media print {
+    .breadcrumb {
+      display: none;
+    }
+    .layout-header-simple {
+      margin-bottom: var(--space-4);
+    }
+  }
+</style>
