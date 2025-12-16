@@ -1,14 +1,12 @@
 ---
 // src/layouts/BasePrintLayout.astro
-// ⚠️ IMPORT CRUCIAL POUR LE STYLE
 import '../styles/main.css';
-
 import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 
-// 🛠️ RÉCUPÉRATION BASE URL SÉCURISÉE
+// 🛠️ RÉCUPÉRATION BASE URL
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const slug = info?.slug || '';
@@ -17,7 +15,6 @@ const collection = info?.collection || 'guide';
 // Configuration de la racine en fonction de la collection
 const isRapido = collection === 'rapidos';
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
-// Correction du lien racine avec la base
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
 
 const niveauSlug = slug.split('/')[0];
@@ -28,7 +25,6 @@ const niveauSlug = slug.split('/')[0];
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    {/* Favicon avec base URL */}
     <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
     
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
@@ -47,7 +43,7 @@ const niveauSlug = slug.split('/')[0];
       {/* --- FIL D'ARIANE --- */}
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
-          {/* ✅ CORRECTION : Lien Accueil pointe vers la racine du PROJET */}
+          {/* ✅ CORRECTION : Le lien Accueil inclut maintenant la base */}
           <li><a href={`${base}/`}>Accueil</a></li>
           <li class="separator">/</li>
          
@@ -83,7 +79,7 @@ const niveauSlug = slug.split('/')[0];
       <slot name="footer" />
     </footer>
 
-    {/* Scripts TikZ et MathJax inchangés */}
+    {/* Scripts inchangés */}
     <script is:inline>
       if (typeof window !== 'undefined') {
         const convertTikzBlocks = () => {

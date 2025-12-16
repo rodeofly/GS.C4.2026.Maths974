@@ -6,7 +6,7 @@ semaine: 16
 questions:
   - variantes:
       - texte: "$5 + 3 = \\dots$"
-        gs: "GS 1"
+        gs: "GS 1.15"
       - texte: "$15 + 8 = \\dots$"
         gs: "GS 1"
       - texte: "$125 + 38 = \\dots$"
