@@ -4,6 +4,9 @@ import { getCollection } from 'astro:content';
 import RapidoLayout from '../../layouts/RapidoLayout.astro';
 import A4Layout from '../../layouts/A4.astro';
 
+// 1. Récupération de la Base URL (pour GitHub Pages)
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
   return entries.map(entry => {
@@ -25,7 +28,9 @@ const isIndex = entry.id.endsWith('index.md');
 
 // Logique pour trouver le parent valide (pour le bouton retour)
 const allRapidos = await getCollection('rapidos');
-let parentUrl = '/rapidos/'; 
+
+// 🛠️ CORRECTION 1 : Le parent par défaut doit inclure la base
+let parentUrl = `${base}/rapidos/`; 
 
 if (!isIndex) {
   const parts = entry.slug.split('/');
@@ -37,7 +42,8 @@ if (!isIndex) {
         return eSlug === candidateSlug && e.id.endsWith('index.md');
     });
     if (parentEntry) {
-      parentUrl = `/rapidos/${candidateSlug}/`;
+      // 🛠️ CORRECTION 2 : Le lien parent calculé doit inclure la base
+      parentUrl = `${base}/rapidos/${candidateSlug}/`;
       break; 
     }
     parts.pop(); 
@@ -72,13 +78,15 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
   >
     <div class="rapido-menu-grid">
       {children.length > 0 ? children.map(child => (
-        <a href={`/rapidos/${child.slug}/`} class="card rapido-card-link">
+        
+        /* 🛠️ CORRECTION 3 : Ajout de la base dans le lien de la carte */
+        <a href={`${base}/rapidos/${child.slug}/`} class="card rapido-card-link">
+          
           <div class="card-header">
             <span class="rapido-icon">⚡</span>
             <span class="rapido-number">Rapido {child.data.numero}</span>
           </div>
           
-          {/* MODIFICATION ICI : Ajout du niveau */}
           <div class="rapido-meta">
             {child.data.questions && (
                <span>{child.data.questions.length} questions</span>
@@ -157,7 +165,7 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     margin: 0;
     font-size: var(--text-sm);
     color: var(--color-gray-500);
-    padding-left: calc(40px + var(--space-3)); /* Alignement sous le texte */
+    padding-left: calc(40px + var(--space-3));
     display: flex;
     flex-wrap: wrap;
     gap: 0.3rem;

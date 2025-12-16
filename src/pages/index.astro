@@ -16,8 +16,7 @@ const rapidos = await getCollection('rapidos', ({ id }) => {
 // Tri alphabétique
 const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
 
-// 🛠️ RÉCUPÉRATION DE LA BASE URL (Gère le /GS.C4.2026.Maths974 automatiquement)
-// On retire le slash final s'il existe pour éviter les doubles //
+// Récupération de la Base URL (pour GitHub Pages)
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
@@ -46,9 +45,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       </div>
       <div class="grid">
         {guides.sort(sortContent).map(g => (
-          /* 🛠️ AJOUT DE LA BASE ICI */
           <a href={`${base}/guide/${g.slug.replace('/index', '')}/`} class="card guide-card">
-            <h3>{g.data.title}</h3>
+            
+            <div class="card-header-home">
+                <h3>{g.data.title}</h3>
+                {/* 🟢 Badge Niveau Guide */}
+                {g.data.niveau && <span class="badge guide">{g.data.niveau}</span>}
+            </div>
+            
             <p>{g.data.resume || "Fiches de révision complètes"}</p>
           </a>
         ))}
@@ -62,9 +66,14 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       <div class="grid">
         {rapidos.length > 0 ? (
           rapidos.map(r => (
-            /* 🛠️ AJOUT DE LA BASE ICI */
             <a href={`${base}/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
-              <h3>{r.data.title}</h3> 
+              
+              <div class="card-header-home">
+                  <h3>{r.data.title}</h3>
+                  {/* 🟠 Badge Niveau Rapido */}
+                  {r.data.niveau && <span class="badge rapido">{r.data.niveau}</span>}
+              </div>
+              
               <p>Exercices d'échauffement & rituels</p>
             </a>
           ))
@@ -77,3 +86,43 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   </div>
 </body>
 </html>
+
+<style>
+  /* Styles spécifiques aux cartes de l'accueil */
+  
+  .card-header-home {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+    gap: 1rem;
+  }
+
+  /* On s'assure que le titre ne prend pas toute la place s'il y a un badge */
+  .card-header-home h3 {
+    margin: 0;
+    font-size: var(--text-xl);
+    line-height: 1.2;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 99px;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap; /* Empêche le badge de se casser */
+    flex-shrink: 0;      /* Empêche le badge de rétrécir */
+  }
+
+  /* Couleurs des badges */
+  .badge.guide {
+    background-color: var(--color-guide-light);
+    color: var(--color-guide-primary);
+  }
+
+  .badge.rapido {
+    background-color: var(--color-rapido-light);
+    color: var(--color-rapido-primary);
+  }
+</style>
