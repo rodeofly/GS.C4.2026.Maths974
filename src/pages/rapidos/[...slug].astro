@@ -6,52 +6,76 @@ import A4Layout from '../../layouts/A4.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
-  return entries.map(entry => ({
-    params: { slug: entry.slug.replace(/\/index$/, '') },
-    props: { entry },
-  }));
+  return entries.map(entry => {
+    // 1. Nettoyage du slug
+    let cleanSlug = entry.slug.replace(/\/index$/, '');
+    
+    // 2. GESTION DE LA RACINE : Si le slug est 'index', on le transforme en undefined
+    // Cela permet à cette route de répondre à l'URL /rapidos/
+    if (cleanSlug === 'index') {
+        cleanSlug = undefined;
+    }
+    
+    return {
+      params: { slug: cleanSlug },
+      props: { entry },
+    };
+  });
 }
 
 const { entry } = Astro.props;
 const { slug } = Astro.params;
 
-// Est-ce un index de niveau ? (ex: "sixieme" ou "sixieme/index")
+// Est-ce un index de niveau ? (ex: "sixieme" ou la racine "index")
 const isIndex = entry.id.endsWith('index.md');
 
 // Si c'est un index, on cherche ses enfants (les Rapidos)
 let children = [];
 if (isIndex) {
   const allRapidos = await getCollection('rapidos');
+  // On récupère les Rapidos qui commencent par le slug courant
+  // Si slug est undefined (racine), on prend tout ce qui n'est pas un index
+  const prefix = slug ? slug + '/' : '';
+  
   children = allRapidos
-    .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
+    .filter(e => {
+        // On exclut les fichiers index (dossiers)
+        if (e.id.endsWith('index.md')) return false;
+        // On garde ceux qui sont dans le dossier courant
+        return e.slug.startsWith(prefix);
+    })
     .sort((a, b) => a.id.localeCompare(b.id)); // Tri par ID (ex: 1.1, 1.2...)
 }
 
-// Préparer le contenu de l'index pour la modale
+// Préparer le contenu de l'index
 const { Content: IndexContent } = await entry.render();
 const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 ---
 
-{/* CAS 1 : C'est une fiche Rapido (P1-S1) -> Mode Projection (INCHANGÉ) */}
+{/* CAS 1 : C'est une fiche Rapido -> Mode Projection */}
 {!isIndex && <RapidoLayout info={entry} />}
 
-{/* CAS 2 : Menu du niveau (MODIFIÉ) */}
+{/* CAS 2 : Menu (Racine ou Niveau) -> Mode Liste */}
 {isIndex && (
   <A4Layout 
     info={entry} 
-    title={entry.data.title} 
+    title={entry.data.title || "Rapidos"} 
     theme="Rapidos"
     indexContent={hasIndexContent ? IndexContent : null}
   >
     
-    {/* NOTE : L'article d'intro a été supprimé ici car le contenu est passé dans 'indexContent' */}
-    
-    {/* 🟢 LISTE DES RAPIDOS */}
     <div class="rapido-menu-grid">
       {children.length > 0 ? children.map(child => (
-        <a href={`/rapidos/${child.slug}/`} class="rapido-link-card">
-          <span class="rapido-icon">⚡</span>
-          <span class="rapido-title">Rapido {child.data.numero}</span>
+        <a href={`/rapidos/${child.slug}/`} class="card rapido-card-link">
+          <div class="card-header">
+            <span class="rapido-icon">⚡</span>
+            <span class="rapido-number">Rapido {child.data.numero}</span>
+          </div>
+          {child.data.questions && (
+             <p class="rapido-preview">
+               {child.data.questions.length} questions • Semaine {child.data.semaine}
+             </p>
+          )}
         </a>
       )) : (
         <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
@@ -62,41 +86,66 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 )}
 
 <style>
+  /* Grille responsive */
   .rapido-menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-6);
     padding: var(--space-4) 0;
-    grid-column: 1 / -1; /* Prend toute la largeur */
+    grid-column: 1 / -1;
   }
   
-  .rapido-link-card {
+  /* Style harmonisé avec l'accueil (Carte blanche + Bordure) */
+  .card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    text-decoration: none;
+    color: var(--color-gray-900);
+    border: 2px solid var(--color-gray-100);
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Effet Hover Rapido (Orange/Rouge) */
+  .rapido-card-link:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-rapido-primary);
+  }
+  
+  .card-header {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    background: linear-gradient(135deg, var(--color-rapido-primary), var(--color-rapido-secondary));
-    border: 2px solid transparent;
-    border-radius: var(--radius-xl);
-    text-decoration: none;
-    color: white;
-    box-shadow: var(--shadow-md);
-    transition: all var(--transition-base);
-  }
-  
-  .rapido-link-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-rapido);
-    border-color: var(--color-accent);
+    gap: var(--space-3);
   }
   
   .rapido-icon { 
-    font-size: var(--text-3xl);
+    font-size: var(--text-2xl);
+    background: var(--color-rapido-light);
+    color: var(--color-rapido-primary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
   }
   
-  .rapido-title { 
-    font-weight: var(--font-bold);
+  .rapido-number { 
+    font-weight: var(--font-black);
     font-size: var(--text-lg);
+    color: var(--color-gray-900);
+  }
+
+  .rapido-preview {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+    padding-left: calc(40px + var(--space-3)); /* Alignement sous le texte */
   }
 
   .empty-msg {
@@ -105,5 +154,7 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
     grid-column: 1 / -1;
     text-align: center;
     padding: 2rem;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
   }
 </style>
