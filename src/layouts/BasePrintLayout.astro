@@ -1,34 +1,36 @@
 ---
 // src/layouts/BasePrintLayout.astro
+// ⚠️ IMPORT CRUCIAL POUR LE STYLE
 import '../styles/main.css';
+
 import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 
-// 🛠️ RÉCUPÉRATION BASE URL
+// 🛠️ RÉCUPÉRATION BASE URL SÉCURISÉE
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-// 1. Récupération des infos de navigation
 const slug = info?.slug || '';
 const collection = info?.collection || 'guide';
 
-// 2. Configuration de la racine en fonction de la collection
+// Configuration de la racine en fonction de la collection
 const isRapido = collection === 'rapidos';
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
-// 🛠️ CORRECTION : Ajout de la base ici aussi par sécurité
+// Correction du lien racine avec la base
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
 
 const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
 <html lang="fr">
-  {/* ... (Head inchangé) ... */}
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    {/* Favicon avec base URL */}
     <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
     
     <script is:inline>
@@ -37,24 +39,20 @@ const niveauSlug = slug.split('/')[0];
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
-
   <body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
     
     <header class="layout-header-simple">
       
-      {/* --- FIL D'ARIANE DYNAMIQUE --- */}
+      {/* --- FIL D'ARIANE --- */}
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
-          {/* 🛠️ CORRECTION : Lien Accueil avec la base */}
+          {/* ✅ CORRECTION : Lien Accueil pointe vers la racine du PROJET */}
           <li><a href={`${base}/`}>Accueil</a></li>
           <li class="separator">/</li>
          
-          {/* Lien racine dynamique (Guide ou Rapidos) */}
           <li><a href={rootUrl}>{rootLabel}</a></li>
           
-          {/* Lien vers le niveau (ex: Sixième) */}
-          {/* On l'affiche seulement si on est plus profond que la racine du niveau */}
           {niveauLabel && niveauSlug && slug !== niveauSlug && slug !== `${niveauSlug}/index` ? (
             <>
               <li class="separator">/</li>
@@ -64,7 +62,6 @@ const niveauSlug = slug.split('/')[0];
           
           <li class="separator">/</li>
           
-          {/* Page courante + Bouton Info */}
           <li class="current" aria-current="page">
             {title}
             <SubthemeInfo info={info} Content={indexContent} />
@@ -75,6 +72,7 @@ const niveauSlug = slug.split('/')[0];
       <div class="header-main">
         <h1>{title}</h1>
       </div>
+ 
     </header>
 
     <main class="etiquettes-grid">
@@ -85,7 +83,7 @@ const niveauSlug = slug.split('/')[0];
       <slot name="footer" />
     </footer>
 
-    {/* ... (Script MathJax inchangé) ... */}
+    {/* Scripts TikZ et MathJax inchangés */}
     <script is:inline>
       if (typeof window !== 'undefined') {
         const convertTikzBlocks = () => {
@@ -106,13 +104,14 @@ const niveauSlug = slug.split('/')[0];
         const renderTikz = () => { if (window.tikzjax?.renderAll) window.tikzjax.renderAll(); };
         const runMath = () => {
           convertTikzBlocks();
-          if (window.MathJax?.typesetPromise) { window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz); } else { renderTikz(); }
+          if (window.MathJax?.typesetPromise) { window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
+          } else { renderTikz(); }
         };
         const onReady = () => { if (window.MathJax?.startup?.promise) { window.MathJax.startup.promise.then(runMath).catch(renderTikz); } else { runMath(); } };
         const resetTikzProcessing = () => { document.querySelectorAll('.etiquette').forEach((container) => { delete container.dataset.tikzProcessed; }); };
         const openAll = () => { document.querySelectorAll('details').forEach((detail) => { detail.setAttribute('open', ''); }); };
-
-        if (document.readyState === 'complete' || document.readyState === 'interactive') { onReady(); } else { document.addEventListener('DOMContentLoaded', onReady, { once: true }); }
+        if (document.readyState === 'complete' || document.readyState === 'interactive') { onReady(); } else { document.addEventListener('DOMContentLoaded', onReady, { once: true });
+        }
         document.addEventListener('astro:after-swap', () => { resetTikzProcessing(); onReady(); });
         window.addEventListener('beforeprint', openAll);
       }
@@ -121,7 +120,7 @@ const niveauSlug = slug.split('/')[0];
 </html>
 
 <style>
-  /* Structure Header simplifiée */
+  /* Structure Header */
   .layout-header-simple {
     display: flex;
     flex-direction: column;
@@ -129,7 +128,6 @@ const niveauSlug = slug.split('/')[0];
     margin-bottom: var(--space-6);
   }
 
-  /* Style du Breadcrumb */
   .breadcrumb ol {
     display: flex;
     flex-wrap: wrap;
@@ -162,10 +160,9 @@ const niveauSlug = slug.split('/')[0];
     font-weight: var(--font-bold);
     color: var(--color-gray-900);
     display: flex;
-    align-items: center; /* Aligne le texte et le bouton (i) */
+    align-items: center;
   }
 
-  /* Titre Principal H1 */
   .header-main h1 {
     margin: 0;
     font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
@@ -175,11 +172,7 @@ const niveauSlug = slug.split('/')[0];
   }
 
   @media print {
-    .breadcrumb {
-      display: none;
-    }
-    .layout-header-simple {
-      margin-bottom: var(--space-4);
-    }
+    .breadcrumb { display: none; }
+    .layout-header-simple { margin-bottom: var(--space-4); }
   }
 </style>

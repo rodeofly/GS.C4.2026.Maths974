@@ -26,39 +26,24 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-
+    
     <style>
-       /* ... (Garde tous tes styles CSS tels quels) ... */
-       /* Je ne les répète pas pour gagner de la place, mais garde tout ton bloc <style> */
-       
-       /* Assure-toi juste que .back-btn est bien stylisé comme avant */
+       /* CSS Inchangé */
        body { margin: 0; height: 100vh; width: 100vw; overflow: hidden; font-family: var(--font-sans) !important; color: #1e293b; background: linear-gradient(to bottom, #dc2626, #fca5a5); position: relative; }
        h1, h2, button, .q-card, .q-num { font-family: var(--font-sans) !important; }
        .bg-curves { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; pointer-events: none; }
-       
        .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255, 255, 255, 0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
        .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
-
-       /* ... etc (Copie-colle tout le reste de tes styles ici) ... */
        .rapido-container { position: relative; z-index: 10; height: 100%; padding: 1rem 4rem 4rem 4rem; display: flex; flex-direction: column; }
        header { text-align: center; margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; position: relative; }
        .deco-area { width: 100%; position: relative; margin-top: 1rem; display: flex; align-items: flex-end; padding-bottom: 0; }
        .deco-volcan-wrapper { position: absolute; left: -20px; bottom: 3rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
        .deco-volcan { width: 300px; max-width: 35vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
        .copyright { color: white; font-size: 1.5rem; font-weight: 800; margin-top: -40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
-
-        .frise-lambrequin { 
-          height: 3rem; 
-          width: 100%; 
-          /* background-image retiré d'ici */
-          background-repeat: repeat-x; 
-          background-size: contain;
-          background-position: top center; 
-          opacity: 1; 
-          position: relative; 
-          z-index: 10; 
-       }
-
+       
+       /* On garde le style de base, mais l'image URL est gérée dans le HTML */
+       .frise-lambrequin { height: 3rem; width: 100%; background-repeat: repeat-x; background-size: contain; background-position: top center; opacity: 1; position: relative; z-index: 10; }
+       
        .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; }
        h1 { color: white; font-size: 3rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
        .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 2.2rem; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 4px solid white; z-index: 10; }
@@ -86,6 +71,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 </head>
 <body>
 
+  {/* ✅ CORRECTION : Images avec base URL */}
   <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
   <img src={`${base}/images/margouillat.png`} alt="Margouillat" class="deco-margouillat" />
 
@@ -100,12 +86,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       </div>
       <div class="deco-area">
          <div class="deco-volcan-wrapper">
-           {/* 🛠️ CORRECTION 2 : Image Volcan */}
+           {/* ✅ CORRECTION : Image volcan */}
            <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
           <div class="copyright">© maths974</div>
         </div>
         
-        {/* 🛠️ CORRECTION 3 : Image de fond Lambrequin via style inline */}
+        {/* ✅ CORRECTION : Image de fond via style inline */}
         <div class="frise-lambrequin" style={`background-image: url('${base}/images/lambrequin.svg');`}></div>
       </div>
       
