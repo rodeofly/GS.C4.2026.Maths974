@@ -7,7 +7,7 @@
 
 > **"Les maths, c'est comme le cari : meilleur quand on a la bonne recette."** 🍛
 
-Bienvenue sur le dépôt du **Guide de Survie Maths974**, une plateforme éducative moderne conçue pour aider les élèves de la Réunion (et d'ailleurs) à maîtriser les mathématiques du Collège au Lycée.
+Bienvenue sur le dépôt du **Guide de Survie Maths974**, une plateforme éducative moderne conçue pour aider les élèves de la Réunion (et d'ailleurs) à maîtriser les mathématiques du Collège au Lycée !
 
 ## 🌟 Fonctionnalités
 
