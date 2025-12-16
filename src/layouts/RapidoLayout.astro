@@ -1,11 +1,11 @@
 ---
+// src/layouts/RapidoLayout.astro
 import '../styles/main.css';
 
 const { info } = Astro.props;
 const data = info.data || {};
-
 // Données sécurisées
-const numero = data.numero || "Sans numéro";
+const numero = data.numero || "1";
 const niveau = data.niveau || "";
 const questions = data.questions || [];
 
@@ -27,105 +27,61 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
 
   <style>
-    /* 1. CONFIGURATION DU FOND (LAYERS) */
+    /* 1. CONFIGURATION DU FOND & POLICE */
     body {
       margin: 0;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font-sans) !important;
       color: #1e293b;
-      
-      /* Couche 1 : Dégradé Rouge */
       background: linear-gradient(to bottom, #dc2626, #fca5a5); 
       position: relative;
     }
 
-    /* Couche 2 : Curves SVG (Stretch) */
+    h1, h2, button, .q-card, .q-num {
+      font-family: var(--font-sans) !important;
+    }
+
+    /* Couche 2 : Curves SVG */
     .bg-curves {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      object-fit: cover; /* Étiré pour couvrir tout l'écran */
+      object-fit: cover;
       z-index: 1;
-      opacity: 0.6; /* Ajuster selon le contraste voulu */
+      opacity: 0.6;
       pointer-events: none;
     }
 
-    .frise-lambrequin {
-        /* Hauteur de la frise : ajustez selon le rendu voulu */
-        height: 3rem; 
-        width: 100%;
-        
-        /* Image et répétition */
-        background-image: url('/images/lambrequin.svg');
-        background-repeat: repeat-x;
-        background-size: contain; /* Garde les proportions du motif */
-        background-position: top center;
-        
-        /* Espacement pour ne pas coller au titre */
-        margin-top: 0rem;
-        margin-bottom: 1rem;
-        
-        /* Optionnel : ajouter une légère ombre ou opacité */
-        opacity: 0.9;
-    }
-
-    /* 2. ÉLÉMENTS FLOTTANTS (DECO) */
-    .deco-volcan {
-      position: absolute;
-      top: 1rem;
-      right: 4rem;
-      width: 18vw; /* Taille responsive */
-      max-width: 250px;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .copyright {
-      position: absolute;
-      top: 1rem;
-      right: 4rem;
-      color: white;
-      font-size: 0.9rem;
-      font-weight: 600;
-      z-index: 3; /* Par dessus le volcan */
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    }
-
-    .deco-margouillat {
-      position: absolute;
-      top: 20px;
-      left: 25%;
-      width: 10vw;
-      max-width: 120px;
-      z-index: 2;
-      pointer-events: none;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-    }
-
-    /* Bouton retour discret */
     .back-btn {
       position: absolute;
       top: 1rem;
       left: 1rem;
       background: rgba(255, 255, 255, 0.2);
       color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 99px;
+      border-radius: 50%;
       text-decoration: none;
       font-weight: bold;
       z-index: 50;
       backdrop-filter: blur(4px);
       transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      font-size: 1.5rem;
+      border: 2px solid rgba(255,255,255,0.4);
     }
     .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
 
-    /* 3. CONTENU PRINCIPAL */
+    /* 3. HEADER & TITRE */
     .rapido-container {
       position: relative;
-      z-index: 10; /* Au dessus du fond */
+      z-index: 10;
       height: 100%;
-      padding: 1rem 4rem 4rem 4rem; /* Marges pour ne pas toucher les bords */
+      padding: 1rem 4rem 4rem 4rem;
       display: flex;
       flex-direction: column;
     }
@@ -133,87 +89,207 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
     header {
       text-align: center;
       margin-bottom: 0rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative; /* Pour positionner les éléments déco */
+    }
+
+    /* === AJUSTEMENT DÉCO : VOLCAN & COPYRIGHT === */
+    .deco-area {
+      width: 100%;
+      position: relative;
+      /* On laisse la hauteur automatique pour ne pas brider le positionnement */
+      margin-top: 1rem;
+      display: flex;
+      align-items: flex-end;
+      /* Le padding-bottom réserve la place pour le lambrequin */
+      padding-bottom: 0; 
+    }
+
+    .deco-volcan-wrapper {
+      position: absolute;
+      left: -20px; /* Légèrement décalé à gauche pour toucher le bord de l'écran */
+      
+      /* Le lambrequin fait 3rem. 
+         bottom: 1.5rem fait descendre le volcan "derrière" la moitié haute du lambrequin.
+         Ajustez cette valeur si vous voulez qu'il soit plus haut ou plus bas. */
+      bottom: 3rem; 
+      
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 5; /* Derrière le lambrequin (z-index 10) */
+      pointer-events: none; /* Pour cliquer au travers si besoin */
+    }
+
+    .deco-volcan {
+      /* Taille demandée */
+      width: 300px; 
+      max-width: 35vw; /* Responsive : max 35% de la largeur sur petits écrans */
+      height: auto;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+    }
+
+    .copyright {
+      color: white;
+      /* Taille demandée */
+      font-size: 1.5rem; 
+      font-weight: 800;
+      
+      /* On remonte fortement le texte pour qu'il soit DANS le pied du volcan */
+      margin-top: -40px; 
+      
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      font-family: var(--font-sans);
+      letter-spacing: 0.05em;
+      position: relative;
+      z-index: 6;
+    }
+
+    .frise-lambrequin {
+        height: 3rem;
+        width: 100%;
+        background-image: url('/images/lambrequin.svg');
+        background-repeat: repeat-x;
+        background-size: contain;
+        background-position: top center;
+        opacity: 1;
+        position: relative;
+        z-index: 10; /* Le lambrequin passe DEVANT le bas du volcan */
+    }
+
+    /* Le reste du titre */
+    .title-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 0.5rem;
     }
 
     h1 {
       color: white;
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin: 0;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 1;
+    }
+
+    .rapido-badge {
+      background-color: #fbbf24;
+      color: #0f172a;
+      font-family: var(--font-sans);
+      font-weight: 900;
+      font-size: 2.2rem;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: rotate(-10deg);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+      border: 4px solid white;
+      z-index: 10;
     }
 
     h2 {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1.5rem;
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 1.2rem;
       margin: 0;
-      font-weight: 400;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
-    /* GRILLE DES QUESTIONS */
+    .deco-margouillat {
+      position: absolute;
+      top: 20px;
+      right: 20%; /* Changé à droite pour équilibrer avec le volcan à gauche */
+      width: 8vw;
+      max-width: 100px;
+      z-index: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+      transform: rotate(15deg);
+    }
+
+    /* 4. GRILLE DES QUESTIONS */
     .questions-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: repeat(3, 1fr); /* 3 lignes équitables */
+      grid-template-rows: repeat(3, 1fr);
       gap: 1.5rem;
-      flex: 1; /* Prend tout l'espace restant */
+      flex: 1;
     }
 
     .q-card {
-      background: rgba(255, 255, 255, 0.9); /* Blanc opacité 0.8/0.9 */
-      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1.5rem;
       padding: 1.5rem;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      font-size: 1.4rem;
-      font-weight: 500;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #334155;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 2px solid rgba(255, 255, 255, 0.8);
     }
 
-    /* La 5ème question (si 5 questions) centrée en bas */
     .questions-grid:has(> :last-child:nth-child(5)) > :last-child {
-      grid-column: 1 / -1; /* Prend toute la largeur */
-      width: 60%; /* Mais pas trop large visuellement */
-      margin: 0 auto; /* Centré */
+      grid-column: 1 / -1;
+      width: 70%;
+      margin: 0 auto;
     }
 
-    /* Le badge "GS Ref" en haut à gauche */
     .gs-ref {
       position: absolute;
       top: 0;
       left: 0;
-      background: #0f766e; /* Teal */
+      background: #0f766e;
       color: white;
-      font-size: 0.8rem;
-      font-weight: bold;
-      padding: 0.3rem 0.6rem;
-      border-top-left-radius: 0.9rem; /* Suit l'arrondi de la carte */
-      border-bottom-right-radius: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 800;
+      padding: 0.4rem 0.8rem;
+      border-top-left-radius: 1.3rem;
+      border-bottom-right-radius: 1rem;
       box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
 
-    /* Le numéro de la question (optionnel, style cercle) */
     .q-num {
       position: absolute;
-      top: -10px;
-      right: -10px;
-      width: 2rem;
-      height: 2rem;
+      top: -15px;
+      right: -15px;
+      width: 2.5rem;
+      height: 2.5rem;
       background: #f59e0b;
       color: white;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 1rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-weight: 900;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      border: 3px solid white;
+    }
+
+    .content {
+      display: inline-block;
+      line-height: 1.5;
+    }
+    
+    .content :global(mjx-container) {
+      vertical-align: middle !important;
+      margin: 0 0.2em !important;
     }
 
   </style>
@@ -221,27 +297,35 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 <body>
 
   <img src="/images/curves.svg" alt="" class="bg-curves" />
-  
-  
   <img src="/images/margouillat.png" alt="Margouillat" class="deco-margouillat" />
 
-  <a href="/" class="back-btn">⬅ Accueil</a>
+  <a href=".." class="back-btn" aria-label="Retour au menu">⬅</a>
 
   <div class="rapido-container">
     <header>
       <h2>Maths974</h2>
-      <h1>Rapido {niveau} — {numero}</h1>
-      <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
-      <div class="copyright">© maths974</div>
+      
+      <div class="title-wrapper">
+        <h1>Rapido {niveau}</h1>
+        <div class="rapido-badge">{numero}</div>
+      </div>
+
+      {/* ZONE DÉCO : Volcan + Lambrequin */}
+      <div class="deco-area">
+        <div class="deco-volcan-wrapper">
+          <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
+          <div class="copyright">© maths974</div>
+        </div>
+        <div class="frise-lambrequin"></div>
+      </div>
+
     </header>
-    <div class="frise-lambrequin"></div>
+    
     <div class="questions-grid">
       {questions.map((item, index) => (
         <article class="q-card">
           {item.gs && <div class="gs-ref">{item.gs}</div>}
-          
           <div class="q-num">{index + 1}</div>
-
           <div class="content">{item.texte}</div>
         </article>
       ))}

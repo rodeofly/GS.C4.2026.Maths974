@@ -1,4 +1,5 @@
 ---
+// src/pages/rapidos/[...slug].astro
 import { getCollection } from 'astro:content';
 import RapidoLayout from '../../layouts/RapidoLayout.astro';
 import A4Layout from '../../layouts/A4.astro';
@@ -23,35 +24,29 @@ if (isIndex) {
   const allRapidos = await getCollection('rapidos');
   children = allRapidos
     .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort((a, b) => a.id.localeCompare(b.id)); // Tri par ID (ex: 1.1, 1.2...)
 }
 
-// Préparer le contenu de l'index
+// Préparer le contenu de l'index pour la modale
 const { Content: IndexContent } = await entry.render();
 const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 ---
 
-{/* CAS 1 : C'est une fiche Rapido (P1-S1) -> Mode Projection */}
+{/* CAS 1 : C'est une fiche Rapido (P1-S1) -> Mode Projection (INCHANGÉ) */}
 {!isIndex && <RapidoLayout info={entry} />}
 
-{/* CAS 2 : Menu du niveau */}
+{/* CAS 2 : Menu du niveau (MODIFIÉ) */}
 {isIndex && (
-  <A4Layout info={entry} title={entry.data.title} theme="Rapidos">
+  <A4Layout 
+    info={entry} 
+    title={entry.data.title} 
+    theme="Rapidos"
+    indexContent={hasIndexContent ? IndexContent : null}
+  >
     
-    {/* 🔵 INDEX EN PREMIER (si le fichier a du contenu) */}
-    {hasIndexContent && (
-      <article class="etiquette etiquette-full-width etiquette-index format-1_1">
-        <header class="etiquette-header">
-          <h2 class="etiquette-title">{entry.data.title}</h2>
-        </header>
-        
-        <section class="etiquette-section section-texte">
-          <IndexContent />
-        </section>
-      </article>
-    )}
+    {/* NOTE : L'article d'intro a été supprimé ici car le contenu est passé dans 'indexContent' */}
     
-    {/* 🟢 LISTE DES RAPIDOS ENSUITE */}
+    {/* 🟢 LISTE DES RAPIDOS */}
     <div class="rapido-menu-grid">
       {children.length > 0 ? children.map(child => (
         <a href={`/rapidos/${child.slug}/`} class="rapido-link-card">
@@ -59,7 +54,7 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
           <span class="rapido-title">Rapido {child.data.numero}</span>
         </a>
       )) : (
-        <p>Aucun rapido disponible pour ce niveau.</p>
+        <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
       )}
     </div>
     
@@ -96,11 +91,19 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
   }
   
   .rapido-icon { 
-    font-size: var(--text-3xl); 
+    font-size: var(--text-3xl);
   }
   
   .rapido-title { 
     font-weight: var(--font-bold);
     font-size: var(--text-lg);
+  }
+
+  .empty-msg {
+    color: var(--color-gray-500);
+    font-style: italic;
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 2rem;
   }
 </style>

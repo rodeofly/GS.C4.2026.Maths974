@@ -48,7 +48,6 @@ if (isIndex) {
 
   // A. ÉTIQUETTES (Enfants directs uniquement)
   directChildren = allGuides.filter(e => {
-    // Nettoyage robuste du slug
     const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
     
     // Doit commencer par le dossier courant
@@ -64,15 +63,12 @@ if (isIndex) {
 
   // B. SOUS-DOSSIERS (Navigation)
   const allDescendantIndices = allGuides.filter(e => {
-    // CORRECTION ICI : Si le slug est juste "index", on le vide pour qu'il soit égal à la racine
     const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
     
     // 1. Exclure soi-même
     if (eSlug === currentSlug) return false;
     
     // 2. Doit être un descendant
-    // Si on est à la racine (currentSlug vide), tout (sauf soi-même) est descendant
-    // Sinon, on vérifie le préfixe
     if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
     
     // 3. Doit être un index
@@ -89,7 +85,6 @@ if (isIndex) {
         const otherSlug = other.slug === 'index' ? '' : other.slug.replace(/\/index$/, '');
         
         if (otherSlug === candidateSlug) return false; // Pas soi-même
-        // Le candidat commence-t-il par l'autre + '/' ?
         const prefix = otherSlug ? otherSlug + '/' : ''; 
         return candidateSlug.startsWith(otherSlug + '/');
      });
@@ -102,7 +97,7 @@ if (isIndex) {
   hasIndexContent = entry.body && entry.body.trim().length > 0;
 }
 
-// 3. NAVIGATION PARENT
+// 3. NAVIGATION PARENT (Pour la vue focus etiquette seule)
 let parentUrl = '/';
 let parentTitle = 'Accueil';
 
@@ -121,7 +116,6 @@ if (!isIndex) {
     parentUrl = `/guide/${parentSlug}/`;
     parentTitle = parentEntry.data.sous_theme || parentEntry.data.title;
   } else if (slug) {
-     // Fallback si pas d'index parent trouvé (ex: retour racine)
      parentUrl = '/guide/';
      parentTitle = 'Sommaire';
   }
@@ -136,7 +130,7 @@ if (!isIndex) {
   indexContent={hasIndexContent ? IndexContent : null}
 >
 
-  {/* VUE FOCUS */}
+  {/* VUE FOCUS (Étiquette seule) */}
   {!isIndex && (
     <div class="single-etiquette-view">
       <div class="toolbar">
@@ -155,15 +149,10 @@ if (!isIndex) {
     </div>
   )}
 
-  {/* VUE DOSSIER */}
+  {/* VUE DOSSIER (Index) */}
   {isIndex && (
     <>
-      {/* Bouton retour (sauf si on est à la racine absolue du guide) */}
-      {slug !== undefined && slug !== '' && (
-         <a href=".." class="back-button-simple">← Niveau supérieur</a>
-      )}
-
-      {/* SUPPRESSION DE L'ARTICLE INDEX ICI - Contenu déplacé dans le layout */}
+      {/* SUPPRESSION DU BOUTON RETOUR ICI (Géré par Breadcrumb) */}
 
       {/* Grille des sous-dossiers */}
       {subfolders.length > 0 && (
@@ -272,26 +261,15 @@ if (!isIndex) {
   .btn-fav.active:hover {
     background: var(--color-guide-secondary);
   }
-  .back-button-simple {
-    display: inline-block;
-    padding: var(--space-2) var(--space-4);
-    background: white;
-    border: 1px solid var(--color-gray-300);
-    border-radius: var(--radius-full);
-    color: var(--color-gray-600);
-    font-weight: var(--font-medium);
-    text-decoration: none;
-    width: fit-content;
-    margin-bottom: var(--space-4);
-    grid-column: 1 / -1;
-  }
+  
   .subthemes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--space-6);
     grid-column: 1 / -1;
-    margin-top: var(--space-4);
+    /* On retire la marge top car il n'y a plus de bouton au dessus */
   }
+  
   .subtheme-card {
     background: white;
     border: 2px solid var(--color-guide-light);

@@ -6,9 +6,16 @@ import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 
-// Construction des liens du fil d'ariane
+// 1. Récupération des infos de navigation
 const slug = info?.slug || '';
-// On récupère la racine du niveau (ex: "sixieme") depuis le slug
+const collection = info?.collection || 'guide'; // 'guide' ou 'rapidos'
+
+// 2. Configuration de la racine en fonction de la collection
+const isRapido = collection === 'rapidos';
+const rootLabel = isRapido ? 'Rapidos' : 'Guide';
+const rootUrl = isRapido ? '/rapidos/' : '/guide/';
+
+// 3. Extraction du niveau (ex: "sixieme")
 const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
@@ -32,25 +39,29 @@ const niveauSlug = slug.split('/')[0];
     
     <header class="layout-header-simple">
       
-      {/* --- NOUVEAU : FIL D'ARIANE (BREADCRUMB) --- */}
+      {/* --- FIL D'ARIANE DYNAMIQUE --- */}
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
           <li><a href="/">Accueil</a></li>
           <li class="separator">/</li>
-          <li><a href="/guide/">Guide</a></li>
           
-          {/* Lien vers le niveau (si ce n'est pas la page du niveau elle-même) */}
+          {/* Lien racine dynamique (Guide ou Rapidos) */}
+          <li><a href={rootUrl}>{rootLabel}</a></li>
+          
+          {/* Lien vers le niveau (ex: Sixième) */}
+          {/* On l'affiche seulement si on est plus profond que la racine du niveau */}
           {niveauLabel && niveauSlug && slug !== niveauSlug && slug !== `${niveauSlug}/index` ? (
             <>
               <li class="separator">/</li>
-              <li><a href={`/guide/${niveauSlug}/`}>{niveauLabel}</a></li>
+              <li><a href={`${rootUrl}${niveauSlug}/`}>{niveauLabel}</a></li>
             </>
           ) : null}
           
           <li class="separator">/</li>
+          
+          {/* Page courante + Bouton Info */}
           <li class="current" aria-current="page">
             {title}
-            {/* Le bouton (i) est collé ici */}
             <SubthemeInfo info={info} Content={indexContent} />
           </li>
         </ol>

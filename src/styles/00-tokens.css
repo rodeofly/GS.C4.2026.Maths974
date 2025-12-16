@@ -1,24 +1,26 @@
+/* src/styles/00-tokens.css */
+
+/* 1. AJOUTER L'IMPORT EN HAUT DU FICHIER */
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@100..900&display=swap');
+
 :root {
   /* ========================================
      COULEURS - PALETTE 974
      ======================================== */
   
-  /* Guide de Survie - Teal/Cyan */
+  /* ... (Vos couleurs ne changent pas) ... */
   --color-guide-primary: #0d9488;
   --color-guide-secondary: #0891b2;
   --color-guide-light: #ccfbf1;
   --color-guide-bg: #f0fdfa;
   
-  /* Rapidos - Red/Orange */
   --color-rapido-primary: #dc2626;
   --color-rapido-secondary: #f97316;
   --color-rapido-light: #fed7aa;
   --color-rapido-bg: #fef3e2;
   
-  /* Accent 974 */
   --color-accent: #f97316;
   
-  /* Neutrals */
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -30,7 +32,6 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
   
-  /* Semantics */
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -40,7 +41,10 @@
      TYPOGRAPHIE
      ======================================== */
   
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* 2. REMPLACER 'Inter' PAR 'Lexend Deca' */
+  --font-sans: 'Lexend Deca', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* On garde la mono pour le code */
   --font-mono: 'Courier New', 'Consolas', monospace;
   
   /* Échelle typographique (ratio 1.250 - Major Third) */
@@ -67,36 +71,28 @@
   --font-black: 900;
   
   /* ========================================
-     ESPACEMENT - Échelle 4px
+     ESPACEMENT & LE RESTE (Inchangé)
      ======================================== */
   
   --space-0: 0;
-  --space-1: 0.25rem;   /* 4px */
-  --space-2: 0.5rem;    /* 8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.25rem;   /* 20px */
-  --space-6: 1.5rem;    /* 24px */
-  --space-8: 2rem;      /* 32px */
-  --space-10: 2.5rem;   /* 40px */
-  --space-12: 3rem;     /* 48px */
-  --space-16: 4rem;     /* 64px */
-  --space-20: 5rem;     /* 80px */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
   
-  /* ========================================
-     RADIUS - Arrondis
-     ======================================== */
-  
-  --radius-sm: 0.375rem;   /* 6px */
-  --radius-md: 0.5rem;     /* 8px */
-  --radius-lg: 0.75rem;    /* 12px */
-  --radius-xl: 1rem;       /* 16px */
-  --radius-2xl: 1.25rem;   /* 20px */
-  --radius-full: 9999px;   /* Cercle parfait */
-  
-  /* ========================================
-     SHADOWS - Ombres
-     ======================================== */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -104,13 +100,8 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   
-  /* Ombres colorées */
   --shadow-guide: 0 10px 30px rgba(13, 148, 136, 0.15);
   --shadow-rapido: 0 10px 30px rgba(220, 38, 38, 0.15);
-  
-  /* ========================================
-     BREAKPOINTS (pour JS/media queries)
-     ======================================== */
   
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -118,17 +109,9 @@
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1536px;
   
-  /* ========================================
-     TRANSITIONS
-     ======================================== */
-  
   --transition-fast: 150ms ease;
   --transition-base: 250ms ease;
   --transition-slow: 350ms ease;
-  
-  /* ========================================
-     Z-INDEX - Niveaux d'empilement
-     ======================================== */
   
   --z-below: -1;
   --z-base: 0;
@@ -141,12 +124,7 @@
   --z-tooltip: 70;
 }
 
-/* ========================================
-   DARK MODE (pour plus tard)
-   ======================================== */
-
 @media (prefers-color-scheme: dark) {
   :root {
-    /* On garde ça pour plus tard si besoin */
   }
 }
