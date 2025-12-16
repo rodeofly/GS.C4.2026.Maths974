@@ -1,0 +1,598 @@
+---
+// src/pages/recherche/favoris.astro
+---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Favoris & Historique - Maths974</title>
+  <link rel="stylesheet" href="/styles/main.css" />
+  
+  <style>
+    .favorites-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e0f2fe 100%);
+      padding: var(--space-4);
+    }
+    
+    .favorites-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    /* Header */
+    .favorites-header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+      box-shadow: var(--shadow-xl);
+      color: white;
+    }
+    
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+    
+    .header-brand a {
+      text-decoration: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+    
+    .logo-974 {
+      background: var(--color-accent);
+      color: #1e293b;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-weight: var(--font-black);
+    }
+    
+    .header-title {
+      font-size: var(--text-3xl);
+      font-weight: var(--font-black);
+      margin: 0;
+    }
+    
+    .header-subtitle {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: var(--text-base);
+      margin: var(--space-2) 0 0 0;
+    }
+    
+    /* Onglets */
+    .tabs {
+      display: flex;
+      gap: var(--space-2);
+      border-bottom: 2px solid var(--color-gray-200);
+      margin-bottom: var(--space-6);
+      background: white;
+      padding: var(--space-4);
+      border-radius: var(--radius-lg);
+    }
+    
+    .tab-btn {
+      padding: var(--space-3) var(--space-6);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: var(--text-base);
+      font-weight: var(--font-semibold);
+      color: var(--color-gray-600);
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    
+    .tab-btn:hover {
+      color: var(--color-gray-900);
+      background: var(--color-gray-50);
+      border-radius: var(--radius-md);
+    }
+    
+    .tab-btn.active {
+      color: var(--color-guide-primary);
+      border-bottom-color: var(--color-guide-primary);
+      background: var(--color-guide-bg);
+    }
+    
+    .tab-badge {
+      display: inline-block;
+      margin-left: var(--space-2);
+      padding: 0.125rem var(--space-2);
+      background: var(--color-gray-200);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-bold);
+    }
+    
+    .tab-btn.active .tab-badge {
+      background: var(--color-guide-primary);
+      color: white;
+    }
+    
+    /* Panels */
+    .tab-panel {
+      display: none;
+    }
+    
+    .tab-panel.active {
+      display: block;
+    }
+    
+    /* Actions bar */
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4);
+      background: white;
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-4);
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .action-btn {
+      padding: var(--space-3) var(--space-4);
+      background: white;
+      border: 2px solid var(--color-gray-300);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      font-weight: var(--font-semibold);
+    }
+    
+    .action-btn:hover {
+      background: var(--color-gray-50);
+      border-color: var(--color-gray-400);
+    }
+    
+    .action-btn.danger {
+      border-color: var(--color-danger);
+      color: var(--color-danger);
+    }
+    
+    .action-btn.danger:hover {
+      background: var(--color-danger);
+      color: white;
+    }
+    
+    /* Liste d'étiquettes */
+    .etiquettes-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--space-4);
+    }
+    
+    .etiquette-card {
+      background: white;
+      border: 2px solid var(--color-gray-200);
+      border-radius: var(--radius-xl);
+      padding: var(--space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+      transition: all var(--transition-base);
+      position: relative;
+    }
+    
+    .etiquette-card:hover {
+      border-color: var(--color-guide-primary);
+      box-shadow: var(--shadow-guide);
+      transform: translateY(-2px);
+    }
+    
+    .card-remove {
+      position: absolute;
+      top: var(--space-3);
+      right: var(--space-3);
+      width: 2rem;
+      height: 2rem;
+      background: white;
+      border: 1px solid var(--color-gray-300);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--text-lg);
+      transition: all var(--transition-fast);
+    }
+    
+    .card-remove:hover {
+      background: var(--color-danger);
+      color: white;
+      border-color: var(--color-danger);
+    }
+    
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+    
+    .card-id {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--color-guide-primary), var(--color-guide-secondary));
+      color: white;
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: var(--font-bold);
+      width: fit-content;
+    }
+    
+    .card-title {
+      font-size: var(--text-lg);
+      font-weight: var(--font-bold);
+      color: var(--color-gray-900);
+      margin: 0;
+    }
+    
+    .card-link {
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .card-link:hover .card-title {
+      color: var(--color-guide-primary);
+    }
+    
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      font-size: var(--text-xs);
+      color: var(--color-gray-600);
+    }
+    
+    .meta-badge {
+      padding: var(--space-1) var(--space-2);
+      background: var(--color-gray-100);
+      border-radius: var(--radius-sm);
+    }
+    
+    .card-date {
+      font-size: var(--text-xs);
+      color: var(--color-gray-500);
+      font-style: italic;
+    }
+    
+    /* État vide */
+    .empty-state {
+      text-align: center;
+      padding: var(--space-12);
+      background: white;
+      border-radius: var(--radius-xl);
+      color: var(--color-gray-500);
+    }
+    
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: var(--space-4);
+    }
+    
+    .empty-title {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-bold);
+      color: var(--color-gray-700);
+      margin-bottom: var(--space-2);
+    }
+    
+    .empty-action {
+      margin-top: var(--space-4);
+    }
+    
+    .empty-action a {
+      display: inline-block;
+      padding: var(--space-3) var(--space-6);
+      background: var(--color-guide-primary);
+      color: white;
+      text-decoration: none;
+      border-radius: var(--radius-lg);
+      font-weight: var(--font-semibold);
+      transition: all var(--transition-fast);
+    }
+    
+    .empty-action a:hover {
+      background: var(--color-guide-secondary);
+      transform: translateY(-2px);
+    }
+    
+    /* Responsive */
+    @media (max-width: 640px) {
+      .etiquettes-list {
+        grid-template-columns: 1fr;
+      }
+      
+      .tabs {
+        flex-direction: column;
+      }
+      
+      .actions-bar {
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+    }
+  </style>
+</head>
+<body class="favorites-page">
+  
+  <div class="favorites-container">
+    
+    <!-- Header -->
+    <header class="favorites-header">
+      <div class="header-brand">
+        <a href="/">
+          <span class="logo-974">M974</span>
+          <span style="font-size: var(--text-2xl); font-weight: var(--font-black);">Maths974</span>
+        </a>
+      </div>
+      <h1 class="header-title">Mes Favoris & Historique</h1>
+      <p class="header-subtitle">Retrouvez rapidement vos étiquettes préférées et récentes</p>
+    </header>
+    
+    <!-- Onglets -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="favoris">
+        ⭐ Favoris
+        <span class="tab-badge" id="favorisCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="historique">
+        🕐 Historique
+        <span class="tab-badge" id="historiqueCount">0</span>
+      </button>
+      <button class="tab-btn" data-tab="recherche">
+        🔍 Recherche
+      </button>
+    </div>
+    
+    <!-- Panel Favoris -->
+    <div class="tab-panel active" id="panel-favoris">
+      <div class="actions-bar">
+        <div>
+          <strong id="favorisTotal">0</strong> favoris
+        </div>
+        <button class="action-btn danger" id="clearFavoris">
+          🗑️ Vider les favoris
+        </button>
+      </div>
+      
+      <div class="etiquettes-list" id="favorisList"></div>
+      
+      <div class="empty-state" id="emptyFavoris">
+        <div class="empty-icon">⭐</div>
+        <h2 class="empty-title">Aucun favori</h2>
+        <p>Ajoutez des étiquettes en favoris pour les retrouver facilement ici.</p>
+        <div class="empty-action">
+          <a href="/recherche/">Parcourir les étiquettes</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Panel Historique -->
+    <div class="tab-panel" id="panel-historique">
+      <div class="actions-bar">
+        <div>
+          <strong id="historiqueTotal">0</strong> étiquettes récentes (10 max)
+        </div>
+        <button class="action-btn danger" id="clearHistorique">
+          🗑️ Vider l'historique
+        </button>
+      </div>
+      
+      <div class="etiquettes-list" id="historique"></div>
+      
+      <div class="empty-state" id="emptyHistorique">
+        <div class="empty-icon">🕐</div>
+        <h2 class="empty-title">Aucun historique</h2>
+        <p>Visitez des étiquettes pour les voir apparaître ici.</p>
+        <div class="empty-action">
+          <a href="/recherche/">Parcourir les étiquettes</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Panel Recherche (redirect) -->
+    <div class="tab-panel" id="panel-recherche">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h2 class="empty-title">Recherche globale</h2>
+        <p>Recherchez parmi toutes les étiquettes disponibles</p>
+        <div class="empty-action">
+          <a href="/recherche/">Accéder à la recherche</a>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script type="module">
+    // Import des fonctions storage
+    import { Favoris, Historique } from '/src/utils/storage.js';
+    
+    // Éléments DOM
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('.tab-panel');
+    
+    // Gestion des onglets
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.tab;
+        
+        // Mise à jour UI tabs
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Mise à jour panels
+        panels.forEach(p => p.classList.remove('active'));
+        document.getElementById(`panel-${target}`).classList.add('active');
+      });
+    });
+    
+    // Fonction pour formater une date
+    function formatDate(isoDate) {
+      const date = new Date(isoDate);
+      const now = new Date();
+      const diff = now - date;
+      
+      // Moins d'1 heure
+      if (diff < 3600000) {
+        const minutes = Math.floor(diff / 60000);
+        return `Il y a ${minutes} min`;
+      }
+      
+      // Moins d'1 jour
+      if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `Il y a ${hours}h`;
+      }
+      
+      // Moins d'1 semaine
+      if (diff < 604800000) {
+        const days = Math.floor(diff / 86400000);
+        return `Il y a ${days}j`;
+      }
+      
+      // Format court
+      return date.toLocaleDateString('fr-FR', { 
+        day: 'numeric', 
+        month: 'short' 
+      });
+    }
+    
+    // Créer une card étiquette
+    function createCard(etiq, showRemove = true, dateField = null) {
+      const card = document.createElement('div');
+      card.className = 'etiquette-card';
+      
+      let html = '';
+      
+      // Bouton remove
+      if (showRemove) {
+        html += `
+          <button class="card-remove" data-remove="${etiq.slug}" title="Retirer">
+            ×
+          </button>
+        `;
+      }
+      
+      // Contenu
+      html += `
+        <a href="${etiq.url}" class="card-link">
+          <div class="card-header">
+            ${etiq.id ? `<span class="card-id">${etiq.id}</span>` : ''}
+            <h3 class="card-title">${etiq.title}</h3>
+          </div>
+        </a>
+        
+        <div class="card-meta">
+          ${etiq.niveau ? `<span class="meta-badge">📚 ${etiq.niveau}</span>` : ''}
+          ${etiq.theme ? `<span class="meta-badge">📂 ${etiq.theme}</span>` : ''}
+        </div>
+      `;
+      
+      // Date si demandée
+      if (dateField && etiq[dateField]) {
+        html += `
+          <div class="card-date">
+            ${formatDate(etiq[dateField])}
+          </div>
+        `;
+      }
+      
+      card.innerHTML = html;
+      return card;
+    }
+    
+    // Afficher favoris
+    function displayFavoris() {
+      const favoris = Favoris.getAll();
+      const container = document.getElementById('favorisList');
+      const empty = document.getElementById('emptyFavoris');
+      
+      // Mise à jour compteurs
+      document.getElementById('favorisCount').textContent = favoris.length;
+      document.getElementById('favorisTotal').textContent = favoris.length;
+      
+      // Vider container
+      container.innerHTML = '';
+      
+      if (favoris.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      
+      empty.style.display = 'none';
+      
+      favoris.forEach(fav => {
+        const card = createCard(fav, true, 'addedAt');
+        container.appendChild(card);
+        
+        // Event remove
+        const removeBtn = card.querySelector('[data-remove]');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            Favoris.remove(fav.slug);
+            displayFavoris();
+          });
+        }
+      });
+    }
+    
+    // Afficher historique
+    function displayHistorique() {
+      const historique = Historique.getAll();
+      const container = document.getElementById('historiquList');
+      const empty = document.getElementById('emptyHistorique');
+      
+      // Mise à jour compteurs
+      document.getElementById('historiqueCount').textContent = historique.length;
+      document.getElementById('historiqueTotal').textContent = historique.length;
+      
+      // Vider container
+      container.innerHTML = '';
+      
+      if (historique.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+      
+      empty.style.display = 'none';
+      
+      historique.forEach(item => {
+        const card = createCard(item, false, 'visitedAt');
+        container.appendChild(card);
+      });
+    }
+    
+    // Event: Clear favoris
+    document.getElementById('clearFavoris').addEventListener('click', () => {
+      if (confirm('Voulez-vous vraiment vider tous vos favoris ?')) {
+        Favoris.clear();
+        displayFavoris();
+      }
+    });
+    
+    // Event: Clear historique
+    document.getElementById('clearHistorique').addEventListener('click', () => {
+      if (confirm('Voulez-vous vraiment vider tout votre historique ?')) {
+        Historique.clear();
+        displayHistorique();
+      }
+    });
+    
+    // Init
+    displayFavoris();
+    displayHistorique();
+  </script>
+  
+</body>
+</html>

@@ -1,6 +1,7 @@
 /* ========================================
    MATHS974 - Main CSS Entry Point
-   Architecture modulaire Sprint 1
+   Architecture modulaire optimisée
+   MIGRATION COMPLÈTE - base.css supprimé ✅
    ======================================== */
 
 /* 1. Fondations */
@@ -18,14 +19,7 @@
 @import './components/dialog.css';
 @import './components/tags.css';
 
-/* 3. Layouts */
-/* @import './layouts/page.css'; */  /* Vide pour l'instant */
-
-/* 4. Thèmes */
-/* @import './themes/guide.css'; */  /* Vide pour l'instant */
-/* @import './themes/rapido.css'; */ /* Vide pour l'instant */
-
-/* 5. Print (chargé uniquement à l'impression) */
+/* 3. Layouts Print (chargés uniquement à l'impression) */
 @import './layouts/print-a4.css' print;
 @import './layouts/print-a5.css' print;
 
@@ -41,7 +35,10 @@
 
 .print-only {
   display: none;
-  @media print {
+}
+
+@media print {
+  .print-only {
     display: block;
   }
 }
@@ -58,13 +55,111 @@
   font-weight: var(--font-bold);
   z-index: var(--z-tooltip);
   border-radius: 0 0 var(--radius-md) 0;
+  transition: top var(--transition-fast);
 }
 
 .skip-link:focus {
   top: 0;
 }
 
-/* Conteneur responsive */
+/* ========================================
+   TOUCH TARGETS - Accessibilité Mobile
+   Minimum 44x44px selon WCAG
+   ======================================== */
+
+button,
+a,
+input[type="checkbox"],
+input[type="radio"],
+select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception pour les boutons texte inline */
+.btn-inline {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* ========================================
+   ÉTATS DE CHARGEMENT
+   ======================================== */
+
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: wait;
+  position: relative;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+}
+
+/* ========================================
+   FOCUS VISIBLE - Accessibilité
+   ======================================== */
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Exception pour éléments qui ont déjà un style focus */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   ANIMATIONS RÉDUITES (Accessibilité)
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   HIGH CONTRAST MODE (Accessibilité)
+   ======================================== */
+
+@media (prefers-contrast: high) {
+  :root {
+    --color-gray-500: #000;
+    --color-gray-600: #000;
+    --color-gray-700: #000;
+  }
+  
+  .etiquette {
+    border-width: 3px;
+  }
+  
+  button,
+  a {
+    border: 2px solid currentColor;
+  }
+}
+
+/* ========================================
+   CONTENEURS RESPONSIVE
+   ======================================== */
+
 .container {
   width: 100%;
   max-width: 1400px;
@@ -78,19 +173,98 @@
   }
 }
 
-/* États de chargement */
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
-  cursor: wait;
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 var(--space-8);
+  }
 }
 
-.loading::after {
-  content: '';
+/* ========================================
+   UTILITAIRES RAPIDES
+   ======================================== */
+
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.hidden { display: none; }
+.sr-only {
   position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.8);
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ========================================
+   COMPATIBILITÉ MATHÉMATIQUES
+   MathJax et TikZJax
+   ======================================== */
+
+mjx-container {
+  display: inline-block;
+  margin: 0.5em 0;
+}
+
+.tikzjax {
   display: flex;
-  align-items: center;
   justify-content: center;
+  margin: var(--space-4) 0;
+}
+
+.tikzjax svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ========================================
+   AMÉLIORATIONS TYPOGRAPHIQUES
+   ======================================== */
+
+/* Meilleur rendu des ligatures */
+body {
+  font-variant-ligatures: common-ligatures;
+  text-rendering: optimizeLegibility;
+}
+
+/* Éviter les orphelins en français */
+p {
+  orphans: 3;
+  widows: 3;
+}
+
+/* ========================================
+   PRINT GLOBAL
+   ======================================== */
+
+@media print {
+  /* Optimiser les couleurs pour l'impression */
+  * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  /* Éviter les coupures de page dans les éléments */
+  .etiquette,
+  .etiquette-section,
+  article,
+  section {
+    page-break-inside: avoid;
+  }
+  
+  /* Forcer les liens à afficher l'URL */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: var(--color-gray-600);
+  }
+  
+  /* Sauf pour les QR codes */
+  .qr-wrapper a::after {
+    content: none;
+  }
 }

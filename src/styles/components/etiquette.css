@@ -108,6 +108,14 @@
   color: var(--color-gray-900);
 }
 
+.meta-subtheme {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(19, 41, 61, 0.08);
+  border: 1px solid rgba(19, 41, 61, 0.15);
+  font-weight: var(--font-medium);
+}
+
 /* ========================================
    SECTIONS DE CONTENU
    ======================================== */
@@ -145,6 +153,18 @@
   margin-top: var(--space-3);
 }
 
+/* TikZ graphics */
+.section-texte .tikzjax {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4) 0;
+}
+
+.section-texte .tikzjax svg {
+  max-width: min(100%, 18rem);
+  height: auto;
+}
+
 /* Section Rappel */
 .section-rappel {
   background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
@@ -154,27 +174,16 @@
   align-items: start;
 }
 
-.section-rappel-icon {
+.section-rappel::before {
+  content: '💡';
   font-size: var(--text-2xl);
   flex-shrink: 0;
 }
 
-.section-rappel-content {
-  flex: 1;
-}
-
-.section-rappel-title {
-  font-weight: var(--font-bold);
-  color: #065f46;
-  font-size: var(--text-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--space-2);
-}
-
-.section-rappel-text {
+.section-rappel p {
   color: #064e3b;
   line-height: var(--leading-relaxed);
+  margin: 0;
 }
 
 /* Section Erreurs fréquentes */
@@ -189,10 +198,14 @@
   font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: var(--space-3);
+  margin: 0 0 var(--space-3) 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+.section-erreurs-title::before {
+  content: '⚠️';
 }
 
 .section-erreurs ul {
@@ -212,10 +225,19 @@
 }
 
 .section-erreurs li::before {
-  content: '⚠️';
+  content: '×';
   position: absolute;
   left: 0;
-  font-size: var(--text-lg);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: #dc2626;
+}
+
+/* Section Retain (à retenir) */
+.section-retain {
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  border-left: 4px solid #7c3aed;
+  padding: var(--space-4);
 }
 
 /* Liste de contenus */
@@ -261,20 +283,31 @@
    FORMATS (colonnes grid)
    ======================================== */
 
-.format-1_1 {
-  grid-column: span 1;
-}
-
-.format-1_2 {
-  grid-column: span 1;
-}
-
-.format-1_4 {
-  grid-column: span 1;
-}
-
+/* Mobile : tout en 1 colonne */
+.format-1_1,
+.format-1_2,
+.format-1_4,
 .format-1_8 {
   grid-column: span 1;
+}
+
+/* Desktop : adaptés aux 2 colonnes */
+@media (min-width: 768px) {
+  .format-1_1 {
+    grid-column: span 2; /* Pleine largeur sur 2 colonnes */
+  }
+  
+  .format-1_2 {
+    grid-column: span 1; /* Moitié = 1 colonne */
+  }
+  
+  .format-1_4 {
+    grid-column: span 1; /* Quart = 1 colonne aussi */
+  }
+  
+  .format-1_8 {
+    grid-column: span 1; /* Huitième = 1 colonne */
+  }
 }
 
 /* Pleine largeur (via YAML full_width: true) */
@@ -282,32 +315,29 @@
   grid-column: 1 / -1; /* Prend toutes les colonnes */
 }
 
-/* Style spécial pour l'index du sous-thème */
+/* ========================================
+   ÉTIQUETTE INDEX (intro sous-thème)
+   ======================================== */
+
 .etiquette-index {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border: 2px solid var(--color-guide-primary);
   border-left-width: 6px;
+  order: -999; /* Toujours en premier */
+}
+
+.etiquette-index:hover {
+  transform: none; /* Pas d'animation hover */
 }
 
 .etiquette-index .etiquette-title {
   color: var(--color-guide-primary);
-  font-size: var(--text-2xl);
+  font-size: clamp(var(--text-xl), 4vw, var(--text-3xl));
 }
 
 .etiquette-index .etiquette-title::after {
   width: 100px;
   height: 4px;
-}
-
-/* Sur desktop (2 colonnes) */
-@media (min-width: 768px) {
-  .format-1_1 {
-    grid-column: span 2; /* Par défaut, 1/1 prend 2 colonnes */
-  }
-  
-  .format-1_2 {
-    grid-column: span 1; /* 1/2 prend 1 colonne */
-  }
 }
 
 /* ========================================
@@ -326,6 +356,10 @@
   .etiquette-section {
     padding: var(--space-3);
   }
+  
+  .section-texte .tikzjax svg {
+    max-width: 100%;
+  }
 }
 
 /* ========================================
@@ -337,9 +371,28 @@
     box-shadow: none;
     border-color: var(--color-gray-400);
     page-break-inside: avoid;
+    padding: 0.8cm 1cm;
   }
   
   .etiquette:hover {
     transform: none;
+    box-shadow: none;
+  }
+  
+  /* Formats A5 spécifiques */
+  .layout-a5 .format-1_1 {
+    grid-column: span 8;
+  }
+  
+  .layout-a5 .format-1_2 {
+    grid-column: span 4;
+  }
+  
+  .layout-a5 .format-1_4 {
+    grid-column: span 2;
+  }
+  
+  .layout-a5 .format-1_8 {
+    grid-column: span 1;
   }
 }

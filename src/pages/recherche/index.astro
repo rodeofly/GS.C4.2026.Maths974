@@ -1,0 +1,563 @@
+---
+// src/pages/recherche/index.astro
+import { getCollection } from 'astro:content';
+
+// Récupérer TOUTES les étiquettes (pas les index)
+const allEtiquettes = await getCollection('guide', ({ id }) => {
+  return !id.endsWith('index.md');
+});
+
+// Récupérer tous les index pour avoir les infos de sous-thèmes
+const allIndex = await getCollection('guide', ({ id }) => {
+  return id.endsWith('index.md');
+});
+
+// Préparer les données pour le JS client
+const etiquettesData = allEtiquettes.map(e => {
+  const { data } = e;
+  
+  // Trouver le sous-thème parent
+  const sousThemeSlug = e.slug.substring(0, e.slug.lastIndexOf('/'));
+  const sousTheme = allIndex.find(idx => idx.slug === sousThemeSlug);
+  
+  return {
+    id: data.id || e.slug,
+    title: data.title,
+    slug: e.slug,
+    niveau: data.niveau || sousTheme?.data.niveau,
+    theme: data.theme || sousTheme?.data.theme,
+    sous_theme: data.sous_theme || sousTheme?.data.sous_theme,
+    tags: data.tags || [],
+    competences: data.competences || [],
+    format: data.format || '1/1',
+    contenus: data.contenus || [],
+    url: `/guide/${e.slug}/`
+  };
+});
+
+// Extraire tous les tags uniques
+const allTags = [...new Set(etiquettesData.flatMap(e => e.tags))].sort();
+
+// Extraire tous les niveaux uniques
+const allNiveaux = [...new Set(etiquettesData.map(e => e.niveau).filter(Boolean))].sort();
+
+// Extraire tous les thèmes uniques
+const allThemes = [...new Set(etiquettesData.map(e => e.theme).filter(Boolean))].sort();
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Recherche - Maths974</title>
+  
+  <style>
+    /* Styles inline pour éviter problème de chemin */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e0f2fe 100%);
+      min-height: 100vh;
+    }
+    
+    /* Layout page de recherche */
+    .search-page {
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    
+    .search-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Header avec logo et recherche */
+    .search-header {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    
+    .search-brand a {
+      text-decoration: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .logo-974 {
+      background: #f59e0b;
+      color: #1e293b;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 900;
+    }
+    
+    .brand-title {
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+    
+    /* Barre de recherche */
+    .search-input-wrapper {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    
+    .search-input {
+      width: 100%;
+      padding: 1rem 1.5rem;
+      padding-left: 3.5rem;
+      font-size: 1.125rem;
+      border: 2px solid transparent;
+      border-radius: 1rem;
+      background: white;
+      transition: all 0.25s;
+    }
+    
+    .search-input:focus {
+      outline: none;
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+    }
+    
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      color: #9ca3af;
+    }
+    
+    /* Filtres */
+    .filters-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .filter-label {
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.9;
+    }
+    
+    .filter-tag {
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.875rem;
+      user-select: none;
+    }
+    
+    .filter-tag:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .filter-tag.active {
+      background: #f59e0b;
+      border-color: #f59e0b;
+      font-weight: 700;
+    }
+    
+    /* Stats */
+    .search-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: white;
+      border-radius: 0.75rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .stats-count {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    .stats-count strong {
+      color: #0d9488;
+      font-size: 1.5rem;
+    }
+    
+    .clear-filters {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      color: #4b5563;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .clear-filters:hover {
+      background: #f3f4f6;
+      border-color: #9ca3af;
+    }
+    
+    /* Grille de résultats */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+    
+    .etiquette-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.25s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .etiquette-card:hover {
+      border-color: #0d9488;
+      box-shadow: 0 10px 30px rgba(13, 148, 136, 0.15);
+      transform: translateY(-4px);
+    }
+    
+    .card-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .card-id {
+      display: inline-block;
+      background: linear-gradient(135deg, #0d9488, #0891b2);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: fit-content;
+    }
+    
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #111827;
+      margin: 0;
+    }
+    
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #4b5563;
+    }
+    
+    .meta-badge {
+      padding: 0.25rem 0.5rem;
+      background: #f3f4f6;
+      border-radius: 0.375rem;
+    }
+    
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .card-tag {
+      padding: 0.25rem 0.75rem;
+      background: #ccfbf1;
+      color: #0d9488;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    /* Message vide */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+    }
+    
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 0.5rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 640px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .filters-container {
+        flex-direction: column;
+      }
+      
+      .search-stats {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body class="search-page">
+  
+  <div class="search-container">
+    
+    <!-- Header avec recherche -->
+    <header class="search-header">
+      <div class="search-brand">
+        <a href="/">
+          <span class="logo-974">M974</span>
+          <span class="brand-title">Maths974</span>
+        </a>
+      </div>
+      
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          class="search-input" 
+          id="searchInput"
+          placeholder="Rechercher une étiquette par titre, contenu, tag..."
+          autocomplete="off"
+        />
+      </div>
+      
+      <div class="filters-container">
+        <!-- Filtres Niveau -->
+        <div class="filter-group">
+          <span class="filter-label">Niveau :</span>
+          {allNiveaux.map(niveau => (
+            <button class="filter-tag" data-filter="niveau" data-value={niveau}>
+              {niveau}
+            </button>
+          ))}
+        </div>
+        
+        <!-- Filtres Thème -->
+        <div class="filter-group">
+          <span class="filter-label">Thème :</span>
+          {allThemes.slice(0, 5).map(theme => (
+            <button class="filter-tag" data-filter="theme" data-value={theme}>
+              {theme}
+            </button>
+          ))}
+        </div>
+      </div>
+    </header>
+    
+    <!-- Stats & Clear -->
+    <div class="search-stats">
+      <div class="stats-count">
+        <strong id="resultCount">{etiquettesData.length}</strong> étiquettes trouvées
+      </div>
+      <button class="clear-filters" id="clearFilters">
+        Réinitialiser les filtres
+      </button>
+    </div>
+    
+    <!-- Résultats -->
+    <div class="results-grid" id="resultsGrid">
+      {etiquettesData.map(etiq => (
+        <a href={etiq.url} class="etiquette-card" data-etiquette={JSON.stringify(etiq)}>
+          <div class="card-header">
+            {etiq.id && <span class="card-id">{etiq.id}</span>}
+            <h2 class="card-title">{etiq.title}</h2>
+          </div>
+          
+          <div class="card-meta">
+            {etiq.niveau && <span class="meta-badge">📚 {etiq.niveau}</span>}
+            {etiq.theme && <span class="meta-badge">📂 {etiq.theme}</span>}
+          </div>
+          
+          {etiq.tags.length > 0 && (
+            <div class="card-tags">
+              {etiq.tags.map(tag => (
+                <span class="card-tag">{tag}</span>
+              ))}
+            </div>
+          )}
+        </a>
+      ))}
+    </div>
+    
+    <!-- État vide -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-state-icon">🔍</div>
+      <h2 class="empty-state-title">Aucun résultat</h2>
+      <p>Essayez de modifier votre recherche ou vos filtres</p>
+    </div>
+    
+  </div>
+  
+  <script is:inline define:vars={{ etiquettesData }}>
+    // Données globales
+    let allData = etiquettesData;
+    let currentFilters = {
+      search: '',
+      niveau: [],
+      theme: []
+    };
+    
+    // Éléments DOM
+    const searchInput = document.getElementById('searchInput');
+    const resultsGrid = document.getElementById('resultsGrid');
+    const emptyState = document.getElementById('emptyState');
+    const resultCount = document.getElementById('resultCount');
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    
+    // Fonction de filtrage
+    function filterEtiquettes() {
+      let filtered = allData;
+      
+      // Filtre recherche textuelle
+      if (currentFilters.search) {
+        const searchLower = currentFilters.search.toLowerCase();
+        filtered = filtered.filter(e => {
+          return (
+            e.title.toLowerCase().includes(searchLower) ||
+            e.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
+            e.contenus.some(c => c.toLowerCase().includes(searchLower)) ||
+            (e.sous_theme && e.sous_theme.toLowerCase().includes(searchLower))
+          );
+        });
+      }
+      
+      // Filtre niveau
+      if (currentFilters.niveau.length > 0) {
+        filtered = filtered.filter(e => 
+          currentFilters.niveau.includes(e.niveau)
+        );
+      }
+      
+      // Filtre thème
+      if (currentFilters.theme.length > 0) {
+        filtered = filtered.filter(e => 
+          currentFilters.theme.includes(e.theme)
+        );
+      }
+      
+      return filtered;
+    }
+    
+    // Afficher résultats
+    function displayResults() {
+      const filtered = filterEtiquettes();
+      
+      // Mise à jour du compteur
+      resultCount.textContent = filtered.length;
+      
+      // Cacher tous les cards
+      const allCards = resultsGrid.querySelectorAll('.etiquette-card');
+      allCards.forEach(card => card.style.display = 'none');
+      
+      // Afficher les cards filtrées
+      if (filtered.length === 0) {
+        emptyState.style.display = 'block';
+      } else {
+        emptyState.style.display = 'none';
+        
+        filtered.forEach(etiq => {
+          const card = Array.from(allCards).find(c => {
+            const data = JSON.parse(c.dataset.etiquette);
+            return data.slug === etiq.slug;
+          });
+          if (card) card.style.display = 'flex';
+        });
+      }
+    }
+    
+    // Event: Recherche textuelle
+    searchInput.addEventListener('input', (e) => {
+      currentFilters.search = e.target.value;
+      displayResults();
+    });
+    
+    // Event: Filtres tags
+    document.querySelectorAll('.filter-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filterType = btn.dataset.filter;
+        const value = btn.dataset.value;
+        
+        // Toggle active
+        btn.classList.toggle('active');
+        
+        // Mise à jour des filtres
+        if (btn.classList.contains('active')) {
+          if (!currentFilters[filterType].includes(value)) {
+            currentFilters[filterType].push(value);
+          }
+        } else {
+          currentFilters[filterType] = currentFilters[filterType].filter(v => v !== value);
+        }
+        
+        displayResults();
+      });
+    });
+    
+    // Event: Clear filters
+    clearFiltersBtn.addEventListener('click', () => {
+      // Reset filtres
+      currentFilters = { search: '', niveau: [], theme: [] };
+      searchInput.value = '';
+      
+      // Reset UI
+      document.querySelectorAll('.filter-tag').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      displayResults();
+    });
+    
+    // Init
+    displayResults();
+  </script>
+  
+</body>
+</html>

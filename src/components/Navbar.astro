@@ -1,4 +1,5 @@
 ---
+// src/components/Navbar.astro
 const { title = "Guide de Survie" } = Astro.props;
 ---
 
@@ -12,8 +13,15 @@ const { title = "Guide de Survie" } = Astro.props;
     <div class="nav-title">{title}</div>
 
     <div class="nav-actions">
+      <a href="/recherche/" class="nav-link nav-link-primary">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-text">Recherche</span>
+      </a>
+      <a href="/recherche/favoris/" class="nav-link">
+        <span class="nav-icon">⭐</span>
+        <span class="nav-text">Favoris</span>
+      </a>
       <a href="/" class="nav-link">Accueil</a>
-      <a href="/guide/arborescence/" class="nav-link">Plan</a>
       <button onclick="window.print()" class="btn-print" aria-label="Imprimer cette page">
         🖨️
       </button>
@@ -23,7 +31,7 @@ const { title = "Guide de Survie" } = Astro.props;
 
 <style>
   .main-navbar {
-    background: #1e293b; /* Bleu nuit pour faire pro */
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     border-bottom: 1px solid #334155;
     color: white;
     position: sticky;
@@ -39,6 +47,7 @@ const { title = "Guide de Survie" } = Astro.props;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 1rem;
   }
 
   .brand {
@@ -66,22 +75,57 @@ const { title = "Guide de Survie" } = Astro.props;
     font-weight: 500;
     display: none;
   }
-  @media (min-width: 768px) { .nav-title { display: block; } }
+  @media (min-width: 768px) { 
+    .nav-title { display: block; } 
+  }
 
   .nav-actions {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 0.75rem;
   }
 
   .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     text-decoration: none;
     color: #e2e8f0;
     font-size: 0.9rem;
     font-weight: 500;
-    transition: color 0.2s;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
   }
-  .nav-link:hover { color: #f59e0b; }
+  
+  .nav-link:hover { 
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+  }
+  
+  .nav-link-primary {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  
+  .nav-link-primary:hover {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: #f59e0b;
+  }
+  
+  .nav-icon {
+    font-size: 1.1rem;
+  }
+  
+  .nav-text {
+    display: none;
+  }
+  
+  @media (min-width: 640px) {
+    .nav-text {
+      display: inline;
+    }
+  }
 
   .btn-print {
     background: #334155;
@@ -91,6 +135,26 @@ const { title = "Guide de Survie" } = Astro.props;
     color: white;
     cursor: pointer;
     transition: background 0.2s;
+    font-size: 1.1rem;
   }
   .btn-print:hover { background: #475569; }
+  
+  /* Responsive mobile */
+  @media (max-width: 640px) {
+    .navbar-content {
+      padding: 0.5rem 1rem;
+    }
+    
+    .brand-text {
+      display: none;
+    }
+    
+    .nav-actions {
+      gap: 0.5rem;
+    }
+    
+    .nav-link {
+      padding: 0.4rem;
+    }
+  }
 </style>

@@ -17,18 +17,67 @@ const { entry } = Astro.props;
 const { slug } = Astro.params;
 
 const allGuides = await getCollection('guide');
-const children = allGuides
-  .filter(e => e.slug.startsWith(slug + '/') && !e.slug.endsWith('/index'))
+const slugDepth = slug.split('/').length;
+
+// Enfants directs (étiquettes)
+const directChildren = allGuides
+  .filter(e => {
+    if (!e.slug.startsWith(slug + '/')) return false;
+    if (e.slug.endsWith('/index') || e.id.endsWith('/index.md')) return false;
+    const childDepth = e.slug.split('/').length;
+    return childDepth === slugDepth + 1;
+  })
+  .sort((a, b) => a.id.localeCompare(b.id));
+
+// Sous-dossiers (sous-thèmes)
+const subfolders = allGuides
+  .filter(e => {
+    if (!e.slug.startsWith(slug + '/')) return false;
+    if (!e.id.endsWith('/index.md')) return false;
+    const childDepth = e.slug.split('/').length;
+    return childDepth === slugDepth + 2;
+  })
   .sort((a, b) => a.id.localeCompare(b.id));
 
 const { Content: IndexContent } = await entry.render();
 const hasIndexContent = entry.body && entry.body.trim().length > 0;
+
+// Calculer le chemin parent pour le bouton retour (intelligent)
+const slugParts = slug.split('/').filter(Boolean);
+
+// Chercher le premier parent qui existe réellement
+let parentUrl = '/';
+if (slugParts.length > 0) {
+  for (let i = slugParts.length - 1; i >= 0; i--) {
+    const testSlug = slugParts.slice(0, i).join('/');
+    const parentExists = allGuides.some(e => 
+      (e.slug === testSlug + '/index' || e.slug === testSlug) && 
+      (e.slug.endsWith('/index') || e.id.endsWith('/index.md'))
+    );
+    
+    if (parentExists) {
+      parentUrl = `/guide/${testSlug}/`;
+      break;
+    }
+  }
+}
+
+const showBackButton = slug !== '';
 ---
 
 <A4Layout info={entry} niveau={entry.data.niveau} theme={entry.data.theme}>
   
+  {/* BOUTON RETOUR */}
+  {showBackButton && (
+    <a href={parentUrl} class="back-button">
+      <span class="back-icon">←</span>
+      <span>Retour</span>
+    </a>
+  )}
+  
+  {/* INDEX */}
   {hasIndexContent && (
-    <article class="etiquette etiquette-full-width etiquette-index format-1_1" style="order: -999;">
+    <article class="etiquette etiquette-full-width etiquette-index format-1_1">
       <header class="etiquette-header">
         <h2 class="etiquette-title">{entry.data.sous_theme || entry.data.title}</h2>
       </header>
@@ -39,6 +88,97 @@ const hasIndexContent = entry.body && entry.body.trim().length > 0;
     </article>
   )}
   
-  {children.map((child, index) => <Etiquette entry={child} />)}
+  {/* SOUS-THÈMES */}
+  {subfolders.length > 0 && (
+    <div class="subthemes-grid">
+      {subfolders.map(subfolder => (
+        <a href={`/guide/${subfolder.slug.replace('/index', '')}/`} class="subtheme-card">
+          <h3 class="subtheme-title">{subfolder.data.sous_theme || subfolder.data.title}</h3>
+          {subfolder.data.objectif && (
+            <p class="subtheme-objectif">{subfolder.data.objectif}</p>
+          )}
+        </a>
+      ))}
+    </div>
+  )}
+  
+  {/* ÉTIQUETTES */}
+  {directChildren.map((child) => <Etiquette entry={child} />)}
   
 </A4Layout>
+
+<style>
+  .back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    background: white;
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-xl);
+    text-decoration: none;
+    color: var(--color-gray-700);
+    font-weight: var(--font-semibold);
+    transition: all var(--transition-base);
+    margin-bottom: var(--space-4);
+    grid-column: 1 / -1;
+  }
+  
+  .back-button:hover {
+    border-color: var(--color-guide-primary);
+    color: var(--color-guide-primary);
+    transform: translateX(-4px);
+  }
+  
+  .back-icon {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+  }
+  
+  .subthemes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-6);
+    grid-column: 1 / -1;
+    margin-top: var(--space-4);
+  }
+  
+  .subtheme-card {
+    background: white;
+    border: 2px solid var(--color-guide-light);
+    border-left-width: 6px;
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    text-decoration: none;
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  
+  .subtheme-card:hover {
+    border-color: var(--color-guide-primary);
+    box-shadow: var(--shadow-guide);
+    transform: translateY(-4px);
+  }
+  
+  .subtheme-title {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: var(--font-black);
+    color: var(--color-guide-primary);
+  }
+  
+  .subtheme-objectif {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    line-height: var(--leading-relaxed);
+  }
+  
+  @media print {
+    .back-button {
+      display: none;
+    }
+  }
+</style>

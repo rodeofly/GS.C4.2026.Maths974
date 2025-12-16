@@ -1,5 +1,6 @@
 /* ========================================
    LAYOUT - Grilles et structures
+   APPROCHE MOBILE-FIRST
    ======================================== */
 
 /* ========================================
@@ -10,7 +11,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   padding: var(--space-4);
   background: linear-gradient(135deg, #f5f7fa 0%, #e0f2fe 100%);
 }
@@ -18,13 +19,14 @@
 @media (min-width: 768px) {
   .layout {
     padding: var(--space-8);
+    gap: var(--space-6);
   }
 }
 
 /* Layouts spécifiques A4/A5 pour l'écran */
 .layout-a4,
 .layout-a5 {
-  margin: var(--space-8) auto;
+  margin: 0 auto;
   background: white;
   box-shadow: 
     0 1px 3px rgba(0,0,0,0.02),
@@ -34,13 +36,20 @@
   border-radius: var(--radius-lg);
   animation: slideUp 0.4s ease-out;
   
-  /* PLEINE LARGEUR : Profite de tout l'écran */
+  /* Mobile : Pleine largeur */
   max-width: 100%;
   width: 100%;
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-6);
 }
 
-/* A4 et A5 ont maintenant la même largeur (100%) */
+@media (min-width: 768px) {
+  .layout-a4,
+  .layout-a5 {
+    padding: var(--space-8) var(--space-12);
+    max-width: 1400px; /* Limiter sur grand écran */
+  }
+}
+
 .layout-a4 {
   min-height: 29.7cm;
 }
@@ -66,11 +75,18 @@
 
 .layout-header {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .layout-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
 }
 
 /* Theme badge */
@@ -85,6 +101,7 @@
   border-radius: var(--radius-xl);
   min-width: 10rem;
   box-shadow: var(--shadow-lg);
+  width: fit-content;
 }
 
 .theme-badge-meta {
@@ -107,11 +124,17 @@
 
 /* Subtheme heading */
 .subtheme-heading {
-  margin-left: auto;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .subtheme-heading {
+    margin-left: auto;
+    align-items: flex-end;
+  }
 }
 
 .subtheme-heading h1 {
@@ -119,26 +142,41 @@
   font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
   font-weight: var(--font-black);
   color: var(--color-guide-primary);
-  text-align: right;
   line-height: var(--leading-tight);
+}
+
+@media (min-width: 768px) {
+  .subtheme-heading h1 {
+    text-align: right;
+  }
 }
 
 /* ========================================
    GRILLE D'ÉTIQUETTES - MAX 2 COLONNES
+   MOBILE-FIRST
    ======================================== */
 
 .etiquettes-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-6);
+  gap: var(--space-4);
   align-content: start;
 }
 
-/* Desktop : 2 colonnes équilibrées */
+/* Tablet et Desktop : 2 colonnes max */
 @media (min-width: 768px) {
   .etiquettes-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-6);
+  }
+}
+
+/* Optionnel : Large écran, garder 2 colonnes max */
+@media (min-width: 1400px) {
+  .etiquettes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 1400px;
+    margin: 0 auto;
   }
 }
 
@@ -255,24 +293,6 @@ footer {
 .m-8 { margin: var(--space-8); }
 
 /* ========================================
-   RESPONSIVE - Mobile first
-   ======================================== */
-
-@media (max-width: 767px) {
-  .subtheme-heading {
-    align-items: flex-start;
-  }
-  
-  .subtheme-heading h1 {
-    text-align: left;
-  }
-  
-  .layout-header {
-    flex-direction: column;
-  }
-}
-
-/* ========================================
    PRINT - Layouts spéciaux impression
    ======================================== */
 
@@ -285,15 +305,20 @@ footer {
   .layout-a4,
   .layout-a5 {
     margin: 0;
-    padding: 0;
+    padding: 0.5cm;
     box-shadow: none;
     border: none;
     width: 100%;
     animation: none;
+    background: white;
   }
   
   .layout-header {
     margin-bottom: var(--space-4);
+  }
+  
+  .etiquettes-grid {
+    gap: var(--space-4);
   }
   
   footer {
