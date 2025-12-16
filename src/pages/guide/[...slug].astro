@@ -4,11 +4,13 @@ import { getCollection } from 'astro:content';
 import A4Layout from '../../layouts/A4.astro';
 import Etiquette from '../../components/Etiquette.astro';
 
+// 🛠️ RÉCUPÉRATION BASE URL
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 export async function getStaticPaths() {
   const entries = await getCollection('guide');
   return entries.map(entry => {
     let cleanSlug = entry.slug;
-    // Gestion de la racine /guide/
     if (cleanSlug === 'index') {
       cleanSlug = undefined;
     } else {
@@ -24,14 +26,14 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { slug } = Astro.params;
 
-// Données pour le script client
+// 🛠️ CORRECTION 1 : L'URL pour les favoris doit inclure la base
 const etiquetteData = {
   slug: entry.slug.replace(/\/index$/, ''),
   title: entry.data.title,
   id: entry.data.id || '',
   niveau: entry.data.niveau || '',
   theme: entry.data.theme || '',
-  url: `/guide/${entry.slug.replace(/\/index$/, '')}/`
+  url: `${base}/guide/${entry.slug.replace(/\/index$/, '')}/` // Ajout de ${base}
 };
 
 const isIndex = entry.id.endsWith('index.md') || entry.slug.endsWith('/index');
@@ -46,49 +48,29 @@ if (isIndex) {
   const currentSlug = slug || '';
   const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
 
-  // A. ÉTIQUETTES (Enfants directs uniquement)
   directChildren = allGuides.filter(e => {
     const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
-    
-    // Doit commencer par le dossier courant
     if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
-    // Ne doit pas être un dossier (index)
     if (e.id.endsWith('index.md')) return false;
-    
-    // Doit être un enfant direct (profondeur + 1)
     const childDepth = eSlug.split('/').length;
     return childDepth === slugDepth + 1;
   }).sort((a, b) => a.id.localeCompare(b.id));
 
-
-  // B. SOUS-DOSSIERS (Navigation)
   const allDescendantIndices = allGuides.filter(e => {
     const eSlug = e.slug === 'index' ? '' : e.slug.replace(/\/index$/, '');
-    
-    // 1. Exclure soi-même
     if (eSlug === currentSlug) return false;
-    
-    // 2. Doit être un descendant
     if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
-    
-    // 3. Doit être un index
     if (!e.id.endsWith('index.md')) return false;
-    
     return true;
   });
 
-  // Filtrer pour ne garder que les enfants les plus proches
   subfolders = allDescendantIndices.filter(candidate => {
      const candidateSlug = candidate.slug === 'index' ? '' : candidate.slug.replace(/\/index$/, '');
-     
      const hasParentInList = allDescendantIndices.some(other => {
         const otherSlug = other.slug === 'index' ? '' : other.slug.replace(/\/index$/, '');
-        
-        if (otherSlug === candidateSlug) return false; // Pas soi-même
-        const prefix = otherSlug ? otherSlug + '/' : ''; 
-        return candidateSlug.startsWith(otherSlug + '/');
+        if (otherSlug === candidateSlug) return false;
+        return candidateSlug.startsWith(otherSlug ? otherSlug + '/' : '');
      });
-     
      return !hasParentInList;
   }).sort((a, b) => a.id.localeCompare(b.id));
 
@@ -97,8 +79,8 @@ if (isIndex) {
   hasIndexContent = entry.body && entry.body.trim().length > 0;
 }
 
-// 3. NAVIGATION PARENT (Pour la vue focus etiquette seule)
-let parentUrl = '/';
+// 🛠️ CORRECTION 2 : Les boutons retour doivent inclure la base
+let parentUrl = `${base}/`; // Par défaut vers l'accueil (avec base)
 let parentTitle = 'Accueil';
 
 if (!isIndex) {
@@ -106,17 +88,16 @@ if (!isIndex) {
   parts.pop();
   const parentSlug = parts.join('/');
   
-  // Chercher le parent exact
   const parentEntry = allGuides.find(e => {
     const cleanEntrySlug = e.slug.replace(/\/index$/, '');
     return cleanEntrySlug === parentSlug && e.id.endsWith('index.md');
   });
 
   if (parentEntry) {
-    parentUrl = `/guide/${parentSlug}/`;
+    parentUrl = `${base}/guide/${parentSlug}/`; // Ajout de ${base}
     parentTitle = parentEntry.data.sous_theme || parentEntry.data.title;
   } else if (slug) {
-     parentUrl = '/guide/';
+     parentUrl = `${base}/guide/`; // Ajout de ${base}
      parentTitle = 'Sommaire';
   }
 }
@@ -130,7 +111,6 @@ if (!isIndex) {
   indexContent={hasIndexContent ? IndexContent : null}
 >
 
-  {/* VUE FOCUS (Étiquette seule) */}
   {!isIndex && (
     <div class="single-etiquette-view">
       <div class="toolbar">
@@ -149,35 +129,29 @@ if (!isIndex) {
     </div>
   )}
 
-  {/* VUE DOSSIER (Index) */}
   {isIndex && (
     <>
-      {/* SUPPRESSION DU BOUTON RETOUR ICI (Géré par Breadcrumb) */}
-
-      {/* Grille des sous-dossiers */}
       {subfolders.length > 0 && (
         <div class="subthemes-grid">
           {subfolders.map(subfolder => (
-            <a href={`/guide/${subfolder.slug.replace(/\/index$/, '')}/`} class="subtheme-card">
+            /* 🛠️ CORRECTION 3 : Lien des sous-thèmes */
+            <a href={`${base}/guide/${subfolder.slug.replace(/\/index$/, '')}/`} class="subtheme-card">
               <h3 class="subtheme-title">{subfolder.data.sous_theme || subfolder.data.title}</h3>
               {subfolder.data.objectif && <p class="subtheme-objectif">{subfolder.data.objectif}</p>}
             </a>
           ))}
         </div>
       )}
-
-      {/* Grille des fiches (étiquettes) */}
       {directChildren.map((child) => <Etiquette entry={child} />)}
     </>
   )}
 
 </A4Layout>
 
-{/* SCRIPT CLIENT */}
+{/* Le script JS reste identique, il utilise etiquetteData qu'on a corrigé plus haut */}
 <script define:vars={{ etiquetteData, isIndex }}>
   import('/src/utils/storage.js').then(({ Favoris, Historique }) => {
     if (!isIndex) Historique.add(etiquetteData);
-
     const favBtn = document.getElementById('fav-btn');
     if (favBtn) {
       const icon = favBtn.querySelector('.icon');
@@ -208,105 +182,19 @@ if (!isIndex) {
 </script>
 
 <style>
-  .single-etiquette-view {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-    max-width: 800px;
-    margin: 0 auto;
-    width: 100%;
-  }
-  .toolbar {
-    display: flex;
-    gap: var(--space-4);
-    flex-wrap: wrap;
-  }
-  .btn-tool {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-5);
-    background: white;
-    border: 2px solid var(--color-gray-200);
-    border-radius: var(--radius-lg);
-    text-decoration: none;
-    color: var(--color-gray-700);
-    font-weight: var(--font-bold);
-    transition: all var(--transition-base);
-    cursor: pointer;
-    font-size: var(--text-base);
-  }
-  .btn-tool:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
-  .btn-back:hover {
-    border-color: var(--color-gray-400);
-    background: var(--color-gray-50);
-  }
-  .btn-fav {
-    margin-left: auto;
-    color: var(--color-guide-primary);
-  }
-  .btn-fav:hover {
-    border-color: var(--color-guide-primary);
-    background: var(--color-guide-bg);
-  }
-  .btn-fav.active {
-    background: var(--color-guide-primary);
-    color: white;
-    border-color: var(--color-guide-primary);
-  }
-  .btn-fav.active:hover {
-    background: var(--color-guide-secondary);
-  }
-  
-  .subthemes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--space-6);
-    grid-column: 1 / -1;
-    /* On retire la marge top car il n'y a plus de bouton au dessus */
-  }
-  
-  .subtheme-card {
-    background: white;
-    border: 2px solid var(--color-guide-light);
-    border-left-width: 6px;
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    text-decoration: none;
-    transition: all var(--transition-base);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-  .subtheme-card:hover {
-    border-color: var(--color-guide-primary);
-    box-shadow: var(--shadow-guide);
-    transform: translateY(-4px);
-  }
-  .subtheme-title {
-    margin: 0;
-    font-size: var(--text-xl);
-    font-weight: var(--font-bold);
-    color: var(--color-guide-primary);
-  }
-  .subtheme-objectif {
-    margin: 0;
-    font-size: var(--text-sm);
-    color: var(--color-gray-600);
-    line-height: var(--leading-relaxed);
-  }
-  @media (max-width: 640px) {
-    .toolbar {
-      flex-direction: column;
-    }
-    .btn-fav {
-      margin-left: 0;
-      width: 100%;
-      justify-content: center;
-    }
-  }
+/* ... Tes styles CSS (inchangés) ... */
+.single-etiquette-view { grid-column: 1 / -1; display: flex; flex-direction: column; gap: var(--space-6); max-width: 800px; margin: 0 auto; width: 100%; }
+.toolbar { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.btn-tool { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-5); background: white; border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); text-decoration: none; color: var(--color-gray-700); font-weight: var(--font-bold); transition: all var(--transition-base); cursor: pointer; font-size: var(--text-base); }
+.btn-tool:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn-back:hover { border-color: var(--color-gray-400); background: var(--color-gray-50); }
+.btn-fav { margin-left: auto; color: var(--color-guide-primary); }
+.btn-fav:hover { border-color: var(--color-guide-primary); background: var(--color-guide-bg); }
+.btn-fav.active { background: var(--color-guide-primary); color: white; border-color: var(--color-guide-primary); }
+.subthemes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6); grid-column: 1 / -1; }
+.subtheme-card { background: white; border: 2px solid var(--color-guide-light); border-left-width: 6px; border-radius: var(--radius-xl); padding: var(--space-6); text-decoration: none; transition: all var(--transition-base); display: flex; flex-direction: column; gap: var(--space-3); }
+.subtheme-card:hover { border-color: var(--color-guide-primary); box-shadow: var(--shadow-guide); transform: translateY(-4px); }
+.subtheme-title { margin: 0; font-size: var(--text-xl); font-weight: var(--font-bold); color: var(--color-guide-primary); }
+.subtheme-objectif { margin: 0; font-size: var(--text-sm); color: var(--color-gray-600); line-height: var(--leading-relaxed); }
+@media (max-width: 640px) { .toolbar { flex-direction: column; } .btn-fav { margin-left: 0; width: 100%; justify-content: center; } }
 </style>

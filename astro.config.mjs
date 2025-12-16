@@ -1,19 +1,13 @@
 import { defineConfig } from 'astro/config';
 
-// Détecte si on est en mode "production" (build) ou "développement" (dev)
-const isProd = process.env.NODE_ENV === 'production';
+// On force la base URL si on est en prod, sinon '/'
+const BASE_URL = process.env.NODE_ENV === 'production' ? '/GS.C4.2026.Maths974' : '';
 
 export default defineConfig({
   srcDir: 'src',
   root: '.',
-  // URL de ton site GitHub Pages
   site: 'https://rodeofly.github.io',
-  
-  // 🛠️ BASE DYNAMIQUE :
-  // - En Prod (GitHub) : on utilise le nom du dépôt
-  // - En Local (Ordi)  : on reste à la racine '/'
-  base: isProd ? '/GS.C4.2026.Maths974' : '/',
-
+  base: BASE_URL, // Utilisation de la variable sécurisée
   server: {
     host: true,
   },

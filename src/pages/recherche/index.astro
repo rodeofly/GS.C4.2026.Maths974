@@ -1,8 +1,11 @@
 ---
 // src/pages/recherche/index.astro
-import Navbar from '../../components/Navbar.astro'; // Import Navbar
+import Navbar from '../../components/Navbar.astro';
 import '../../styles/main.css';
 import { getCollection } from 'astro:content';
+
+// 🛠️ RÉCUPÉRATION BASE URL
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const allEtiquettes = await getCollection('guide', ({ id }) => !id.endsWith('index.md'));
 const allIndex = await getCollection('guide', ({ id }) => id.endsWith('index.md'));
@@ -23,7 +26,8 @@ const etiquettesData = allEtiquettes.map(e => {
     competences: data.competences || [],
     format: data.format || '1/1',
     contenus: data.contenus || [],
-    url: `/guide/${e.slug}/`
+    // 🛠️ CORRECTION : Ajout de la base URL ici
+    url: `${base}/guide/${e.slug}/`
   };
 });
 

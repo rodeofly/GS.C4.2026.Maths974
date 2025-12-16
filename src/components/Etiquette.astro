@@ -8,18 +8,17 @@ const { data: fm } = entry;
 
 const { Content } = await entry.render();
 
-// Calcul des classes de format
 const formatRaw = String(fm.format ?? '1').replace('/', '_').replace('.', '_');
 const formatClass = `format-${formatRaw}`;
 const fullWidthClass = fm.full_width ? 'etiquette-full-width' : '';
 
-// 🛠️ CORRECTION URL : Gestion du sous-dossier GitHub Pages
-// On nettoie le slash de fin pour éviter les doubles //
+// 🛠️ RÉCUPÉRATION BASE URL
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-// On construit l'URL correcte
-const etiquetteUrl = `${base}/guide/${entry.slug.replace(/\/index$/, '')}/`;
 
-// Récupération des données
+// 🛠️ CORRECTION : Construction robuste de l'URL
+const cleanSlug = entry.slug.replace(/\/index$/, '');
+const etiquetteUrl = `${base}/guide/${cleanSlug}/`;
+
 const contenus = Array.isArray(fm.contenus) ? fm.contenus : [];
 const erreurs = Array.isArray(fm.erreurs_frequentes) ? fm.erreurs_frequentes : [];
 const accordions = Array.isArray(fm.accordeons) ? fm.accordeons : [];
