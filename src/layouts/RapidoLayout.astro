@@ -2,7 +2,6 @@
 // src/layouts/RapidoLayout.astro
 import '../styles/main.css';
 
-// On récupère parentUrl depuis les props
 const { info, parentUrl = ".." } = Astro.props;
 const data = info.data || {};
 
@@ -11,6 +10,9 @@ const niveau = data.niveau || "";
 const questions = data.questions || [];
 
 const pageTitle = `Rapido ${numero} - ${niveau}`;
+
+// 🛠️ RÉCUPÉRATION BASE URL
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <!DOCTYPE html>
@@ -24,7 +26,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-    
+
     <style>
        /* ... (Garde tous tes styles CSS tels quels) ... */
        /* Je ne les répète pas pour gagner de la place, mais garde tout ton bloc <style> */
@@ -44,7 +46,19 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
        .deco-volcan-wrapper { position: absolute; left: -20px; bottom: 3rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
        .deco-volcan { width: 300px; max-width: 35vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
        .copyright { color: white; font-size: 1.5rem; font-weight: 800; margin-top: -40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
-       .frise-lambrequin { height: 3rem; width: 100%; background-image: url('/images/lambrequin.svg'); background-repeat: repeat-x; background-size: contain; background-position: top center; opacity: 1; position: relative; z-index: 10; }
+
+        .frise-lambrequin { 
+          height: 3rem; 
+          width: 100%; 
+          /* background-image retiré d'ici */
+          background-repeat: repeat-x; 
+          background-size: contain;
+          background-position: top center; 
+          opacity: 1; 
+          position: relative; 
+          z-index: 10; 
+       }
+
        .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; }
        h1 { color: white; font-size: 3rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
        .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 2.2rem; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 4px solid white; z-index: 10; }
@@ -72,8 +86,8 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
 </head>
 <body>
 
-  <img src="/images/curves.svg" alt="" class="bg-curves" />
-  <img src="/images/margouillat.png" alt="Margouillat" class="deco-margouillat" />
+  <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
+  <img src={`${base}/images/margouillat.png`} alt="Margouillat" class="deco-margouillat" />
 
   <a href={parentUrl} class="back-btn" aria-label="Retour au menu">⬅</a>
 
@@ -86,10 +100,13 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       </div>
       <div class="deco-area">
          <div class="deco-volcan-wrapper">
-          <img src="/images/volcan.svg" alt="Volcan" class="deco-volcan" />
+           {/* 🛠️ CORRECTION 2 : Image Volcan */}
+           <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
           <div class="copyright">© maths974</div>
         </div>
-        <div class="frise-lambrequin"></div>
+        
+        {/* 🛠️ CORRECTION 3 : Image de fond Lambrequin via style inline */}
+        <div class="frise-lambrequin" style={`background-image: url('${base}/images/lambrequin.svg');`}></div>
       </div>
       
     </header>
@@ -98,7 +115,7 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
       {questions.map((q, qIndex) => (
         <article class="q-card" id={`card-${qIndex}`}>
           <div class="q-num">{qIndex + 1}</div>
-          <div class="card-header-controls">
+           <div class="card-header-controls">
             {q.variantes.map((v, vIndex) => (
                v.gs && <div class={`gs-ref-badge ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>{v.gs}</div>
             ))}
@@ -113,7 +130,8 @@ const pageTitle = `Rapido ${numero} - ${niveau}`;
               ))}
             </div>
           </div>
-          {q.variantes.map((v, vIndex) => (
+   
+           {q.variantes.map((v, vIndex) => (
             <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
               <div class="content">{v.texte}</div>
             </div>

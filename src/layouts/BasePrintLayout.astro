@@ -6,26 +6,29 @@ import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 
+// 🛠️ RÉCUPÉRATION BASE URL
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 // 1. Récupération des infos de navigation
 const slug = info?.slug || '';
-const collection = info?.collection || 'guide'; // 'guide' ou 'rapidos'
+const collection = info?.collection || 'guide';
 
 // 2. Configuration de la racine en fonction de la collection
 const isRapido = collection === 'rapidos';
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
-const rootUrl = isRapido ? '/rapidos/' : '/guide/';
+// 🛠️ CORRECTION : Ajout de la base ici aussi par sécurité
+const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
 
-// 3. Extraction du niveau (ex: "sixieme")
 const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
 <html lang="fr">
+  {/* ... (Head inchangé) ... */}
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
     <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
     
     <script is:inline>
@@ -34,6 +37,7 @@ const niveauSlug = slug.split('/')[0];
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
+
   <body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
     
@@ -42,9 +46,10 @@ const niveauSlug = slug.split('/')[0];
       {/* --- FIL D'ARIANE DYNAMIQUE --- */}
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
-          <li><a href="/">Accueil</a></li>
+          {/* 🛠️ CORRECTION : Lien Accueil avec la base */}
+          <li><a href={`${base}/`}>Accueil</a></li>
           <li class="separator">/</li>
-          
+         
           {/* Lien racine dynamique (Guide ou Rapidos) */}
           <li><a href={rootUrl}>{rootLabel}</a></li>
           
