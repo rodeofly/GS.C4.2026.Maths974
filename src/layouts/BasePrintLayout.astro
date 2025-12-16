@@ -5,18 +5,13 @@ import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
-
-// 🛠️ RÉCUPÉRATION BASE URL
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const slug = info?.slug || '';
 const collection = info?.collection || 'guide';
-
-// Configuration de la racine en fonction de la collection
 const isRapido = collection === 'rapidos';
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
-
 const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
@@ -39,11 +34,9 @@ const niveauSlug = slug.split('/')[0];
     <Navbar title={title} />
     
     <header class="layout-header-simple">
-      
-      {/* --- FIL D'ARIANE --- */}
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
-          {/* ✅ CORRECTION : Le lien Accueil inclut maintenant la base */}
+          {/* 🛠️ CORRECTION : Le lien est maintenant `${base}/` */}
           <li><a href={`${base}/`}>Accueil</a></li>
           <li class="separator">/</li>
          
@@ -68,7 +61,6 @@ const niveauSlug = slug.split('/')[0];
       <div class="header-main">
         <h1>{title}</h1>
       </div>
- 
     </header>
 
     <main class="etiquettes-grid">
@@ -116,59 +108,13 @@ const niveauSlug = slug.split('/')[0];
 </html>
 
 <style>
-  /* Structure Header */
-  .layout-header-simple {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    margin-bottom: var(--space-6);
-  }
-
-  .breadcrumb ol {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-size: var(--text-sm);
-    color: var(--color-gray-500);
-  }
-
-  .breadcrumb a {
-    color: var(--color-gray-600);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .breadcrumb a:hover {
-    color: var(--color-guide-primary);
-    text-decoration: underline;
-  }
-
-  .breadcrumb .separator {
-    margin: 0 var(--space-2);
-    color: var(--color-gray-400);
-    font-size: 0.8em;
-  }
-
-  .breadcrumb .current {
-    font-weight: var(--font-bold);
-    color: var(--color-gray-900);
-    display: flex;
-    align-items: center;
-  }
-
-  .header-main h1 {
-    margin: 0;
-    font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl));
-    font-weight: var(--font-black);
-    color: var(--color-guide-primary);
-    line-height: var(--leading-tight);
-  }
-
-  @media print {
-    .breadcrumb { display: none; }
-    .layout-header-simple { margin-bottom: var(--space-4); }
-  }
+/* ... Styles inchangés ... */
+.layout-header-simple { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-6); }
+.breadcrumb ol { display: flex; flex-wrap: wrap; align-items: center; list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); color: var(--color-gray-500); }
+.breadcrumb a { color: var(--color-gray-600); text-decoration: none; transition: color 0.2s; }
+.breadcrumb a:hover { color: var(--color-guide-primary); text-decoration: underline; }
+.breadcrumb .separator { margin: 0 var(--space-2); color: var(--color-gray-400); font-size: 0.8em; }
+.breadcrumb .current { font-weight: var(--font-bold); color: var(--color-gray-900); display: flex; align-items: center; }
+.header-main h1 { margin: 0; font-size: clamp(var(--text-2xl), 4vw, var(--text-4xl)); font-weight: var(--font-black); color: var(--color-guide-primary); line-height: var(--leading-tight); }
+@media print { .breadcrumb { display: none; } .layout-header-simple { margin-bottom: var(--space-4); } }
 </style>

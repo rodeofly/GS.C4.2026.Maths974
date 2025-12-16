@@ -10,8 +10,6 @@ const niveau = data.niveau || "";
 const questions = data.questions || [];
 
 const pageTitle = `Rapido ${numero} - ${niveau}`;
-
-// 🛠️ RÉCUPÉRATION BASE URL
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
@@ -29,158 +27,49 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     
     <style>
-       /* J'utilise is:global pour être sûr que le style s'applique au body */
-       body { 
+       /* 🛠️ CORRECTION : On cible une classe spécifique au lieu de 'body' tout court */
+       .rapido-body { 
           margin: 0; 
           height: 100vh; 
           width: 100vw; 
           overflow: hidden; 
           font-family: var(--font-sans) !important; 
           color: #1e293b; 
-          /* 🔴 FORCAGE DU DÉGRADÉ ROUGE */
-          background: linear-gradient(to bottom, #dc2626, #fca5a5) !important; 
+          /* Le dégradé ne s'appliquera que si la classe est présente */
+          background: linear-gradient(to bottom, #dc2626, #fca5a5); 
           position: relative; 
        }
        
+       /* ... Le reste du CSS reste identique ... */
        h1, h2, button, .q-card, .q-num { font-family: var(--font-sans) !important; }
-       
-       .bg-curves { 
-          position: absolute; 
-          top: 0; 
-          left: 0; 
-          width: 100%; 
-          height: 100%; 
-          object-fit: cover; 
-          z-index: 1; 
-          opacity: 0.6; 
-          pointer-events: none; 
-       }
-       
-       .back-btn { 
-          position: absolute; 
-          top: 1rem; 
-          left: 1rem; 
-          background: rgba(255, 255, 255, 0.2); 
-          color: white; 
-          border-radius: 50%; 
-          text-decoration: none; 
-          font-weight: bold; 
-          z-index: 50; 
-          backdrop-filter: blur(4px); 
-          transition: background 0.2s; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          width: 44px; 
-          height: 44px; 
-          padding: 0; 
-          font-size: 1.5rem; 
-          border: 2px solid rgba(255,255,255,0.4); 
-       }
+       .bg-curves { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; pointer-events: none; }
+       .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255, 255, 255, 0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
        .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
-       
-       .rapido-container { 
-          position: relative; 
-          z-index: 10; 
-          height: 100%; 
-          padding: 1rem 4rem 4rem 4rem; 
-          display: flex; 
-          flex-direction: column; 
-       }
-       
-       header { 
-          text-align: center; 
-          margin-bottom: 2rem; 
-          display: flex; 
-          flex-direction: column; 
-          align-items: center; 
-          position: relative; 
-       }
-       
-       .deco-area { 
-          width: 100%; 
-          position: relative; 
-          margin-top: 1rem; 
-          display: flex; 
-          align-items: flex-end; 
-          padding-bottom: 0; 
-       }
-       
-       .deco-volcan-wrapper { 
-          position: absolute; 
-          left: -20px; 
-          bottom: 3rem; 
-          display: flex; 
-          flex-direction: column; 
-          align-items: center; 
-          z-index: 5; 
-          pointer-events: none; 
-       }
-       
-       .deco-volcan { 
-          width: 300px; 
-          max-width: 35vw; 
-          height: auto; 
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); 
-       }
-       
-       .copyright { 
-          color: white; 
-          font-size: 1.5rem; 
-          font-weight: 800; 
-          margin-top: -40px; 
-          text-shadow: 0 2px 4px rgba(0,0,0,0.8); 
-          font-family: var(--font-sans); 
-          letter-spacing: 0.05em; 
-          position: relative; 
-          z-index: 6; 
-       }
-       
-       .frise-lambrequin { 
-          height: 3rem; 
-          width: 100%; 
-          /* Image gérée via style inline pour la base URL */
-          background-repeat: repeat-x; 
-          background-size: contain; 
-          background-position: top center; 
-          opacity: 1; 
-          position: relative; 
-          z-index: 10; 
-       }
-       
+       .rapido-container { position: relative; z-index: 10; height: 100%; padding: 1rem 4rem 4rem 4rem; display: flex; flex-direction: column; }
+       header { text-align: center; margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; position: relative; }
+       .deco-area { width: 100%; position: relative; margin-top: 1rem; display: flex; align-items: flex-end; padding-bottom: 0; }
+       .deco-volcan-wrapper { position: absolute; left: -20px; bottom: 3rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
+       .deco-volcan { width: 300px; max-width: 35vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+       .copyright { color: white; font-size: 1.5rem; font-weight: 800; margin-top: -40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
+       .frise-lambrequin { height: 3rem; width: 100%; background-repeat: repeat-x; background-size: contain; background-position: top center; opacity: 1; position: relative; z-index: 10; }
        .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; }
        h1 { color: white; font-size: 3rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
        .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 2.2rem; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 4px solid white; z-index: 10; }
        h2 { color: rgba(255, 255, 255, 0.95); font-size: 1.2rem; margin: 0; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-       
-       .deco-margouillat { 
-          position: absolute; 
-          top: 20px; 
-          right: 20%; 
-          width: 8vw; 
-          max-width: 300px; 
-          z-index: 2; 
-          pointer-events: none; 
-          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); 
-          transform: rotate(15deg); 
-       }
-       
+       .deco-margouillat { position: absolute; top: 20px; right: 20%; width: 8vw; max-width: 300px; z-index: 2; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(15deg); }
        .questions-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1.5rem; flex: 1; }
        .q-card { background: rgba(255, 255, 255, 0.95); border-radius: 1.5rem; padding: 3rem 1.5rem 1.5rem 1.5rem; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); backdrop-filter: blur(8px); border: 2px solid rgba(255, 255, 255, 0.8); }
        .questions-grid:has(> :last-child:nth-child(5)) > :last-child { grid-column: 1 / -1; width: 70%; margin: 0 auto; }
        .q-num { position: absolute; top: -15px; right: -15px; width: 2.5rem; height: 2.5rem; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 3px solid white; z-index: 20; }
-       
        .card-header-controls { position: absolute; top: 10px; left: 0; width: 100%; padding: 0 15px; display: flex; align-items: center; gap: 10px; z-index: 30; }
        .gs-ref-badge { display: none; background: #0f766e; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 12px 12px 12px 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
        .gs-ref-badge.active { display: block; }
        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-       
        .bullets-nav { display: flex; gap: 6px; background: rgba(0,0,0,0.03); padding: 4px 6px; border-radius: 10px; }
        .bullet { min-width: auto !important; min-height: auto !important; width: 10px; height: 10px; border-radius: 50%; background-color: #cbd5e1; border: none; padding: 0; cursor: pointer; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
        .bullet::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -10px; right: -10px; }
        .bullet:hover { background-color: #94a3b8; }
        .bullet.active { background-color: #f59e0b; transform: scale(1.1); }
-       
        .variant-content { display: none; width: 100%; animation: fadeIn 0.3s ease; }
        .variant-content.active { display: block; }
        .content { display: inline-block; line-height: 1.5; font-size: 1.5rem; font-weight: 600; color: #334155; }
@@ -188,9 +77,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
 
-  {/* ✅ FIX 1 : Les images utilisent la base URL */}
+{/* 🛠️ CORRECTION : Ajout de la classe rapido-body sur la balise body */}
+<body class="rapido-body">
+
   <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
   <img src={`${base}/images/margouillat.png`} alt="Margouillat" class="deco-margouillat" />
 
@@ -205,15 +95,12 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       </div>
       <div class="deco-area">
          <div class="deco-volcan-wrapper">
-           {/* ✅ FIX 2 : Image volcan */}
            <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
           <div class="copyright">© maths974</div>
         </div>
         
-        {/* ✅ FIX 3 : Image Lambrequin en inline-style pour gérer la base URL */}
         <div class="frise-lambrequin" style={`background-image: url('${base}/images/lambrequin.svg');`}></div>
       </div>
-      
     </header>
     
     <div class="questions-grid">
