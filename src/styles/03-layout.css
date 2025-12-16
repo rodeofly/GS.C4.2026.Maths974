@@ -325,3 +325,60 @@ footer {
     display: none;
   }
 }
+
+/* ========================================
+   MODES D'AFFICHAGE DYNAMIQUES
+   Contrôlés par le bouton Paramètres
+   ======================================== */
+
+/* --- MODE : ÉCRAN FLUIDE (Screen) --- */
+/* On force le conteneur à prendre toute la largeur disponible, 
+   en annulant les contraintes fixes A4/A5 */
+body[data-layout-mode="screen"] .layout-a4,
+body[data-layout-mode="screen"] .layout-a5 {
+  max-width: 1400px; /* Largeur max confortable pour la lecture écran */
+  width: 100%;
+  min-height: auto;
+  aspect-ratio: auto;
+  padding: var(--space-6);
+  /* On garde un peu de style carte mais adapté écran */
+}
+
+/* --- MODE : FORCER A4 --- */
+body[data-layout-mode="a4"] .layout-a5, 
+body[data-layout-mode="a4"] .layout-a4,
+body[data-layout-mode="a4"] .layout {
+  /* Dimensions A4 exactes */
+  width: 21cm;
+  min-height: 29.7cm;
+  padding: 1cm; /* Marges d'impression simulées */
+  margin: 0 auto;
+  
+  /* On remet la grille A4 si on était en A5 */
+  grid-template-columns: 1fr; 
+  display: flex; 
+  flex-direction: column;
+}
+/* Si on force A4 sur un layout prévu A5, on adapte la grille grid A5 */
+body[data-layout-mode="a4"] .layout-a5 .etiquettes-grid {
+    grid-template-columns: repeat(2, 1fr); /* Retour à 2 colonnes standard */
+}
+
+
+/* --- MODE : FORCER A5 --- */
+body[data-layout-mode="a5"] .layout-a4,
+body[data-layout-mode="a5"] .layout-a5,
+body[data-layout-mode="a5"] .layout {
+  /* Dimensions A5 exactes */
+  width: 14.8cm;
+  min-height: 21cm;
+  padding: 0.5cm;
+  margin: 0 auto;
+  font-size: 0.9em; /* On réduit un peu le texte pour que ça rentre */
+}
+
+/* Ajustement spécifique pour le contenu en mode A5 forcé */
+body[data-layout-mode="a5"] .etiquettes-grid {
+  grid-template-columns: 1fr; /* Une seule colonne en A5 */
+  gap: var(--space-4);
+}

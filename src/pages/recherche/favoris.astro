@@ -2,6 +2,9 @@
 // src/pages/recherche/favoris.astro
 import Navbar from '../../components/Navbar.astro';
 import '../../styles/main.css';
+
+// 1. Récupération de la Base URL pour GitHub Pages
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <!DOCTYPE html>
@@ -10,6 +13,7 @@ import '../../styles/main.css';
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Favoris & Historique - Maths974</title>
+  <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
 </head>
 <body>
   
@@ -29,7 +33,9 @@ import '../../styles/main.css';
       <button class="tab-btn" data-tab="historique">
         🕐 Historique <span class="tab-badge" id="historiqueCount">0</span>
       </button>
-      <a href="/recherche/" class="tab-btn" style="text-decoration:none;">
+      
+      {/* 2. CORRECTION DU LIEN RECHERCHE */}
+      <a href={`${base}/recherche/`} class="tab-btn" style="text-decoration:none;">
         🔍 Recherche
       </a>
     </div>
@@ -46,7 +52,9 @@ import '../../styles/main.css';
         <span class="empty-icon">⭐</span>
         <h2 class="empty-title">Aucun favori pour le moment</h2>
         <p class="empty-text">Ajoutez des fiches en favoris lors de votre navigation.</p>
-        <a href="/recherche/" class="btn-cta">Parcourir les fiches</a>
+        
+        {/* 3. CORRECTION DU BOUTON PARCOURIR */}
+        <a href={`${base}/recherche/`} class="btn-cta">Parcourir les fiches</a>
       </div>
     </div>
     
@@ -62,14 +70,17 @@ import '../../styles/main.css';
         <span class="empty-icon">🕐</span>
         <h2 class="empty-title">Historique vide</h2>
         <p class="empty-text">Vos dernières consultations apparaîtront ici.</p>
-        <a href="/" class="btn-cta">Aller à l'accueil</a>
+        
+        {/* 4. CORRECTION DU BOUTON ACCUEIL */}
+        <a href={`${base}/`} class="btn-cta">Aller à l'accueil</a>
       </div>
     </div>
     
   </main>
   
-  <script type="module">
-    import { Favoris, Historique } from '/src/utils/storage.js';
+  {/* 5. CORRECTION DU SCRIPT : Import relatif géré par Astro */}
+  <script>
+    import { Favoris, Historique } from '../../utils/storage.js';
 
     // UI Logic
     const tabs = document.querySelectorAll('.tab-btn[data-tab]');
@@ -77,11 +88,11 @@ import '../../styles/main.css';
 
     tabs.forEach(tab => {
       tab.addEventListener('click', () => {
-        const target = tab.dataset.tab;
+        const target = (tab as HTMLElement).dataset.tab; // Cast TS simple ou enlever le type si pur JS
         tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         panels.forEach(p => p.classList.remove('active'));
-        document.getElementById(`panel-${target}`).classList.add('active');
+        document.getElementById(`panel-${target}`)?.classList.add('active');
       });
     });
 
@@ -94,8 +105,8 @@ import '../../styles/main.css';
 
     function createCard(etiq, showRemove = true, dateField = null) {
       const card = document.createElement('a');
-      card.href = etiq.url;
-      card.className = 'result-card'; // Using unified class
+      card.href = etiq.url; // L'URL est déjà stockée avec le bon chemin dans storage.js normalement
+      card.className = 'result-card';
       
       let removeBtnHTML = '';
       if (showRemove) {
@@ -112,9 +123,9 @@ import '../../styles/main.css';
            ${etiq.id ? `<span class="card-id">${etiq.id}</span>` : ''}
         </div>
         <h3 class="card-title">${etiq.title}</h3>
-        <div class="card-meta">
-          ${etiq.niveau ? `<span class="meta-badge">📚 ${etiq.niveau}</span>` : ''}
-          ${etiq.theme ? `<span class="meta-badge">📂 ${etiq.theme}</span>` : ''}
+        <div class="card-tags">
+             ${etiq.niveau ? `<span class="card-tag">${etiq.niveau}</span>` : ''}
+             ${etiq.theme ? `<span class="card-tag">${etiq.theme}</span>` : ''}
         </div>
         ${dateHTML}
       `;
@@ -127,21 +138,24 @@ import '../../styles/main.css';
       const container = document.getElementById('favorisList');
       const empty = document.getElementById('emptyFavoris');
       
-      document.getElementById('favorisCount').textContent = favoris.length;
-      document.getElementById('favorisTotal').textContent = favoris.length;
+      const countEl = document.getElementById('favorisCount');
+      const totalEl = document.getElementById('favorisTotal');
+      if(countEl) countEl.textContent = favoris.length.toString();
+      if(totalEl) totalEl.textContent = favoris.length.toString();
       
-      container.innerHTML = '';
+      if(container) container.innerHTML = '';
+      
       if (favoris.length === 0) {
-        empty.style.display = 'block';
+        if(empty) empty.style.display = 'block';
         return;
       }
-      empty.style.display = 'none';
+      if(empty) empty.style.display = 'none';
       
       favoris.forEach(fav => {
         const card = createCard(fav, true, 'addedAt');
-        container.appendChild(card);
+        if(container) container.appendChild(card);
         
-        // Handle click on remove button (stop propagation to link)
+        // Handle click on remove button
         const btn = card.querySelector('[data-remove]');
         if(btn) {
             btn.addEventListener('click', (e) => {
@@ -157,33 +171,41 @@ import '../../styles/main.css';
     // Logic for Historique
     function displayHistorique() {
       const hist = Historique.getAll();
-      // Note: ID changed in HTML to match JS logic standard (historiqueList vs historiquList typo in original)
-      const container = document.getElementById('historiqueList'); 
+      const container = document.getElementById('historiqueList');
       const empty = document.getElementById('emptyHistorique');
       
-      document.getElementById('historiqueCount').textContent = hist.length;
-      document.getElementById('historiqueTotal').textContent = hist.length;
+      const countEl = document.getElementById('historiqueCount');
+      const totalEl = document.getElementById('historiqueTotal');
+      if(countEl) countEl.textContent = hist.length.toString();
+      if(totalEl) totalEl.textContent = hist.length.toString();
       
-      container.innerHTML = '';
+      if(container) container.innerHTML = '';
+      
       if (hist.length === 0) {
-        empty.style.display = 'block';
+        if(empty) empty.style.display = 'block';
         return;
       }
-      empty.style.display = 'none';
+      if(empty) empty.style.display = 'none';
       
       hist.forEach(item => {
         const card = createCard(item, false, 'visitedAt');
-        container.appendChild(card);
+        if(container) container.appendChild(card);
       });
     }
 
-    document.getElementById('clearFavoris').addEventListener('click', () => {
-      if(confirm('Tout supprimer ?')) { Favoris.clear(); displayFavoris(); }
-    });
-    
-    document.getElementById('clearHistorique').addEventListener('click', () => {
-      if(confirm('Tout effacer ?')) { Historique.clear(); displayHistorique(); }
-    });
+    const btnClearFav = document.getElementById('clearFavoris');
+    if(btnClearFav) {
+        btnClearFav.addEventListener('click', () => {
+            if(confirm('Tout supprimer ?')) { Favoris.clear(); displayFavoris(); }
+        });
+    }
+
+    const btnClearHist = document.getElementById('clearHistorique');
+    if(btnClearHist) {
+        btnClearHist.addEventListener('click', () => {
+            if(confirm('Tout effacer ?')) { Historique.clear(); displayHistorique(); }
+        });
+    }
 
     // Init
     displayFavoris();

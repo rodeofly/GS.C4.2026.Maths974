@@ -1,8 +1,5 @@
 ---
-// src/components/Navbar.astro
 const { title = "Guide de Survie" } = Astro.props;
-
-// 🛠️ BASE URL
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
@@ -16,149 +13,150 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <div class="nav-title">{title}</div>
 
     <div class="nav-actions">
-      <a href={`${base}/recherche/`} class="nav-link nav-link-primary">
+      <a href={`${base}/recherche/`} class="nav-link nav-link-primary mobile-icon-only" title="Recherche">
         <span class="nav-icon">🔍</span>
         <span class="nav-text">Recherche</span>
       </a>
-      <a href={`${base}/recherche/favoris/`} class="nav-link">
+      <a href={`${base}/recherche/favoris/`} class="nav-link mobile-icon-only" title="Favoris">
         <span class="nav-icon">⭐</span>
         <span class="nav-text">Favoris</span>
       </a>
-      <a href={`${base}/`} class="nav-link">Accueil</a>
       
-      <button onclick="window.print()" class="btn-print" aria-label="Imprimer cette page">
+      {/* --- MENU PARAMÈTRES --- */}
+      <div class="settings-dropdown-wrapper">
+        <button id="settingsBtn" class="btn-icon" aria-label="Paramètres d'affichage" aria-expanded="false" title="Affichage">
+          ⚙️
+        </button>
+        
+        <div id="settingsMenu" class="settings-menu hidden">
+          <div class="menu-header">Format d'affichage</div>
+          <button class="menu-item active" data-mode="screen">
+            🖥️ Écran Fluide
+          </button>
+          <button class="menu-item" data-mode="a4">
+            📄 Format A4
+          </button>
+          <button class="menu-item" data-mode="a5">
+            📑 Format A5
+          </button>
+        </div>
+      </div>
+      
+      <button onclick="window.print()" class="btn-print mobile-hidden" aria-label="Imprimer cette page" title="Imprimer">
         🖨️
       </button>
     </div>
   </div>
 </nav>
 
-<style>
-  .main-navbar {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border-bottom: 1px solid #334155;
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-  }
+<script is:inline>
+  // Logique de gestion des modes d'affichage
+  (function() {
+    const body = document.body;
+    const btn = document.getElementById('settingsBtn');
+    const menu = document.getElementById('settingsMenu');
+    const options = document.querySelectorAll('.menu-item[data-mode]');
 
-  .navbar-content {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0.75rem 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
+    // Initialisation
+    const savedMode = localStorage.getItem('maths974-display-mode') || 'screen';
+    setMode(savedMode);
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    text-decoration: none;
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
-  }
+    // --- Fonction mise à jour pour gérer @page ET les tailles de police ---
+    function updatePrintPageSize(mode) {
+      let styleEl = document.getElementById('dynamic-page-size');
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-page-size';
+        styleEl.setAttribute('media', 'print'); // S'applique uniquement à l'impression
+        document.head.appendChild(styleEl);
+      }
 
-  .logo-icon {
-    background: #f59e0b; /* Orange Rapido */
-    color: #1e293b;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    font-weight: 900;
-  }
-
-  .nav-title {
-    font-size: 1rem;
-    color: #94a3b8;
-    font-weight: 500;
-    display: none;
-  }
-  @media (min-width: 768px) { 
-    .nav-title { display: block; } 
-  }
-
-  .nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .nav-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    color: #e2e8f0;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    transition: all 0.2s;
-  }
-  
-  .nav-link:hover { 
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
-  }
-  
-  .nav-link-primary {
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-  }
-  
-  .nav-link-primary:hover {
-    background: rgba(245, 158, 11, 0.25);
-    border-color: #f59e0b;
-  }
-  
-  .nav-icon {
-    font-size: 1.1rem;
-  }
-  
-  .nav-text {
-    display: none;
-  }
-  
-  @media (min-width: 640px) {
-    .nav-text {
-      display: inline;
+      if (mode === 'a5') {
+        // --- RÉGLAGES POUR A5 ---
+        // Texte : 10pt | H1 : 12pt
+        styleEl.textContent = `
+          @page { 
+            size: A5 portrait; 
+            margin: 0.5cm; /* Marge légère pour A5 */
+          }
+          body { 
+            font-size: 10pt !important; 
+          }
+          h1, .etiquette-title { 
+            font-size: 12pt !important; 
+          }
+          /* Ajustement optionnel pour les autres titres pour garder la hiérarchie */
+          h2 { font-size: 11pt !important; }
+          p, li { line-height: 1.4 !important; }
+        `;
+      } else {
+        // --- RÉGLAGES POUR A4 (et défaut) ---
+        // Texte : 12pt | H1 : 14pt
+        styleEl.textContent = `
+          @page { 
+            size: A4 portrait; 
+            margin: 1cm; 
+          }
+          body { 
+            font-size: 12pt !important; 
+          }
+          h1, .etiquette-title { 
+            font-size: 14pt !important; 
+          }
+          h2 { font-size: 13pt !important; }
+        `;
+      }
     }
-  }
+    // -------------------------------------------------------
 
-  .btn-print {
-    background: #334155;
-    border: 1px solid #475569;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-size: 1.1rem;
-  }
-  .btn-print:hover { background: #475569; }
-  
-  /* Responsive mobile */
-  @media (max-width: 640px) {
-    .navbar-content {
-      padding: 0.5rem 1rem;
+    // Ouvrir/Fermer le menu
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+        toggleMenu(!isExpanded);
+      });
     }
-    
-    .brand-text {
-      display: none;
+
+    // Fermer le menu si on clique ailleurs
+    document.addEventListener('click', (e) => {
+      if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+        toggleMenu(false);
+      }
+    });
+
+    // Choix du mode
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        const mode = opt.dataset.mode;
+        setMode(mode);
+        toggleMenu(false);
+      });
+    });
+
+    function toggleMenu(show) {
+      if (!menu) return;
+      if (show) {
+        menu.classList.remove('hidden');
+        btn.setAttribute('aria-expanded', 'true');
+      } else {
+        menu.classList.add('hidden');
+        btn.setAttribute('aria-expanded', 'false');
+      }
     }
-    
-    .nav-actions {
-      gap: 0.5rem;
+
+    function setMode(mode) {
+      body.setAttribute('data-layout-mode', mode);
+      localStorage.setItem('maths974-display-mode', mode);
+
+      // On met à jour l'UI du menu
+      options.forEach(opt => {
+        if (opt.dataset.mode === mode) opt.classList.add('active');
+        else opt.classList.remove('active');
+      });
+
+      // On met à jour la règle @page pour l'imprimante
+      updatePrintPageSize(mode);
     }
-    
-    .nav-link {
-      padding: 0.4rem;
-    }
-  }
-</style>
+  })();
+</script>

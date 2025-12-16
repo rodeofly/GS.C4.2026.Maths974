@@ -1,7 +1,4 @@
-@page {
-  size: A5 portrait;
-  margin: 0.2cm;
-}
+/* @page { size: A5 portrait; margin: 0.2cm; } <-- SUPPRIMER OU COMMENTER CECI */
 
 .layout-a5 {
   --page-margin: 0.2cm;

@@ -148,37 +148,48 @@ if (!isIndex) {
 
 </A4Layout>
 
-{/* Le script JS reste identique, il utilise etiquetteData qu'on a corrigé plus haut */}
+{/* Le script JS corrigé avec import statique */}
 <script define:vars={{ etiquetteData, isIndex }}>
-  import('/src/utils/storage.js').then(({ Favoris, Historique }) => {
-    if (!isIndex) Historique.add(etiquetteData);
-    const favBtn = document.getElementById('fav-btn');
-    if (favBtn) {
-      const icon = favBtn.querySelector('.icon');
-      const text = favBtn.querySelector('.text');
-      const updateUI = () => {
-        const isFav = Favoris.isFavori(etiquetteData.slug);
-        if (isFav) {
-          favBtn.classList.add('active');
-          icon.textContent = '⭐';
-          text.textContent = 'Retirer des favoris';
-        } else {
-          favBtn.classList.remove('active');
-          icon.textContent = '☆';
-          text.textContent = 'Ajouter aux favoris';
-        }
-      };
-      favBtn.addEventListener('click', () => {
-        if (Favoris.isFavori(etiquetteData.slug)) {
-          Favoris.remove(etiquetteData.slug);
-        } else {
-          Favoris.add(etiquetteData);
-        }
-        updateUI();
-      });
+  // Import statique pour que Astro bundle le fichier correctement
+  import { Favoris, Historique } from '../../utils/storage.js';
+
+  // 1. Gestion Historique (seulement si ce n'est pas un index)
+  if (!isIndex) {
+    Historique.add(etiquetteData);
+  }
+
+  // 2. Gestion Bouton Favoris
+  const favBtn = document.getElementById('fav-btn');
+  
+  if (favBtn) {
+    const icon = favBtn.querySelector('.icon');
+    const text = favBtn.querySelector('.text');
+
+    const updateUI = () => {
+      const isFav = Favoris.isFavori(etiquetteData.slug);
+      if (isFav) {
+        favBtn.classList.add('active');
+        if(icon) icon.textContent = '⭐';
+        if(text) text.textContent = 'Retirer des favoris';
+      } else {
+        favBtn.classList.remove('active');
+        if(icon) icon.textContent = '☆';
+        if(text) text.textContent = 'Ajouter aux favoris';
+      }
+    };
+
+    favBtn.addEventListener('click', () => {
+      if (Favoris.isFavori(etiquetteData.slug)) {
+        Favoris.remove(etiquetteData.slug);
+      } else {
+        Favoris.add(etiquetteData);
+      }
       updateUI();
-    }
-  });
+    });
+
+    // Initialisation état bouton
+    updateUI();
+  }
 </script>
 
 <style>
