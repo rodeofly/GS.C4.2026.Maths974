@@ -359,9 +359,9 @@
 .bullets-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 10px; /* Espace entre les bulles */
   background: rgba(0,0,0,0.05);
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 20px;
 }
 
@@ -370,21 +370,23 @@
   background: transparent;
   color: var(--color-gray-400);
   cursor: pointer;
-  padding: 0 0 0 8px;
+  padding: 0 0 0 8px; /* Séparateur visuel via padding */
   border-left: 1px solid var(--color-gray-300);
   display: flex;
-  transition: color 0.2s;
-}
-
-.visual-toggle-btn.mini-eye:hover {
-  color: var(--color-guide-primary);
-  transform: scale(1.1);
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: auto !important;
+  min-height: auto !important;
 }
 
 .visual-toggle-btn.mini-eye.active {
   color: var(--color-guide-primary);
 }
 
+.visual-toggle-btn.mini-eye:hover {
+  color: var(--color-accent);
+}
 
 /* On cache l'ancien bouton s'il existe encore */
 .q-card > .visual-toggle-btn {

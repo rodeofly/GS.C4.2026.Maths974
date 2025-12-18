@@ -130,50 +130,34 @@ export async function initCardVisuals(cardElement, visualData) {
   const config = parseVisualConfig(visualData);
   if (config.hidden) return;
 
-  // Déterminer le conteneur selon la position
   const positionClass = `q-card-${config.position}`;
   let container = cardElement.querySelector(`.${positionClass}`);
 
-  // Créer le conteneur s'il n'existe pas
+  // Créer la zone si elle n'existe pas
   if (!container) {
     container = document.createElement('div');
     container.className = positionClass;
-
-    // Insérer selon la position
+    
     const contentArea = cardElement.querySelector('.q-card-content');
+    
+    // Logique d'insertion intelligente dans la Grid
     if (config.position === 'north') {
-      cardElement.insertBefore(container, contentArea);
+      cardElement.prepend(container); // Avant tout le reste
     } else if (config.position === 'south') {
-      cardElement.appendChild(container);
+      cardElement.append(container);  // Après tout le reste
     } else {
+      // Pour east, west, front, back, on ajoute simplement
       cardElement.appendChild(container);
     }
   }
 
-  // Appliquer l'opacité
-  if (config.position === 'front' || config.position === 'back') {
-    container.style.opacity = config.opacity;
-  }
+  // Appliquer l'opacité (utile pour 'back')
+  container.style.opacity = config.opacity;
 
-  // Créer le visuel
   try {
-    const element = await createVisualElement(config.type, config.config, container);
-
-    // Stocker la config sur l'élément pour l'éditeur
-    element.visualConfig = config;
-    element.visualContainer = container;
-
-    return element;
+    return await createVisualElement(config.type, config.config, container);
   } catch (error) {
     console.error('Failed to init visual:', error);
-
-    // Fallback : afficher un placeholder
-    container.innerHTML = `
-      <div style="padding: 1rem; color: #ef4444; text-align: center; font-size: 0.875rem;">
-        ⚠️ Visuel non disponible<br>
-        <small>${config.type}</small>
-      </div>
-    `;
   }
 }
 

@@ -77,27 +77,36 @@ function restructureCardGrid(cardElement) {
 /**
  * Ajouter le bouton toggle visuel
  */
-// src/utils/rapidos-visuals-integration.js
+/**
+ * Ajouter le bouton toggle visuel à l'intérieur de la navigation des variantes
+ */
 function addVisualToggleButton(cardElement) {
-  const controls = cardElement.querySelector('.bullets-nav');
-  if (!controls) return;
+  // On cible le conteneur des petits ronds (bullets)
+  const navContainer = cardElement.querySelector('.bullets-nav');
+  if (!navContainer) return;
 
   const toggleBtn = document.createElement('button');
   toggleBtn.className = 'visual-toggle-btn mini-eye active'; // Active par défaut
   
-  // Icône SVG discrète
+  // SVG discret (Style Lucide)
   toggleBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
       <circle cx="12" cy="12" r="3"></circle>
     </svg>`;
   
+  toggleBtn.title = 'Afficher/Masquer le visuel';
+
+  let isVisible = true;
   toggleBtn.addEventListener('click', (e) => {
-    const isVisible = toggleBtn.classList.toggle('active');
+    e.stopPropagation();
+    isVisible = !isVisible;
     VisualsSystem.toggleVisual(cardElement, isVisible);
+    toggleBtn.classList.toggle('active', isVisible);
   });
 
-  controls.appendChild(toggleBtn);
+  // On l'ajoute comme dernier enfant des bullets
+  navContainer.appendChild(toggleBtn);
 }
 
 /**
