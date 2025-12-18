@@ -6,8 +6,9 @@ import BasePrintLayout from './BasePrintLayout.astro';
 const { info, niveau, theme, sousTheme, indexContent } = Astro.props;
 const fm = info?.data ?? info?.frontmatter ?? {};
 
-const title = fm.sous_theme ?? sousTheme ?? fm.title ?? 'Sans titre';
-const themeLabel = fm.theme ?? theme ?? 'Général';
+// 🛠️ CORRECTION : Priorité au titre passé en prop, puis au frontmatter
+const title = propsTitle ?? fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sans titre';
+const themeLabel = fm.theme ?? theme ?? (path.includes('/rapidos/') ? 'Rapidos' : 'Général');
 const niveauLabel = fm.niveau ?? niveau ?? '';
 ---
 

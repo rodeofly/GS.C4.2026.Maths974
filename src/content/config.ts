@@ -37,10 +37,12 @@ const guideCollection = defineCollection({
   }),
 });
 
+// src/content/config.ts
+
 const rapidosCollection = defineCollection({
   type: 'content',
   schema: z.object({
-    // AJOUTER CES CHAMPS POUR QU'ILS SOIENT RECONNUS
+    // CHAMPS OBLIGATOIRES POUR L'AFFICHAGE
     title: z.string().optional(),
     numero: z.string().optional(),
     niveau: z.string().optional(),
@@ -48,6 +50,7 @@ const rapidosCollection = defineCollection({
     periode: z.number().optional(),
     semaine: z.number().optional(),
     
+    // STRUCTURE DES QUESTIONS
     questions: z.array(
       z.object({
         variantes: z.array(
@@ -69,6 +72,7 @@ const rapidosCollection = defineCollection({
     ).optional(),
   }),
 });
+
 export const collections = {
   'guide': guideCollection,
   'rapidos': rapidosCollection,

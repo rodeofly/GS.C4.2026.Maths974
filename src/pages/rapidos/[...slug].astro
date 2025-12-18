@@ -57,63 +57,63 @@ if (isIndex) {
   const currentSlug = slug || '';
   const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
 
-  // 1. Récupérer les fichiers rituels du dossier actuel (profondeur + 1)
+  // 1. On récupère les sous-dossiers (index.md au niveau profondeur + 1)
+  subfolders = allRapidos.filter(e => {
+    const eSlug = e.slug.replace(/\/index$/, '');
+    if (eSlug === currentSlug) return false;
+    if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
+    if (!e.id.endsWith('index.md')) return false;
+    
+    const parts = eSlug.split('/');
+    return parts.length === slugDepth + 1;
+  }).sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
+
+  // 2. On récupère les Rapidos rituels du dossier actuel (profondeur + 1)
   directChildren = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, '');
     if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
     if (e.id.endsWith('index.md')) return false;
-    const childDepth = eSlug.split('/').length;
-    return childDepth === slugDepth + 1;
+    
+    const parts = eSlug.split('/');
+    return parts.length === slugDepth + 1;
   }).sort((a, b) => (a.data.numero || '').localeCompare(b.data.numero || ''));
-
-  // 2. Récupérer les sous-dossiers (fichiers index.md à profondeur + 1)
-  subfolders = allRapidos.filter(e => {
-    const eSlug = e.slug.replace(/\/index$/, '');
-    if (eSlug === currentSlug) return false;
-    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
-    if (!e.id.endsWith('index.md')) return false;
-    const childDepth = eSlug.split('/').length;
-    return childDepth === slugDepth + 1;
-  }).sort((a, b) => a.data.title.localeCompare(b.data.title));
 }
-
-let children = [];
-if (isIndex) {
-  const prefix = slug ? slug + '/' : '';
-  children = allRapidos
-    .filter(e => {
-        if (e.id.endsWith('index.md')) return false;
-        return e.slug.startsWith(prefix);
-    })
-    .sort((a, b) => a.id.localeCompare(b.id));
-}
-
-const { Content: IndexContent } = await entry.render();
-const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 ---
 
 {/* CAS 1 : Fiche Rapido */}
 {!isIndex && <RapidoLayout info={entry} parentUrl={parentUrl} />}
 
-{/* CAS 2 : Menu / Index */}
+{/* Dans le template, section Menu / Index */}
 {isIndex && (
-  <A4Layout ...>
+  <A4Layout 
+    info={entry} 
+    title={entry.data.title || "Rapidos"} 
+    niveau={entry.data.niveau}  <-- 🛠️ AJOUTER CECI
+    theme="Rapidos"
+    indexContent={hasIndexContent ? IndexContent : null}
+  >
     <div class="rapido-menu-grid">
       {/* AFFICHAGE DES DOSSIERS (Catégories) */}
       {subfolders.map(folder => (
         <a href={`${base}/rapidos/${folder.slug.replace(/\/index$/, '')}/`} class="card folder-card">
           <div class="card-header">
-            <span class="folder-icon">📂</span>
-            <h3>{folder.data.title}</h3>
+            <span class="rapido-icon">📂</span>
+            <span class="rapido-number">{folder.data.title}</span>
           </div>
-          {folder.data.niveau && <span class="badge">{folder.data.niveau}</span>}
+          <div class="rapido-meta">Dossier</div>
         </a>
       ))}
 
-      {/* AFFICHAGE DES RAPIDOS DIRECTS */}
+      {/* AFFICHAGE DES RAPIDOS (Fiches) */}
       {directChildren.map(child => (
         <a href={`${base}/rapidos/${child.slug}/`} class="card rapido-card-link">
-          {/* ... contenu de la carte existant (badge numero, meta) ... */}
+          <div class="card-header">
+            <span class="rapido-icon">⚡</span>
+            <span class="rapido-number">Rapido {child.data.numero}</span>
+          </div>
+          <div class="rapido-meta">
+            {child.data.questions?.length || 0} questions • {child.data.niveau}
+          </div>
         </a>
       ))}
     </div>

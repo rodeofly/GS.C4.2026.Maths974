@@ -7,11 +7,14 @@ import SubthemeInfo from '../components/SubthemeInfo.astro';
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-const slug = info?.slug || '';
-const collection = info?.collection || 'guide';
-const isRapido = collection === 'rapidos';
+// 🛠️ CORRECTION : Détection fiable basée sur l'URL
+const path = Astro.url.pathname;
+const isRapido = path.includes('/rapidos/');
+
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
+
+const slug = info?.slug || '';
 const niveauSlug = slug.split('/')[0];
 ---
 <!DOCTYPE html>
@@ -36,21 +39,21 @@ const niveauSlug = slug.split('/')[0];
     <header class="layout-header-simple">
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
-          {/* 🛠️ CORRECTION : Le lien est maintenant `${base}/` */}
           <li><a href={`${base}/`}>Accueil</a></li>
           <li class="separator">/</li>
-         
+          
+          {/* 🛠️ LIEN VERS LA SECTION (Rapidos ou Guide) */}
           <li><a href={rootUrl}>{rootLabel}</a></li>
           
-          {niveauLabel && niveauSlug && slug !== niveauSlug && slug !== `${niveauSlug}/index` ? (
+          {/* 🛠️ LIEN VERS LE NIVEAU (ex: Sixième) */}
+          {niveauLabel && niveauSlug && (slug !== niveauSlug) && (slug !== `${niveauSlug}/index`) && (
             <>
               <li class="separator">/</li>
               <li><a href={`${rootUrl}${niveauSlug}/`}>{niveauLabel}</a></li>
             </>
-          ) : null}
+          )}
           
           <li class="separator">/</li>
-          
           <li class="current" aria-current="page">
             {title}
             <SubthemeInfo info={info} Content={indexContent} />
