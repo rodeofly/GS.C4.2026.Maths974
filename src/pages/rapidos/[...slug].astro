@@ -33,7 +33,7 @@ if (isIndex) {
   IndexContent = rendered.Content;
   hasIndexContent = !!(entry.body && entry.body.trim().length > 0);
 
-  // Filtrage des dossiers
+  // Filtrage des dossiers 
   subfolders = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, '');
     // On ignore le fichier racine 'index' et le dossier actuel
@@ -44,7 +44,7 @@ if (isIndex) {
   });
 
   directChildren = allRapidos.filter(e => {
-    const eSlug = e.slug.replace(/\/index$/, '');
+    const eSlug = e.slug.replace(/\/index$/, ''); 
     if (e.id.endsWith('index.md') || !eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
     return eSlug.split('/').length === slugDepth + 1;
   });
