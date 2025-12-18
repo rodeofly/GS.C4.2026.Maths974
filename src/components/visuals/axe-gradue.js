@@ -6,7 +6,7 @@ class AxeGradueComponent extends HTMLElement {
     this.config = { 
       min: 0, max: 10, step: 1, 
       orientation: 'horizontal', 
-      width: 450, height: 100, 
+      width: 450, height: 80, 
       points: [], showNumbers: true 
     };
   }
@@ -16,9 +16,26 @@ class AxeGradueComponent extends HTMLElement {
   }
 
   // 🛠️ UTILITAIRE : Précision mathématique pour éviter le bug "0,700000001"
-  round(v, s) { 
+  round(v, s) {
     const p = (s.toString().split('.')[1] || '').length;
     return parseFloat(v.toFixed(p));
+  }
+
+  // 🛠️ UTILITAIRE : Adapter dimensions selon orientation
+  adjustDimensionsForOrientation() {
+    if (this.config.orientation === 'vertical') {
+      // Si dimensions par défaut horizontal (450x100), adapter pour vertical
+      // SEULEMENT si width/height n'ont pas été explicitement définis dans la config
+      if (this.config.width === 450 && this.config.height === 80) {
+        this.config.width = 140;
+        this.config.height = 160;
+      }
+    }
+  }
+
+  // 🛠️ UTILITAIRE : Marge interne unifiée (réduite pour gagner de la place)
+  getPadding() {
+    return 15;
   }
 
   // 🛠️ UTILITAIRE : Dessiner une flèche propre au bout de l'axe
@@ -35,14 +52,19 @@ class AxeGradueComponent extends HTMLElement {
 
   render() {
     this.parseAttributes();
+    this.adjustDimensionsForOrientation();
     this.innerHTML = '';
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
+
     // Support Haute Définition (Retina)
     canvas.width = this.config.width * 2;
     canvas.height = this.config.height * 2;
     canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.maxWidth = this.config.width + 'px';
+    canvas.style.maxHeight = this.config.height + 'px';
+    canvas.style.objectFit = 'contain';
     ctx.scale(2, 2);
     this.appendChild(canvas);
 
@@ -63,7 +85,7 @@ class AxeGradueComponent extends HTMLElement {
   drawHorizontalAxis() {
     const { ctx } = this;
     const { min, max, step, width, height, showNumbers } = this.config;
-    const padding = 40;
+    const padding = this.getPadding();
     const range = max - min;
     const axisLen = width - padding * 2;
     const y = height / 2;
@@ -105,7 +127,7 @@ class AxeGradueComponent extends HTMLElement {
   drawVerticalAxis() {
     const { ctx } = this;
     const { min, max, step, width, height, showNumbers } = this.config;
-    const padding = 35;
+    const padding = this.getPadding();
     const range = max - min;
     const axisLen = height - padding * 2;
     const x = width / 2;
@@ -121,7 +143,7 @@ class AxeGradueComponent extends HTMLElement {
     ctx.moveTo(x, height - padding);
     ctx.lineTo(x, padding);
     ctx.stroke();
-    this.drawArrow(ctx, x, padding + 10, x, padding);
+    this.drawArrow(ctx, x, padding + 15, x, padding);
 
     // Graduations
     for (let v = min, i = 0; v <= max + (step/2); v += step, i++) {
@@ -138,8 +160,9 @@ class AxeGradueComponent extends HTMLElement {
         ctx.fillStyle = '#1e293b';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Lexend Deca, sans-serif';
-        ctx.fillText(val.toString().replace('.', ','), x - 15, y);
+        ctx.font = 'bold 14px Lexend Deca, sans-serif';
+        const labelX = x - 20;
+        ctx.fillText(val.toString().replace('.', ','), labelX, y);
       }
     }
   }
@@ -147,7 +170,7 @@ class AxeGradueComponent extends HTMLElement {
   drawPoints() {
     const { ctx } = this;
     const { min, max, orientation, width, height, points } = this.config;
-    const padding = (orientation === 'horizontal' ? 40 : 35);
+    const padding = this.getPadding();
     const range = max - min;
     const axisLen = (orientation === 'horizontal' ? width : height) - padding * 2;
 

@@ -4,67 +4,7 @@
    north, south, east, west, front, back
    ======================================== */
 
-.q-card {
-  /* Remplace le flex par grid */
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-rows: auto 1fr auto;
-  grid-template-areas:
-    "north north north"
-    "west content east"
-    "south south south";
-  gap: 0.5rem;
-  position: relative;
-  min-height: 200px;
-}
-
-/* ========================================
-   ZONES DE CONTENU
-   ======================================== */
-
-.q-card-north {
-  grid-area: north;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80px;
-}
-
-.q-card-south {
-  grid-area: south;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 80px;
-}
-
-.q-card-west {
-  grid-area: west;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 100px;
-  max-width: 150px;
-}
-
-.q-card-east {
-  grid-area: east;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-width: 100px;
-  max-width: 150px;
-}
-
-.q-card-content {
-  grid-area: content;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem;
-  z-index: 2; /* Au-dessus du background */
-}
+/* Note: La grille .q-card est définie plus bas avec toutes les zones */
 
 /* ========================================
    ZONES OVERLAY (front/back)
@@ -206,37 +146,122 @@
 
 .editor-body {
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-content: start;
 }
 
 .editor-field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
 .editor-field label {
   font-weight: 600;
   color: #1e293b;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .editor-field input,
 .editor-field select {
-  padding: 0.5rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 0.5rem;
-  font-size: 1rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  width: 100%;
 }
 
 .editor-field input:focus,
 .editor-field select:focus {
   outline: none;
   border-color: #0f766e;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.1);
+}
+
+/* Champs pleine largeur (Arrays, Textarea) */
+.editor-field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Checkbox compacte */
+.editor-field.checkbox-field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.editor-field.checkbox-field:hover {
+  background: #f1f5f9;
+}
+
+.editor-field.checkbox-field label {
+  margin: 0;
+  cursor: pointer;
+  color: #334155;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+
+.editor-field.checkbox-field input {
+  width: auto;
+  accent-color: #0f766e;
+}
+
+/* Section Aléatoire */
+.randomizer-section {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.randomizer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.randomizer-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0f766e;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-random {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background 0.2s;
+}
+
+.btn-random:hover {
+  background: #d97706;
 }
 
 .editor-actions {
@@ -359,83 +384,119 @@
 .bullets-nav {
   display: flex;
   align-items: center;
-  gap: 10px; /* Espace entre les bulles */
+  gap: 10px; /* Espace entre les bulles - augmenté pour plus de respiration */
   background: rgba(0,0,0,0.05);
-  padding: 4px 10px;
+  padding: 6px 8px 6px 12px; /* Padding augmenté pour plus d'espace */
   border-radius: 20px;
 }
 
 .visual-toggle-btn.mini-eye {
-  border: none;
+  border: none !important;
   background: transparent;
-  color: var(--color-gray-400);
+  color: #94a3b8; /* color-gray-400 */
   cursor: pointer;
-  padding: 0 0 0 8px; /* Séparateur visuel via padding */
-  border-left: 1px solid var(--color-gray-300);
-  display: flex;
+  padding: 0;
+  margin-left: 6px; /* Aligné avec le gap des bullets */
+  padding-left: 6px; /* Séparation visuelle subtile */
+  border-left: 1px solid rgba(0,0,0,0.08); /* Trait de séparation discret */
+  display: contents;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   min-width: auto !important;
   min-height: auto !important;
+  width: 14px;
+  height: 14px;
 }
 
 .visual-toggle-btn.mini-eye.active {
-  color: var(--color-guide-primary);
+  color: #0f766e; /* color-guide-primary */
 }
 
 .visual-toggle-btn.mini-eye:hover {
-  color: var(--color-accent);
+  color: #f59e0b; /* color-accent */
+  transform: scale(1.15);
 }
 
+/* ========================================
+   GRILLE PRINCIPALE ET ZONES
+   ======================================== */
 
 .q-card {
   display: grid;
-  /* 🛠️ FIX : 3 colonnes. Le centre prend tout l'espace restant */
-  grid-template-columns: minmax(0, auto) 1fr minmax(0, auto);
+  /* Par défaut : 1 seule colonne (pour north/south) */
+  grid-template-columns: 1fr;
   grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "north"
+    "content"
+    "south";
+  gap: 0.5rem;
+  align-items: center;
+  position: relative;
+  min-height: 180px;
+}
+
+/* Quand il y a un visuel west ou east : passer à 3 colonnes */
+.q-card:has(.q-card-west),
+.q-card:has(.q-card-east) {
+  grid-template-columns: auto 1fr auto;
   grid-template-areas:
     "north north north"
     "west content east"
     "south south south";
-  gap: 1.5rem;
-  align-items: center;
-  min-height: 220px;
 }
 
-/* On assigne explicitement chaque zone à sa grid-area */
-.q-card-north { grid-area: north; }
-.q-card-south { grid-area: south; }
-.q-card-west  { grid-area: west; min-width: 180px; }
-.q-card-east  { grid-area: east; min-width: 180px; }
-.q-card-content { grid-area: content; }
+/* Zone vide ne prend pas de place */
+.q-card-west:empty,
+.q-card-east:empty {
+  display: none;
+}
 
-/* 🛠️ FIX : On s'assure que le contenu ne s'étale pas sur les côtés */
+/* Zone Nord (en haut) */
+.q-card-north {
+  grid-area: north;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
+}
+
+/* Zone Sud (en bas) */
+.q-card-south {
+  grid-area: south;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60px;
+}
+
+/* Zone Ouest (à gauche) */
+.q-card-west {
+  grid-area: west;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0px;
+}
+
+/* Zone Est (à droite) */
+.q-card-east {
+  grid-area: east;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 0px;
+}
+
+/* Zone centrale (contenu de la question) */
 .q-card-content {
+  grid-area: content;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  text-align: center;
-}
-
-/* Amélioration visuelle pour les axes de côté */
-.q-card-east, .q-card-west {
-  padding: 0 10px;
-}
-
-/* 🛠️ FIX : Suppression de la bordure "trait vertical" sur l'oeil */
-.visual-toggle-btn.mini-eye {
-  border: none !important;
-  background: transparent;
-  color: var(--color-gray-400);
-  cursor: pointer;
-  padding: 0;
-  margin-left: 8px; /* Simple espace */
-  display: flex;
   align-items: center;
-  transition: color 0.2s;
-}
-
-.visual-toggle-btn.mini-eye.active {
-  color: var(--color-guide-primary);
+  text-align: center;
+  padding: 0rem 0rem;
+  z-index: 2; /* Au-dessus du background */
 }

@@ -147,15 +147,47 @@ export async function initCardVisuals(cardElement, visualData) {
   // 2. Création du nouveau conteneur
   const container = document.createElement('div');
   container.className = `q-card-${config.position}`;
-
-  // 3. Insertion selon la position pour respecter l'ordre du DOM
-  if (config.position === 'north') {
-    cardElement.prepend(container);
-  } else {
-    cardElement.appendChild(container);
-  }
-
   container.style.opacity = config.opacity;
+
+  // 3. Insertion selon la position pour respecter l'ordre de la grille CSS
+  // Ordre attendu: north, west, content, east, south (front/back en absolute)
+  const contentElement = cardElement.querySelector('.q-card-content');
+
+  if (!contentElement) {
+    // Pas de .q-card-content, ajouter à la fin
+    cardElement.appendChild(container);
+  } else {
+    // Insérer selon la position
+    switch (config.position) {
+      case 'north':
+        // Avant .q-card-content
+        cardElement.insertBefore(container, contentElement);
+        break;
+      case 'west':
+        // Juste avant .q-card-content
+        cardElement.insertBefore(container, contentElement);
+        break;
+      case 'east':
+        // Juste après .q-card-content
+        if (contentElement.nextSibling) {
+          cardElement.insertBefore(container, contentElement.nextSibling);
+        } else {
+          cardElement.appendChild(container);
+        }
+        break;
+      case 'south':
+        // À la fin
+        cardElement.appendChild(container);
+        break;
+      case 'front':
+      case 'back':
+        // Position absolute, ordre n'a pas d'importance
+        cardElement.appendChild(container);
+        break;
+      default:
+        cardElement.appendChild(container);
+    }
+  }
 
   try {
     const element = await createVisualElement(config.type, config.config, container);
