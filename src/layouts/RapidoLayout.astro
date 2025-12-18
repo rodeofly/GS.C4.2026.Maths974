@@ -132,7 +132,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           </div>
    
            {q.variantes.map((v, vIndex) => (
-                <div class="variant-content" data-index={vIndex}>
+                <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
                 <div class="content" set:html={nl2br(v.texte)}></div>
                 </div>
             ))}
@@ -141,32 +141,61 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     </div>
   </div>
 
+  <script is:inline define:vars={{ questions }}>
+    window.__RAPIDO_QUESTIONS__ = questions;
+  </script>
+
   <script>
         import RapidosVisuals from '../utils/rapidos-visuals-integration.js';
 
         // IMPORTANT : Passer les données des questions avec visuels
-        const questionData = {questions};
+        const questionData = window.__RAPIDO_QUESTIONS__;
 
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialiser le système de visuels
             await RapidosVisuals.initRapidosVisuals(questionData);
 
-            // HOOK : Modifier le système de bullets existant
+            // Gérer le système de bullets pour changer de variante
             const bullets = document.querySelectorAll('.bullet');
             bullets.forEach(bullet => {
-            const originalHandler = bullet.onclick;
-            
-            bullet.addEventListener('click', async (e) => {
-                // Exécuter le handler d'origine (switch variante)
-                if (originalHandler) originalHandler.call(bullet, e);
-                
-                // NOUVEAU : Mettre à jour le visuel
-                const cardIndex = e.target.dataset.card;
-                const variantIndex = e.target.dataset.variant;
-                const card = document.getElementById(`card-${cardIndex}`);
-                
-                await RapidosVisuals.handleVariantChange(card, parseInt(variantIndex));
-            });
+                bullet.addEventListener('click', async (e) => {
+                    const cardIndex = e.target.dataset.card;
+                    const variantIndex = parseInt(e.target.dataset.variant);
+                    const card = document.getElementById(`card-${cardIndex}`);
+
+                    // Mettre à jour les bullets actifs
+                    const cardBullets = card.querySelectorAll('.bullet');
+                    cardBullets.forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+
+                    // Mettre à jour les variantes affichées
+                    const variants = card.querySelectorAll('.variant-content');
+                    variants.forEach((v, idx) => {
+                        if (idx === variantIndex) {
+                            v.classList.add('active');
+                        } else {
+                            v.classList.remove('active');
+                        }
+                    });
+
+                    // Mettre à jour le badge GS
+                    const gsBadges = card.querySelectorAll('.gs-ref-badge');
+                    gsBadges.forEach((badge, idx) => {
+                        if (idx === variantIndex) {
+                            badge.classList.add('active');
+                        } else {
+                            badge.classList.remove('active');
+                        }
+                    });
+
+                    // Mettre à jour le visuel
+                    await RapidosVisuals.handleVariantChange(card, variantIndex);
+
+                    // Re-render MathJax si présent
+                    if (window.MathJax) {
+                        MathJax.typesetPromise([card]);
+                    }
+                });
             });
         });
     </script>
