@@ -50,6 +50,33 @@ if (!isIndex) {
   }
 }
 
+let directChildren = [];
+let subfolders = [];
+
+if (isIndex) {
+  const currentSlug = slug || '';
+  const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
+
+  // 1. Récupérer les fichiers rituels du dossier actuel (profondeur + 1)
+  directChildren = allRapidos.filter(e => {
+    const eSlug = e.slug.replace(/\/index$/, '');
+    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
+    if (e.id.endsWith('index.md')) return false;
+    const childDepth = eSlug.split('/').length;
+    return childDepth === slugDepth + 1;
+  }).sort((a, b) => (a.data.numero || '').localeCompare(b.data.numero || ''));
+
+  // 2. Récupérer les sous-dossiers (fichiers index.md à profondeur + 1)
+  subfolders = allRapidos.filter(e => {
+    const eSlug = e.slug.replace(/\/index$/, '');
+    if (eSlug === currentSlug) return false;
+    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
+    if (!e.id.endsWith('index.md')) return false;
+    const childDepth = eSlug.split('/').length;
+    return childDepth === slugDepth + 1;
+  }).sort((a, b) => a.data.title.localeCompare(b.data.title));
+}
+
 let children = [];
 if (isIndex) {
   const prefix = slug ? slug + '/' : '';
@@ -70,39 +97,25 @@ const hasIndexContent = isIndex && entry.body && entry.body.trim().length > 0;
 
 {/* CAS 2 : Menu / Index */}
 {isIndex && (
-  <A4Layout 
-    info={entry} 
-    title={entry.data.title || "Rapidos"} 
-    theme="Rapidos"
-    indexContent={hasIndexContent ? IndexContent : null}
-  >
+  <A4Layout ...>
     <div class="rapido-menu-grid">
-      {children.length > 0 ? children.map(child => (
-        
-        /* 🛠️ CORRECTION 3 : Ajout de la base dans le lien de la carte */
-        <a href={`${base}/rapidos/${child.slug}/`} class="card rapido-card-link">
-          
+      {/* AFFICHAGE DES DOSSIERS (Catégories) */}
+      {subfolders.map(folder => (
+        <a href={`${base}/rapidos/${folder.slug.replace(/\/index$/, '')}/`} class="card folder-card">
           <div class="card-header">
-            <span class="rapido-icon">⚡</span>
-            <span class="rapido-number">Rapido {child.data.numero}</span>
+            <span class="folder-icon">📂</span>
+            <h3>{folder.data.title}</h3>
           </div>
-          
-          <div class="rapido-meta">
-            {child.data.questions && (
-               <span>{child.data.questions.length} questions</span>
-            )}
-            {child.data.semaine && (
-               <span>• Semaine {child.data.semaine}</span>
-            )}
-            {child.data.niveau && (
-               <span class="niveau-badge">• {child.data.niveau}</span>
-            )}
-          </div>
-
+          {folder.data.niveau && <span class="badge">{folder.data.niveau}</span>}
         </a>
-      )) : (
-        <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
-      )}
+      ))}
+
+      {/* AFFICHAGE DES RAPIDOS DIRECTS */}
+      {directChildren.map(child => (
+        <a href={`${base}/rapidos/${child.slug}/`} class="card rapido-card-link">
+          {/* ... contenu de la carte existant (badge numero, meta) ... */}
+        </a>
+      ))}
     </div>
   </A4Layout>
 )}

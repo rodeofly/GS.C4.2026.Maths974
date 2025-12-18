@@ -64,16 +64,19 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <span>⚡</span> Rapidos
       </div>
       <div class="grid">
-        {rapidos.map(r => (
-  <a href={`${base}/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
-    <div class="card-header-home">
-      {/* CORRECTION : Fallback sur le numéro si le titre est absent */}
-      <h3>{r.data.title || `Rapidos ${r.data.numero}`}</h3>
-      {r.data.niveau && <span class="badge rapido">{r.data.niveau}</span>}
-    </div>
-    <p>Exercices d'échauffement & rituels</p>
-  </a>
-))}
+        {rapidos.sort(sortContent).map(r => {
+          // On extrait le nom du dossier du slug (ex: "6e" de "6e/index")
+          const folderName = r.slug.split('/')[0];
+          return (
+            <a href={`${base}/rapidos/${folderName}/`} class="card rapido-card">
+              <div class="card-header-home">
+                <h3>{r.data.title || `Rapidos ${folderName.toUpperCase()}`}</h3>
+                {r.data.niveau && <span class="badge rapido">{r.data.niveau}</span>}
+              </div>
+              <p>{r.data.resume || "Séries d'exercices par niveau"}</p>
+            </a>
+          )
+        })}
       </div>
     </div>
 

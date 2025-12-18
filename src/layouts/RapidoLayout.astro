@@ -12,6 +12,9 @@ const numero = data.numero || "1";
 const niveau = data.niveau || "";
 // Forcez un tableau vide si questions est undefined
 const questions = Array.isArray(data.questions) ? data.questions : [];
+
+console.log("Nombre de questions chargées :", questions.length);
+
 // 🆕 FONCTION pour convertir les retours à la ligne en <br>
 function nl2br(text) {
   if (!text) return '';

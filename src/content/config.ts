@@ -40,7 +40,14 @@ const guideCollection = defineCollection({
 const rapidosCollection = defineCollection({
   type: 'content',
   schema: z.object({
-    // ... champs existants ...
+    // AJOUTER CES CHAMPS POUR QU'ILS SOIENT RECONNUS
+    title: z.string().optional(),
+    numero: z.string().optional(),
+    niveau: z.string().optional(),
+    theme: z.string().optional(),
+    periode: z.number().optional(),
+    semaine: z.number().optional(),
+    
     questions: z.array(
       z.object({
         variantes: z.array(
@@ -48,8 +55,6 @@ const rapidosCollection = defineCollection({
             texte: z.string(),
             gs: z.string().optional(),
             difficulte: z.number().optional(),
-            
-            // NOUVEAU : Schéma visual
             visual: z.object({
               type: z.string(),
               position: z.enum(['north', 'south', 'east', 'west', 'front', 'back']).optional(),
@@ -64,7 +69,6 @@ const rapidosCollection = defineCollection({
     ).optional(),
   }),
 });
-
 export const collections = {
   'guide': guideCollection,
   'rapidos': rapidosCollection,
