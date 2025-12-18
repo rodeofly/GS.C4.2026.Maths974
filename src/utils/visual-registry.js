@@ -19,8 +19,8 @@ registerVisual('repere-cartesien', () => import('../components/visuals/repere-ca
 // 3. TRIANGLE (à créer)
 registerVisual('triangle', () => import('../components/visuals/triangle.js'));
 
-// 4. FRACTION CERCLE (à créer)
-registerVisual('fraction-cercle', () => import('../components/visuals/fraction-cercle.js'));
+// 4. FRACTION FORME (à créer)
+registerVisual('fraction-forme', () => import('../components/visuals/fraction-forme.js'));
 
 // 5. CUBES NUMÉRATION (à créer)
 registerVisual('cubes-numeration', () => import('../components/visuals/cubes-numeration.js'));
