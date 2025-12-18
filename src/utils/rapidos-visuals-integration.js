@@ -77,24 +77,35 @@ function restructureCardGrid(cardElement) {
 /**
  * Ajouter le bouton toggle visuel
  */
+// src/utils/rapidos-visuals-integration.js
+
 function addVisualToggleButton(cardElement) {
+  // On cherche la zone de contrôle des variantes (les bulles)
+  const controls = cardElement.querySelector('.bullets-nav');
+  if (!controls) return;
+
   const toggleBtn = document.createElement('button');
-  toggleBtn.className = 'visual-toggle-btn';
-  toggleBtn.innerHTML = '👁️';
+  toggleBtn.className = 'visual-toggle-btn mini-eye';
+  
+  // SVG discret (Style Lucide/Feather)
+  toggleBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+      <circle cx="12" cy="12" r="3"></circle>
+    </svg>`;
+  
   toggleBtn.title = 'Afficher/Masquer le visuel';
-  toggleBtn.setAttribute('aria-label', 'Toggle visual');
 
   let isVisible = true;
-
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     isVisible = !isVisible;
     VisualsSystem.toggleVisual(cardElement, isVisible);
     toggleBtn.classList.toggle('active', isVisible);
-    toggleBtn.innerHTML = isVisible ? '👁️' : '👁️‍🗨️';
   });
 
-  cardElement.appendChild(toggleBtn);
+  // On l'ajoute au bout du conteneur des bulles
+  controls.appendChild(toggleBtn);
 }
 
 /**
@@ -224,6 +235,7 @@ function populateEditor(panel, visualType, visualData) {
 
   // Générer les champs selon metadata
   const configFields = getConfigFields(visualType);
+
   const currentConfig = visualData.config || {};
 
   configFields.forEach((field) => {
@@ -238,6 +250,8 @@ function populateEditor(panel, visualType, visualData) {
  */
 function generateFieldHTML(field, value) {
   const fieldId = `editor-field-${field.name}`;
+
+  
 
   let inputHTML = '';
 

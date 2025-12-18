@@ -44,7 +44,7 @@ if (isIndex) {
     if (!currentSlug && eSlug.includes('/')) return false; 
 
     const parts = eSlug.split('/');
-    return parts.length === slugDepth + (currentSlug ? 1 : 1);
+    return parts.length === slugDepth + 1;
   }).sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
 
   directChildren = allRapidos.filter(e => {

@@ -322,3 +322,77 @@
 .visual-wrapper {
   animation: visualFadeIn 0.3s ease;
 }
+
+/* src/styles/components/rapidos-visuals.css */
+
+.opacity-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.opacity-slider-container input[type="range"] {
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+.opacity-icon-svg {
+    width: 18px;
+    height: 18px;
+    color: var(--color-gray-400, #94a3b8);
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+/* Changement de couleur quand le visuel est actif ou survolé */
+.visual-toggle-btn.active .opacity-icon-svg {
+    color: white;
+}
+
+.visual-toggle-btn:hover .opacity-icon-svg {
+    color: var(--color-accent);
+}
+
+/* src/styles/components/rapidos-visuals.css */
+
+.bullets-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espacement uniforme */
+  padding: 4px 8px;
+}
+
+.visual-toggle-btn.mini-eye {
+  position: static; /* Sort du positionnement absolu */
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-gray-400);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 4px;
+  border-left: 1px solid var(--color-gray-200);
+  padding-left: 8px;
+}
+
+.visual-toggle-btn.mini-eye:hover {
+  color: var(--color-guide-primary);
+  transform: scale(1.1);
+}
+
+.visual-toggle-btn.mini-eye.active {
+  color: var(--color-guide-primary);
+}
+
+/* On cache l'ancien bouton s'il existe encore */
+.q-card > .visual-toggle-btn {
+  display: none;
+}
