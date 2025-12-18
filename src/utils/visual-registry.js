@@ -11,19 +11,19 @@ import { registerVisual } from './visuals-system.js';
  */
 
 // 1. AXE GRADUÉ
-registerVisual('axe-gradue', () => import('./components/visuals/axe-gradue.js'));
+registerVisual('axe-gradue', () => import('../components/visuals/axe-gradue.js'));
 
 // 2. REPÈRE CARTÉSIEN (à créer)
-registerVisual('repere-cartesien', () => import('./components/visuals/repere-cartesien.js'));
+registerVisual('repere-cartesien', () => import('../components/visuals/repere-cartesien.js'));
 
 // 3. TRIANGLE (à créer)
-registerVisual('triangle', () => import('./components/visuals/triangle.js'));
+registerVisual('triangle', () => import('../components/visuals/triangle.js'));
 
 // 4. FRACTION CERCLE (à créer)
-registerVisual('fraction-cercle', () => import('./components/visuals/fraction-cercle.js'));
+registerVisual('fraction-cercle', () => import('../components/visuals/fraction-cercle.js'));
 
 // 5. CUBES NUMÉRATION (à créer)
-registerVisual('cubes-numeration', () => import('./components/visuals/cubes-numeration.js'));
+registerVisual('cubes-numeration', () => import('../components/visuals/cubes-numeration.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
