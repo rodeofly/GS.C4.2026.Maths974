@@ -130,23 +130,25 @@ export async function createVisualElement(type, config, container) {
 
 // src/utils/visuals-system.js
 
+// src/utils/visuals-system.js
+
 export async function initCardVisuals(cardElement, visualData) {
-  // 🛠️ FIX : Nettoyage systématique des zones existantes
-  const oldZones = cardElement.querySelectorAll(
+  // 1. Nettoyage : On supprime toutes les zones de visuels existantes
+  const existingZones = cardElement.querySelectorAll(
     '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
   );
-  oldZones.forEach(zone => zone.remove());
+  existingZones.forEach(zone => zone.remove());
 
   if (!visualData || !visualData.type) return;
 
   const config = parseVisualConfig(visualData);
   if (config.hidden) return;
 
-  const positionClass = `q-card-${config.position}`;
+  // 2. Création du nouveau conteneur
   const container = document.createElement('div');
-  container.className = positionClass;
+  container.className = `q-card-${config.position}`;
 
-  // Placement intelligent dans le DOM pour la Grid
+  // 3. Insertion selon la position pour respecter l'ordre du DOM
   if (config.position === 'north') {
     cardElement.prepend(container);
   } else {

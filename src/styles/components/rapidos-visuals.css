@@ -388,15 +388,10 @@
   color: var(--color-accent);
 }
 
-/* src/styles/components/rapidos-visuals.css */
-
-/* src/styles/components/rapidos-visuals.css */
-
-/* src/styles/components/rapidos-visuals.css */
 
 .q-card {
   display: grid;
-  /* 🛠️ FIX : On laisse les colonnes s'adapter au contenu */
+  /* 🛠️ FIX : 3 colonnes. Le centre prend tout l'espace restant */
   grid-template-columns: minmax(0, auto) 1fr minmax(0, auto);
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
@@ -404,16 +399,28 @@
     "west content east"
     "south south south";
   gap: 1.5rem;
-  position: relative;
+  align-items: center;
   min-height: 220px;
 }
 
-/* 🛠️ FIX : Suppression des max-width qui écrasaient les visuels de côté */
-.q-card-west, .q-card-east {
+/* On assigne explicitement chaque zone à sa grid-area */
+.q-card-north { grid-area: north; }
+.q-card-south { grid-area: south; }
+.q-card-west  { grid-area: west; min-width: 180px; }
+.q-card-east  { grid-area: east; min-width: 180px; }
+.q-card-content { grid-area: content; }
+
+/* 🛠️ FIX : On s'assure que le contenu ne s'étale pas sur les côtés */
+.q-card-content {
   display: flex;
+  flex-direction: column;
   justify-content: center;
-  align-items: center;
-  min-width: 150px;
+  text-align: center;
+}
+
+/* Amélioration visuelle pour les axes de côté */
+.q-card-east, .q-card-west {
+  padding: 0 10px;
 }
 
 /* 🛠️ FIX : Suppression de la bordure "trait vertical" sur l'oeil */
