@@ -40,20 +40,24 @@ const guideCollection = defineCollection({
 const rapidosCollection = defineCollection({
   type: 'content',
   schema: z.object({
-    title: z.string().optional(),
-    numero: z.string().optional(),
-    niveau: z.string(),
-    theme: z.string().optional(),
-    periode: z.number().optional(),
-    semaine: z.number().optional(),
-    // MODIFICATION ICI : On accepte un tableau de variantes pour chaque question
+    // ... champs existants ...
     questions: z.array(
       z.object({
         variantes: z.array(
           z.object({
             texte: z.string(),
-            gs: z.string().optional(), // Le lien Guide Survie peut changer selon la variante
-            difficulte: z.number().optional() // 1, 2, 3, 4 (optionnel)
+            gs: z.string().optional(),
+            difficulte: z.number().optional(),
+            
+            // NOUVEAU : Schéma visual
+            visual: z.object({
+              type: z.string(),
+              position: z.enum(['north', 'south', 'east', 'west', 'front', 'back']).optional(),
+              config: z.record(z.any()).optional(),
+              editable: z.boolean().optional(),
+              opacity: z.number().optional(),
+              hidden: z.boolean().optional(),
+            }).optional(),
           })
         )
       })

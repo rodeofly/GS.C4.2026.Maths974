@@ -1,6 +1,8 @@
 ---
 // src/layouts/RapidoLayout.astro
 import '../styles/main.css';
+import '../styles/components/rapidos-visuals.css';
+
 
 const { info, parentUrl = ".." } = Astro.props;
 const data = info.data || {};
@@ -130,37 +132,43 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
           </div>
    
            {q.variantes.map((v, vIndex) => (
-            <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
-              {/* 🆕 CORRECTION : Utilisation de set:html pour interpréter les <br> */}
-              <div class="content" set:html={nl2br(v.texte)}></div>
-            </div>
-          ))}
+                <div class="variant-content" data-index={vIndex}>
+                <div class="content" set:html={nl2br(v.texte)}></div>
+                </div>
+            ))}
         </article>
       ))}
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const bullets = document.querySelectorAll('.bullet');
-      bullets.forEach(bullet => {
-        bullet.addEventListener('click', (e) => {
-          const target = e.target;
-          const cardIndex = target.dataset.card;
-          const variantIndex = target.dataset.variant;
-          const card = document.getElementById(`card-${cardIndex}`);
-          if (!card) return;
-          card.querySelectorAll('.variant-content').forEach(c => {
-            c.classList.toggle('active', c.dataset.index === variantIndex);
-          });
-          card.querySelectorAll('.gs-ref-badge').forEach(b => {
-            b.classList.toggle('active', b.dataset.index === variantIndex);
-          });
-          card.querySelectorAll('.bullet').forEach(b => b.classList.remove('active'));
-          target.classList.add('active');
+        import RapidosVisuals from '../utils/rapidos-visuals-integration.js';
+
+        // IMPORTANT : Passer les données des questions avec visuels
+        const questionData = {questions};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialiser le système de visuels
+            await RapidosVisuals.initRapidosVisuals(questionData);
+
+            // HOOK : Modifier le système de bullets existant
+            const bullets = document.querySelectorAll('.bullet');
+            bullets.forEach(bullet => {
+            const originalHandler = bullet.onclick;
+            
+            bullet.addEventListener('click', async (e) => {
+                // Exécuter le handler d'origine (switch variante)
+                if (originalHandler) originalHandler.call(bullet, e);
+                
+                // NOUVEAU : Mettre à jour le visuel
+                const cardIndex = e.target.dataset.card;
+                const variantIndex = e.target.dataset.variant;
+                const card = document.getElementById(`card-${cardIndex}`);
+                
+                await RapidosVisuals.handleVariantChange(card, parseInt(variantIndex));
+            });
+            });
         });
-      });
-    });
-  </script>
+    </script>
 </body>
 </html>
