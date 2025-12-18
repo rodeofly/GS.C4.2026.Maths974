@@ -145,11 +145,9 @@
 }
 
 .editor-body {
-  padding: 1rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  align-content: start;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-field {
@@ -157,6 +155,16 @@
   flex-direction: column;
   gap: 0.25rem;
   min-width: 0;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.editor-field:nth-child(even) {
+  background-color: #f8fafc; /* Gris très clair */
+}
+
+.editor-field:nth-child(odd) {
+  background-color: #ffffff; /* Blanc */
 }
 
 .editor-field label {

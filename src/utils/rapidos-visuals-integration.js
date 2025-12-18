@@ -226,8 +226,8 @@ function createEditorPanel() {
 
   panel.innerHTML = `
     <div class="editor-header">
-      <h3>Éditeur de Visuel</h3>
-      <button class="editor-close" aria-label="Fermer">✕</button>
+      <h3 style="color: white; margin: 0;">Éditeur de Visuel</h3>
+      <button class="editor-close" aria-label="Fermer" style="color: white;">✕</button>
     </div>
     <div class="editor-body">
       <!-- Rempli dynamiquement -->
@@ -309,6 +309,27 @@ function renderAxeGradueEditor(panel, visualData) {
     }
   } catch (e) {}
 
+  // Helper pour les champs range (min/max inputs)
+  const rangeField = (label, name, val) => {
+    const [v1, v2] = val.split(':');
+    return `
+      <div class="editor-field full-width range-group">
+        <label>${label}</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.3rem;">
+            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MIN</span>
+            <input type="number" step="any" value="${v1}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.3rem;">
+            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MAX</span>
+            <input type="number" step="any" value="${v2}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+          </div>
+        </div>
+        <input type="hidden" name="${name}" value="${val}">
+      </div>
+    `;
+  };
+
   // 2. HTML Fusionné
   const html = `
     <!-- CHAMPS CACHÉS (Pour stocker les valeurs générées) -->
@@ -320,21 +341,45 @@ function renderAxeGradueEditor(panel, visualData) {
     <input type="hidden" name="visibleLabels" value="${Array.isArray(config.visibleLabels) ? config.visibleLabels.join(', ') : ''}">
     <input type="hidden" name="points" value='${JSON.stringify(config.points || [])}'>
 
-    <!-- PARAMÈTRES GÉNÉRATEUR -->
-    <div class="editor-section-title">Générateur</div>
-    ${generateFieldHTML({ name: 'rand-min-range', label: 'Intervalle Min', type: 'text' }, randPrefs.min)}
-    ${generateFieldHTML({ name: 'rand-steps', label: 'Pas possibles', type: 'text' }, randPrefs.steps)}
-    ${generateFieldHTML({ name: 'rand-count-range', label: 'Nb Graduations (Longueur)', type: 'text' }, randPrefs.count)}
-    ${generateFieldHTML({ name: 'rand-visible-range', label: 'Abscisses affichées', type: 'text' }, randPrefs.visible)}
-    ${generateFieldHTML({ name: 'rand-points-range', label: 'Nb Points', type: 'text' }, randPrefs.points)}
-    ${generateFieldHTML({ name: 'rand-snap', label: 'Placer sur graduations exactes (ou demies)', type: 'boolean' }, randPrefs.snap)}
+    <!-- LIGNE 1 : POSITION + CHECKBOX -->
+    <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: end;">
+       <div class="editor-field">
+          <label for="editor-field-position">POSITION</label>
+          <select id="editor-field-position" name="position">
+            ${['north', 'south', 'east', 'west'].map(opt => `<option value="${opt}" ${opt === position ? 'selected' : ''}>${opt}</option>`).join('')}
+          </select>
+       </div>
+       
+       <div class="editor-field" style="justify-content: flex-end; padding-bottom: 5px; padding: 0; border: none; background: transparent;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="rand-snap-check" name="rand-snap" ${randPrefs.snap ? 'checked' : ''} style="width: auto;" />
+            <label for="rand-snap-check" style="margin:0; cursor:pointer;">SUR GRADUATION</label>
+          </div>
+       </div>
+    </div>
 
-    <!-- CONFIGURATION -->
-    <div class="editor-section-title" style="margin-top: 1rem;">Configuration</div>
-    ${generateFieldHTML({ name: 'position', label: 'Position', type: 'select', options: ['north', 'south', 'east', 'west'] }, position)}
+    <!-- PARAMÈTRES -->
+    ${rangeField('INTERVALLE MIN', 'rand-min-range', randPrefs.min)}
+    ${generateFieldHTML({ name: 'rand-steps', label: 'PAS POSSIBLES', type: 'text' }, randPrefs.steps)}
+    ${rangeField('NB GRADUATIONS (LONGUEUR)', 'rand-count-range', randPrefs.count)}
+    ${rangeField('ABSCISSES AFFICHÉES', 'rand-visible-range', randPrefs.visible)}
+    ${rangeField('NB POINTS', 'rand-points-range', randPrefs.points)}
   `;
 
   editorBody.insertAdjacentHTML('beforeend', html);
+
+  // Logique pour mettre à jour les inputs hidden quand on change les ranges
+  panel.querySelectorAll('.range-group').forEach(group => {
+    const hidden = group.querySelector('input[type="hidden"]');
+    const inputs = group.querySelectorAll('input[type="number"]');
+    
+    const updateHidden = () => {
+      hidden.value = `${inputs[0].value}:${inputs[1].value}`;
+      hidden.dispatchEvent(new Event('input'));
+    };
+    
+    inputs.forEach(inp => inp.addEventListener('input', updateHidden));
+  });
 
   // Sauvegarde automatique des préférences du générateur lors de la modification
   const savePrefs = () => {
@@ -345,7 +390,7 @@ function renderAxeGradueEditor(panel, visualData) {
       steps: getVal('rand-steps').split(',').map(s => parseFloat(s.trim())),
       visibleRange: getVal('rand-visible-range').split(':').map(Number),
       pointsRange: getVal('rand-points-range').split(':').map(Number),
-      snap: panel.querySelector('[name="rand-snap"]')?.checked
+      snap: panel.querySelector('[name="rand-snap"]').value === 'true'
     };
     if (panel.currentCard?.id) {
       localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(prefs));
@@ -355,8 +400,8 @@ function renderAxeGradueEditor(panel, visualData) {
   ['rand-min-range', 'rand-count-range', 'rand-steps', 'rand-visible-range', 'rand-points-range', 'rand-snap'].forEach(name => {
     const el = panel.querySelector(`[name="${name}"]`);
     if (el) {
-      if (el.type === 'checkbox') el.addEventListener('change', savePrefs);
-      else el.addEventListener('input', savePrefs);
+      el.addEventListener('input', savePrefs);
+      el.addEventListener('change', savePrefs);
     }
   });
 }
