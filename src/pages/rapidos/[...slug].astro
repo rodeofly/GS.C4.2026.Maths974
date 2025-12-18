@@ -36,12 +36,16 @@ if (isIndex) {
   // Filtrage des dossiers 
   subfolders = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, '');
-    // On ignore le fichier racine 'index' et le dossier actuel
+    
+    // 🛠️ FIX : On ignore l'index racine et le dossier actuel
     if (!e.id.endsWith('index.md') || eSlug === 'index' || eSlug === currentSlug) return false;
     
+    if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
+    if (!currentSlug && eSlug.includes('/')) return false; 
+
     const parts = eSlug.split('/');
-    return parts.length === slugDepth + 1;
-  });
+    return parts.length === slugDepth + (currentSlug ? 1 : 1);
+  }).sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
 
   directChildren = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, ''); 

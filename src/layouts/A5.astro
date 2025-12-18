@@ -2,14 +2,16 @@
 // src/layouts/A5.astro
 import BasePrintLayout from './BasePrintLayout.astro';
 
-// 🛠️ FIX : Ajout de 'title: propsTitle'
 const { info, niveau, theme, sousTheme, indexContent, title: propsTitle } = Astro.props;
 const fm = info?.data ?? info?.frontmatter ?? {};
 
+// 1. Calcul du titre
 const titleRaw = propsTitle ?? fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sous-thème';
 const title = `${titleRaw} — Format A5`;
-const themeLabel = fm.theme ?? theme ?? 'Thème';
+
+// 2. Définition des labels
 const niveauLabel = fm.niveau ?? niveau ?? '';
+const themeLabel = fm.theme ?? theme ?? 'Général';
 ---
 
 <BasePrintLayout

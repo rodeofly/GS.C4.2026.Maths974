@@ -1,15 +1,13 @@
 ---
-// src/layouts/A4.astro
 import BasePrintLayout from './BasePrintLayout.astro';
 
-// 1. On extrait 'title' des props pour pouvoir l'utiliser
 const { info, niveau, theme, sousTheme, indexContent, title: propsTitle } = Astro.props;
 const fm = info?.data ?? info?.frontmatter ?? {};
 
-// 2. Priorité au titre passé par la page, sinon au frontmatter, sinon 'Sans titre'
+// Variables sécurisées pour BasePrintLayout
 const title = propsTitle ?? fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sans titre';
-const themeLabel = fm.theme ?? theme ?? 'Général';
 const niveauLabel = fm.niveau ?? niveau ?? '';
+const themeLabel = fm.theme ?? theme ?? 'Général';
 ---
 
 <BasePrintLayout

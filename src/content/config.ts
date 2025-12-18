@@ -15,24 +15,9 @@ const guideCollection = defineCollection({
     erreurs_frequentes: z.array(z.string()).optional(),
     competences: z.array(z.string()).optional(),
     tags: z.array(z.string()).optional(),
-    accordeons: z.array(
-      z.object({ 
-        titre: z.string(), 
-        contenu: z.string() 
-      })
-    ).optional(),
-    liens: z.array(
-      z.object({ 
-        url: z.string(), 
-        label: z.string(), 
-        type: z.string().optional(), 
-        position: z.string().optional(), 
-        size: z.string().optional() 
-      })
-    ).optional(),
+    accordeons: z.array(z.object({ titre: z.string(), contenu: z.string() })).optional(),
+    liens: z.array(z.object({ url: z.string(), label: z.string(), type: z.string().optional(), position: z.string().optional(), size: z.string().optional() })).optional(),
     rappel: z.string().optional(),
-    illustration: z.string().optional(),
-    difficulte: z.string().optional(),
     id: z.string().optional(),
   }),
 });

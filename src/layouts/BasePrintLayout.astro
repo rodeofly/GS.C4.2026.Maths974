@@ -1,47 +1,52 @@
 ---
-// src/layouts/BasePrintLayout.astro
 import '../styles/main.css';
 import Navbar from '../components/Navbar.astro';
 import SubthemeInfo from '../components/SubthemeInfo.astro';
 
-const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
+const { info, title, layoutClass, niveauLabel, indexContent, themeLabel } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-// 🛠️ DÉTECTION FIABLE basée sur l'URL de la page
 const path = Astro.url.pathname;
 const isRapido = path.includes('/rapidos/');
-
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
 
-// Slug actuel pour la logique d'affichage
 const slug = info?.slug?.replace(/\/index$/, '') || '';
 const niveauSlug = slug.split('/')[0];
 ---
-<body class={`layout ${layoutClass}`}>
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
+    <script is:inline>
+      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
+    <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
+  </head>
+  <body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
     
     <header class="layout-header-simple">
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
           <li><a href={`${base}/`}>Accueil</a></li>
-          
-          {/* Affiche "Rapidos" ou "Guide" seulement si on n'est pas déjà à la racine de la section */}
           {slug !== "" && slug !== "index" && (
             <>
               <li class="separator">/</li>
               <li><a href={rootUrl}>{rootLabel}</a></li>
             </>
           )}
-          
-          {/* Affiche le Niveau (ex: CM2) seulement si on est dans un sous-dossier ou une fiche */}
           {niveauLabel && niveauSlug && slug !== niveauSlug && (
             <>
               <li class="separator">/</li>
               <li><a href={`${rootUrl}${niveauSlug}/`}>{niveauLabel}</a></li>
             </>
           )}
-          
           <li class="separator">/</li>
           <li class="current" aria-current="page">
             {title}
@@ -49,20 +54,15 @@ const niveauSlug = slug.split('/')[0];
           </li>
         </ol>
       </nav>
-
-      <div class="header-main">
-        <h1>{title}</h1>
-      </div>
+      <h1>{title}</h1>
     </header>
 
     <main class="etiquettes-grid">
       <slot />
     </main>
 
-    <footer>
-      <slot name="footer" />
-    </footer>
-    </body>
+    <footer><slot name="footer" /></footer>
+  </body>
 </html>
 
 <style>
