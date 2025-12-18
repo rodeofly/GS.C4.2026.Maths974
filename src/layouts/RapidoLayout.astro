@@ -4,13 +4,14 @@ import '../styles/main.css';
 import '../styles/components/rapidos-visuals.css';
 
 
+// src/layouts/RapidoLayout.astro
 const { info, parentUrl = ".." } = Astro.props;
 const data = info.data || {};
 
 const numero = data.numero || "1";
 const niveau = data.niveau || "";
-const questions = data.questions || [];
-
+// Forcez un tableau vide si questions est undefined
+const questions = Array.isArray(data.questions) ? data.questions : [];
 // 🆕 FONCTION pour convertir les retours à la ligne en <br>
 function nl2br(text) {
   if (!text) return '';

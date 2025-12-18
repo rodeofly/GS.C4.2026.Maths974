@@ -64,22 +64,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <span>⚡</span> Rapidos
       </div>
       <div class="grid">
-        {rapidos.length > 0 ? (
-          rapidos.map(r => (
-            <a href={`${base}/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
-              
-              <div class="card-header-home">
-                  <h3>{r.data.title}</h3>
-                  {/* 🟠 Badge Niveau Rapido */}
-                  {r.data.niveau && <span class="badge rapido">{r.data.niveau}</span>}
-              </div>
-              
-              <p>Exercices d'échauffement & rituels</p>
-            </a>
-          ))
-        ) : (
-          <div class="empty-msg">Aucun rapido disponible pour le moment.</div>
-        )}
+        {rapidos.map(r => (
+  <a href={`${base}/rapidos/${r.slug.replace('/index', '')}/`} class="card rapido-card">
+    <div class="card-header-home">
+      {/* CORRECTION : Fallback sur le numéro si le titre est absent */}
+      <h3>{r.data.title || `Rapidos ${r.data.numero}`}</h3>
+      {r.data.niveau && <span class="badge rapido">{r.data.niveau}</span>}
+    </div>
+    <p>Exercices d'échauffement & rituels</p>
+  </a>
+))}
       </div>
     </div>
 

@@ -13,6 +13,12 @@ import { visualMetadata, getConfigFields, getDefaultConfig } from './visual-regi
  * À appeler dans RapidoLayout.astro après le DOM ready
  */
 export async function initRapidosVisuals(questionData) {
+  // AJOUTER CETTE SÉCURITÉ :
+  if (!questionData || !Array.isArray(questionData)) {
+    console.warn('⚠️ No question data provided to Visuals System');
+    return;
+  }
+
   console.log('🎨 Initializing Rapidos Visuals System...');
 
   // Pour chaque question
