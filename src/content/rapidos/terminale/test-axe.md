@@ -6,6 +6,7 @@ semaine: 21
 questions:
   - variantes:
       - texte: "Niveau 1 (Unités) : Quelle est la valeur du point A ?"
+        gs: "6N1-3.14"
         visual:
           type: "axe-gradue"
           position: "north"

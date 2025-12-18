@@ -232,25 +232,11 @@ function createEditorPanel() {
     <div class="editor-body">
       <!-- Rempli dynamiquement -->
     </div>
-    <div class="editor-actions">
-      <button class="editor-btn editor-btn-secondary" data-action="reset">Réinitialiser</button>
-      <button class="editor-btn editor-btn-primary" data-action="apply">Appliquer</button>
-    </div>
   `;
 
   // Events
   panel.querySelector('.editor-close').addEventListener('click', () => {
     panel.classList.remove('open');
-  });
-
-  panel.querySelector('[data-action="reset"]').addEventListener('click', () => {
-    const type = panel.currentType;
-    const defaults = getDefaultConfig(type);
-    populateEditor(panel, type, { type, config: defaults });
-  });
-
-  panel.querySelector('[data-action="apply"]').addEventListener('click', async () => {
-    await applyEditorChanges(panel);
   });
 
   return panel;
@@ -279,9 +265,109 @@ function populateEditor(panel, visualType, visualData) {
     </div>
   `;
 
+  // --- LAYOUT SPÉCIFIQUE POUR AXE GRADUÉ (FUSIONNÉ) ---
+  if (visualType === 'axe-gradue') {
+    renderAxeGradueEditor(panel, visualData);
+  } else {
+    // --- LAYOUT STANDARD POUR LES AUTRES VISUELS ---
+    renderStandardEditor(panel, visualType, visualData);
+  }
+
+  // Activer le "Live Edit" sur tous les inputs
+  const inputs = editorBody.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('change', () => applyEditorChanges(panel));
+    // Pour les sliders ou text, on peut aussi utiliser 'input' pour plus de réactivité
+    if (input.type === 'range' || input.type === 'text' || input.type === 'number') {
+       input.addEventListener('input', () => applyEditorChanges(panel));
+    }
+  });
+
+  // Event Listeners pour l'éditeur de tableau (Points) - Géré globalement
+  // (Le code existant pour click sur .btn-remove-item / .btn-add-item fonctionne car délégué sur editorBody)
+}
+
+/**
+ * Rendu spécifique fusionné pour Axe Gradué
+ */
+function renderAxeGradueEditor(panel, visualData) {
+  const editorBody = panel.querySelector('.editor-body');
+  const config = visualData.config || {};
+  const position = visualData.position || 'north';
+
+  // 1. Charger les préférences aléatoires
+  let randPrefs = { min: '-10:0', count: '5:10', steps: '1, 0.5, 2', visible: '2:4', points: '1:2', snap: true };
+  try {
+    const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
+    if (saved) {
+      randPrefs.min = saved.minRange.join(':');
+      randPrefs.count = saved.countRange.join(':');
+      randPrefs.steps = saved.steps.join(', ');
+      randPrefs.visible = saved.visibleRange.join(':');
+      randPrefs.points = saved.pointsRange.join(':');
+      randPrefs.snap = saved.snap !== undefined ? saved.snap : true;
+    }
+  } catch (e) {}
+
+  // 2. HTML Fusionné
+  const html = `
+    <!-- CHAMPS CACHÉS (Pour stocker les valeurs générées) -->
+    <input type="hidden" name="min" value="${config.min}">
+    <input type="hidden" name="max" value="${config.max}">
+    <input type="hidden" name="step" value="${config.step}">
+    <input type="hidden" name="width" value="${config.width || 800}">
+    <input type="hidden" name="height" value="${config.height || 80}">
+    <input type="hidden" name="visibleLabels" value="${Array.isArray(config.visibleLabels) ? config.visibleLabels.join(', ') : ''}">
+    <input type="hidden" name="points" value='${JSON.stringify(config.points || [])}'>
+
+    <!-- PARAMÈTRES GÉNÉRATEUR -->
+    <div class="editor-section-title">Générateur</div>
+    ${generateFieldHTML({ name: 'rand-min-range', label: 'Intervalle Min', type: 'text' }, randPrefs.min)}
+    ${generateFieldHTML({ name: 'rand-steps', label: 'Pas possibles', type: 'text' }, randPrefs.steps)}
+    ${generateFieldHTML({ name: 'rand-count-range', label: 'Nb Graduations (Longueur)', type: 'text' }, randPrefs.count)}
+    ${generateFieldHTML({ name: 'rand-visible-range', label: 'Abscisses affichées', type: 'text' }, randPrefs.visible)}
+    ${generateFieldHTML({ name: 'rand-points-range', label: 'Nb Points', type: 'text' }, randPrefs.points)}
+    ${generateFieldHTML({ name: 'rand-snap', label: 'Placer sur graduations exactes (ou demies)', type: 'boolean' }, randPrefs.snap)}
+
+    <!-- CONFIGURATION -->
+    <div class="editor-section-title" style="margin-top: 1rem;">Configuration</div>
+    ${generateFieldHTML({ name: 'position', label: 'Position', type: 'select', options: ['north', 'south', 'east', 'west'] }, position)}
+  `;
+
+  editorBody.insertAdjacentHTML('beforeend', html);
+
+  // Sauvegarde automatique des préférences du générateur lors de la modification
+  const savePrefs = () => {
+    const getVal = (name) => panel.querySelector(`[name="${name}"]`)?.value || '';
+    const prefs = {
+      minRange: getVal('rand-min-range').split(':').map(Number),
+      countRange: getVal('rand-count-range').split(':').map(Number),
+      steps: getVal('rand-steps').split(',').map(s => parseFloat(s.trim())),
+      visibleRange: getVal('rand-visible-range').split(':').map(Number),
+      pointsRange: getVal('rand-points-range').split(':').map(Number),
+      snap: panel.querySelector('[name="rand-snap"]')?.checked
+    };
+    if (panel.currentCard?.id) {
+      localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(prefs));
+    }
+  };
+
+  ['rand-min-range', 'rand-count-range', 'rand-steps', 'rand-visible-range', 'rand-points-range', 'rand-snap'].forEach(name => {
+    const el = panel.querySelector(`[name="${name}"]`);
+    if (el) {
+      if (el.type === 'checkbox') el.addEventListener('change', savePrefs);
+      else el.addEventListener('input', savePrefs);
+    }
+  });
+}
+
+/**
+ * Rendu standard pour les autres visuels
+ */
+function renderStandardEditor(panel, visualType, visualData) {
+  const editorBody = panel.querySelector('.editor-body');
   // Générer les champs selon metadata
   const configFields = getConfigFields(visualType);
-
   const currentConfig = visualData.config || {};
 
   configFields.forEach((field) => {
@@ -289,53 +375,6 @@ function populateEditor(panel, visualType, visualData) {
     const fieldHTML = generateFieldHTML(field, fieldValue);
     editorBody.innerHTML += fieldHTML;
   });
-
-  // Charger les préférences aléatoires sauvegardées
-  let randPrefs = { min: '-10:0', max: '10:20', steps: '1, 0.5, 2', points: '2:3' };
-  try {
-    const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
-    if (saved) {
-      randPrefs.min = saved.minRange.join(':');
-      randPrefs.max = saved.maxRange.join(':');
-      randPrefs.steps = saved.steps.join(', ');
-      randPrefs.points = saved.pointsRange.join(':');
-    }
-  } catch (e) {}
-
-  // Ajouter la section Générateur Aléatoire
-  const randomizerHTML = `
-    <div class="randomizer-section">
-      <div class="randomizer-header">
-        <span class="randomizer-title">🎲 Paramètres Aléatoires</span>
-        <button class="btn-random" id="btn-trigger-random">Générer & Appliquer</button>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-         <div class="editor-field">
-           <label title="Format: min:max (ex: -10:0)">Intervalle Min</label>
-           <input type="text" id="rand-min-range" value="${randPrefs.min}" placeholder="-10:0">
-         </div>
-         <div class="editor-field">
-           <label title="Format: min:max (ex: 10:20)">Intervalle Max</label>
-           <input type="text" id="rand-max-range" value="${randPrefs.max}" placeholder="10:20">
-         </div>
-         <div class="editor-field">
-           <label title="Valeurs séparées par virgule">Pas possibles</label>
-           <input type="text" id="rand-steps" value="${randPrefs.steps}" placeholder="1, 0.5">
-         </div>
-         <div class="editor-field">
-           <label title="Format: min:max">Nb Points</label>
-           <input type="text" id="rand-points-range" value="${randPrefs.points}" placeholder="2:3">
-         </div>
-      </div>
-    </div>
-  `;
-  editorBody.insertAdjacentHTML('beforeend', randomizerHTML);
-
-  // Event Listener pour le bouton Random
-  const randBtn = panel.querySelector('#btn-trigger-random');
-  if (randBtn) {
-    randBtn.addEventListener('click', () => handleRandomize(panel));
-  }
 }
 
 /**
@@ -348,7 +387,7 @@ function generateFieldHTML(field, value) {
 
   switch (field.type) {
     case 'number':
-      inputHTML = `<input type="number" id="${fieldId}" name="${field.name}" value="${value}" />`;
+      inputHTML = `<input type="number" step="any" id="${fieldId}" name="${field.name}" value="${value}" />`;
       break;
 
     case 'text':
@@ -356,12 +395,13 @@ function generateFieldHTML(field, value) {
       break;
 
     case 'boolean':
-      containerClass += ' checkbox-field full-width';
       inputHTML = `
-        <label for="${fieldId}">${field.label}</label>
-        <input type="checkbox" id="${fieldId}" name="${field.name}" ${value ? 'checked' : ''} />
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="${fieldId}" name="${field.name}" ${value ? 'checked' : ''} />
+          <label for="${fieldId}" style="margin:0;">${field.label}</label>
+        </div>
       `;
-      break;
+      return `<div class="${containerClass}" style="grid-column: 1 / -1;">${inputHTML}</div>`;
 
     case 'select':
       inputHTML = `
@@ -380,10 +420,27 @@ function generateFieldHTML(field, value) {
       break;
 
     case 'array':
-      // Cas complexe : liste de points, etc.
+      // Interface riche pour les points
       containerClass += ' full-width';
-      // Pour le MVP, on utilise JSON textarea
-      inputHTML = `<textarea id="${fieldId}" name="${field.name}" rows="3" style="font-family: monospace; font-size: 0.875rem;">${JSON.stringify(value || [], null, 2)}</textarea>`;
+      const items = Array.isArray(value) ? value : [];
+      
+      const itemsHTML = items.map(item => `
+        <div class="array-item">
+          <input type="text" placeholder="Nom" class="item-input" data-key="label" value="${item.label || ''}">
+          <input type="number" step="any" placeholder="Val" class="item-input" data-key="value" value="${item.value !== undefined ? item.value : 0}">
+          <input type="color" class="item-input" data-key="color" value="${item.color || '#f59e0b'}">
+          <button class="btn-remove-item" title="Supprimer">✕</button>
+        </div>
+      `).join('');
+
+      inputHTML = `
+        <div class="array-editor" data-field="${field.name}" id="${fieldId}">
+          <div class="array-items">
+            ${itemsHTML}
+          </div>
+          <button class="btn-add-item">+ Ajouter un point</button>
+        </div>
+      `;
       break;
 
     default:
@@ -409,19 +466,29 @@ async function applyEditorChanges(panel) {
   const cardElement = panel.currentCard;
   if (!cardElement) return;
 
+  const activeVariant = cardElement.querySelector('.variant-content.active');
   const visualType = panel.currentType;
   const editorBody = panel.querySelector('.editor-body');
 
   // Collecter les valeurs des champs
-  const newConfig = {};
+  const newConfig = { ...activeVariant?.visualData?.config }; // Garder les valeurs existantes (pour les champs cachés)
   const fields = getConfigFields(visualType);
 
   fields.forEach((field) => {
-    const input = editorBody.querySelector(`[name="${field.name}"]`);
+    // Gestion spéciale pour les champs cachés ou hors metadata (comme position)
+    let input = editorBody.querySelector(`[name="${field.name}"]`);
+    
+    // Si le champ n'est pas dans le DOM standard, on ignore sauf si c'est un hidden input manuel
     if (!input) return;
 
     let value;
     switch (field.type) {
+      case 'select':
+        value = input.value;
+        break;
+      case 'text':
+        value = input.value;
+        break;
       case 'number':
         value = parseFloat(input.value);
         break;
@@ -429,23 +496,36 @@ async function applyEditorChanges(panel) {
         value = input.checked;
         break;
       case 'array':
+        // Pour les arrays (points), on lit le JSON du champ caché ou textarea
         try {
-          value = JSON.parse(input.value);
-        } catch (e) {
-          alert(`Erreur de syntaxe JSON dans le champ "${field.label}" :\n${e.message}`);
-          return; // 🛑 Arrêter la sauvegarde pour ne pas perdre les données
-        }
+          value = JSON.parse(input.value || '[]');
+        } catch (e) { value = []; }
         break;
       default:
         value = input.value;
+    }
+    
+    // Conversion spéciale pour visibleLabels (String -> Array[Number])
+    if (field.name === 'visibleLabels' && typeof value === 'string') {
+      value = value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
     }
 
     newConfig[field.name] = value;
   });
 
+  // Gestion spécifique de la POSITION (root level)
+  const posInput = editorBody.querySelector('[name="position"]');
+  if (posInput) {
+    activeVariant.visualData.position = posInput.value;
+    // Définir l'orientation automatiquement selon la position
+    const isVertical = ['east', 'west'].includes(posInput.value);
+    newConfig.orientation = isVertical ? 'vertical' : 'horizontal';
+  }
+
   // Mettre à jour le visuel
-  const activeVariant = cardElement.querySelector('.variant-content.active');
   if (activeVariant) {
+    // On s'assure que points est bien un tableau
+    if (typeof newConfig.points === 'string') try { newConfig.points = JSON.parse(newConfig.points); } catch(e) {}
     activeVariant.visualData.config = newConfig;
     await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
   }
@@ -458,51 +538,7 @@ async function applyEditorChanges(panel) {
   }
 
   // Fermer le panneau
-  panel.classList.remove('open');
-
   console.log('✅ Visual config updated:', newConfig);
-}
-
-/**
- * Gérer le tirage aléatoire
- */
-function handleRandomize(panel) {
-  // 1. Récupérer les contraintes
-  const getRange = (id) => {
-    const val = panel.querySelector(id).value.split(':').map(Number);
-    return { min: val[0] || 0, max: val[1] !== undefined ? val[1] : val[0] };
-  };
-  const getList = (id) => panel.querySelector(id).value.split(',').map(s => parseFloat(s.trim()));
-
-  const minRange = getRange('#rand-min-range');
-  const maxRange = getRange('#rand-max-range');
-  const steps = getList('#rand-steps');
-  const pointsRange = getRange('#rand-points-range');
-
-  // Sauvegarder les préférences pour le bouton "Reload"
-  const prefs = { minRange: [minRange.min, minRange.max], maxRange: [maxRange.min, maxRange.max], steps, pointsRange: [pointsRange.min, pointsRange.max] };
-  if (panel.currentCard?.id) {
-    localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(prefs));
-  }
-
-  // 2. Générer la config
-  const generated = generateRandomConfigValues(prefs);
-
-  // 3. Mettre à jour les champs du formulaire
-  const setVal = (name, val) => {
-    const input = panel.querySelector(`[name="${name}"]`);
-    if (input) {
-      input.value = typeof val === 'object' ? JSON.stringify(val, null, 2) : val;
-    }
-  };
-
-  setVal('min', generated.min);
-  setVal('max', generated.max);
-  setVal('step', generated.step);
-  setVal('points', generated.points);
-
-  // 4. Appliquer
-  applyEditorChanges(panel);
 }
 
 /**
@@ -513,35 +549,71 @@ function generateRandomConfigValues(prefs) {
   const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
   const minRange = prefs.minRange || [-10, 0];
-  const maxRange = prefs.maxRange || [10, 20];
+  const countRange = prefs.countRange || [5, 10]; // Nombre de graduations
   const steps = prefs.steps || [1];
+  const visibleRange = prefs.visibleRange || [2, 4];
   const pointsRange = prefs.pointsRange || [2, 3];
+  const snapToGrid = prefs.snap !== undefined ? prefs.snap : true;
 
   const newMin = randInt(minRange[0], minRange[1]);
   
-  // S'assurer que max > min
-  let newMax = randInt(Math.max(maxRange[0], newMin + 5), maxRange[1]);
-  if (newMax <= newMin) newMax = newMin + 10;
-
+  // Choisir un pas
   const newStep = randItem(steps) || 1;
+  
+  // Calculer le Max basé sur le nombre de graduations (count)
+  // Max = Min + (NbGraduations * Step)
+  const nbSteps = randInt(countRange[0], countRange[1]);
+  const newMax = newMin + (nbSteps * newStep);
+
+  // Générer toutes les graduations possibles
+  const allTicks = [];
+  for (let v = newMin; v <= newMax + (newStep/10); v += newStep) {
+    // Arrondi pour éviter 0.30000000004
+    const precision = newStep < 1 ? 2 : (newStep % 1 === 0 ? 0 : 1);
+    allTicks.push(parseFloat(v.toFixed(precision)));
+  }
+
+  // Choisir combien d'abscisses afficher (ex: entre 2 et 4)
+  const nbVisible = Math.min(allTicks.length, randInt(visibleRange[0], visibleRange[1]));
+  
+  // Sélectionner aléatoirement les labels visibles
+  // On mélange les ticks et on prend les N premiers
+  const shuffledTicks = [...allTicks].sort(() => 0.5 - Math.random());
+  const visibleLabels = shuffledTicks.slice(0, nbVisible).sort((a, b) => a - b);
 
   // Générer des points
   const nbPoints = randInt(pointsRange[0], pointsRange[1]);
   const newPoints = [];
-  const labels = ['A', 'B', 'C', 'D', 'E'];
+  // Lettres aléatoires A-Z
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   
+  // Essayer de placer les points sur des abscisses INCONNUES (cachées)
   for (let i = 0; i < nbPoints; i++) {
     const range = newMax - newMin;
     let val = newMin + (Math.random() * range);
     
-    // Arrondir au step ou step/2 pour que ce soit "joli"
-    const precision = newStep < 1 ? 0.1 : (newStep % 1 === 0 ? 0.5 : 0.1);
+    let precision = 0.01;
+    if (snapToGrid) {
+      // Exactement sur graduation ou milieu (step / 2)
+      precision = newStep / 2;
+    } else {
+      precision = 0.01;
+    }
     val = Math.round(val / precision) * precision;
+    
+    // Si possible, forcer une valeur qui n'est PAS dans visibleLabels
+    // On a 5 essais pour trouver une valeur cachée
+    for (let attempt = 0; attempt < 5; attempt++) {
+        if (!visibleLabels.includes(val)) break; // C'est bon, c'est caché
+        // Sinon on réessaie
+        val = newMin + (Math.random() * range);
+        val = Math.round(val / precision) * precision;
+    }
     
     // Éviter les doublons exacts
     if (!newPoints.some(p => Math.abs(p.value - val) < 0.001)) {
       newPoints.push({
-        label: labels[i % labels.length],
+        label: alphabet[Math.floor(Math.random() * alphabet.length)],
         value: parseFloat(val.toFixed(2)),
         color: '#f59e0b'
       });
@@ -552,7 +624,8 @@ function generateRandomConfigValues(prefs) {
     min: newMin,
     max: newMax,
     step: newStep,
-    points: newPoints
+    points: newPoints,
+    visibleLabels: visibleLabels
   };
 }
 
@@ -565,9 +638,11 @@ async function quickRandomize(cardElement) {
   // 1. Récupérer les préférences ou défauts
   let prefs = {
     minRange: [-10, 0],
-    maxRange: [10, 20],
+    countRange: [5, 10],
     steps: [1, 0.5, 2],
-    pointsRange: [2, 3]
+    visibleRange: [2, 4],
+    pointsRange: [2, 3],
+    snap: true
   };
   
   try {
@@ -591,6 +666,12 @@ async function quickRandomize(cardElement) {
     
     // Sauvegarder le résultat
     localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(activeVariant.visualData.config));
+
+    // Si l'éditeur est ouvert pour cette carte, le rafraîchir pour afficher les nouvelles valeurs
+    const editorPanel = document.getElementById('visual-editor-panel');
+    if (editorPanel && editorPanel.classList.contains('open') && editorPanel.currentCard === cardElement) {
+      populateEditor(editorPanel, activeVariant.visualData.type, activeVariant.visualData);
+    }
   }
 }
 

@@ -6,9 +6,13 @@ class AxeGradueComponent extends HTMLElement {
     this.config = { 
       min: 0, max: 10, step: 1, 
       orientation: 'horizontal', 
-      width: 450, height: 80, 
-      points: [], showNumbers: true 
+      width: 800, height: 80, 
+      points: [], showNumbers: true,
+      labelFrequency: 1,
+      visibleLabels: null 
     };
+    this.hitRegions = [];
+    this.hoveredPoint = null;
   }
 
   connectedCallback() {
@@ -26,7 +30,7 @@ class AxeGradueComponent extends HTMLElement {
     if (this.config.orientation === 'vertical') {
       // Si dimensions par défaut horizontal (450x100), adapter pour vertical
       // SEULEMENT si width/height n'ont pas été explicitement définis dans la config
-      if (this.config.width === 450 && this.config.height === 80) {
+      if (this.config.width === 800 && this.config.height === 80) {
         this.config.width = 140;
         this.config.height = 160;
       }
@@ -55,6 +59,7 @@ class AxeGradueComponent extends HTMLElement {
     this.adjustDimensionsForOrientation();
     this.innerHTML = '';
     const canvas = document.createElement('canvas');
+    this.canvas = canvas;
     const ctx = canvas.getContext('2d');
 
     // Support Haute Définition (Retina)
@@ -73,18 +78,61 @@ class AxeGradueComponent extends HTMLElement {
     this.primaryColor = style.getPropertyValue('--color-guide-primary').trim() || '#0d9488';
     this.ctx = ctx;
 
-    if (this.config.orientation === 'horizontal') {
+    // Gestion des événements souris
+    canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
+
+    this.draw();
+  }
+
+  handleMouseMove(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    // Calcul de l'échelle entre les pixels CSS et le système de coordonnées interne
+    const scaleX = this.config.width / rect.width;
+    const scaleY = this.config.height / rect.height;
+
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    // Détection de collision (cercle de rayon 10px pour faciliter le survol)
+    const hit = this.hitRegions.find(p => {
+      const dx = x - p.x;
+      const dy = y - p.y;
+      return dx * dx + dy * dy <= 100; // 10^2
+    });
+
+    if (hit !== this.hoveredPoint) {
+      this.hoveredPoint = hit;
+      this.canvas.style.cursor = hit ? 'pointer' : 'default';
+      this.draw();
+    }
+  }
+
+  handleMouseLeave() {
+    if (this.hoveredPoint) {
+      this.hoveredPoint = null;
+      this.draw();
+    }
+  }
+
+  draw() {
+    const { ctx, config } = this;
+    // Effacer le canvas
+    ctx.clearRect(0, 0, config.width, config.height);
+
+    if (config.orientation === 'horizontal') {
       this.drawHorizontalAxis();
     } else {
       this.drawVerticalAxis();
     }
 
     this.drawPoints();
+    this.drawTooltip();
   }
 
   drawHorizontalAxis() {
     const { ctx } = this;
-    const { min, max, step, width, height, showNumbers } = this.config;
+    const { min, max, step, width, height, showNumbers, labelFrequency, visibleLabels } = this.config;
     const padding = this.getPadding();
     const range = max - min;
     const axisLen = width - padding * 2;
@@ -93,6 +141,7 @@ class AxeGradueComponent extends HTMLElement {
     // Calcul densité des étiquettes (pas moins de 40px d'écart)
     const pxPerStep = (step / range) * axisLen;
     const labelFreq = pxPerStep < 40 ? Math.ceil(40 / pxPerStep) : 1;
+    const finalFreq = Math.max(labelFrequency || 1, labelFreq);
 
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2;
@@ -108,7 +157,13 @@ class AxeGradueComponent extends HTMLElement {
     for (let v = min, i = 0; v <= max + (step/2); v += step, i++) {
       const val = this.round(v, step);
       const x = padding + ((val - min) / range) * axisLen;
-      const isMajor = i % labelFreq === 0;
+      
+      let isMajor = false;
+      if (visibleLabels && Array.isArray(visibleLabels) && visibleLabels.length > 0) {
+        isMajor = visibleLabels.includes(val);
+      } else {
+        isMajor = i % finalFreq === 0;
+      }
 
       ctx.beginPath();
       ctx.moveTo(x, y - (isMajor ? 8 : 4));
@@ -126,7 +181,7 @@ class AxeGradueComponent extends HTMLElement {
 
   drawVerticalAxis() {
     const { ctx } = this;
-    const { min, max, step, width, height, showNumbers } = this.config;
+    const { min, max, step, width, height, showNumbers, labelFrequency, visibleLabels } = this.config;
     const padding = this.getPadding();
     const range = max - min;
     const axisLen = height - padding * 2;
@@ -134,6 +189,7 @@ class AxeGradueComponent extends HTMLElement {
 
     const pxPerStep = (step / range) * axisLen;
     const labelFreq = pxPerStep < 40 ? Math.ceil(40 / pxPerStep) : 1;
+    const finalFreq = Math.max(labelFrequency || 1, labelFreq);
 
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2;
@@ -149,7 +205,13 @@ class AxeGradueComponent extends HTMLElement {
     for (let v = min, i = 0; v <= max + (step/2); v += step, i++) {
       const val = this.round(v, step);
       const y = (height - padding) - ((val - min) / range) * axisLen;
-      const isMajor = i % labelFreq === 0;
+      
+      let isMajor = false;
+      if (visibleLabels && Array.isArray(visibleLabels) && visibleLabels.length > 0) {
+        isMajor = visibleLabels.includes(val);
+      } else {
+        isMajor = i % finalFreq === 0;
+      }
 
       ctx.beginPath();
       ctx.moveTo(x - (isMajor ? 8 : 4), y);
@@ -173,6 +235,7 @@ class AxeGradueComponent extends HTMLElement {
     const padding = this.getPadding();
     const range = max - min;
     const axisLen = (orientation === 'horizontal' ? width : height) - padding * 2;
+    this.hitRegions = [];
 
     points.forEach(p => {
       const ratio = (p.value - min) / range;
@@ -188,16 +251,60 @@ class AxeGradueComponent extends HTMLElement {
       ctx.font = 'bold 14px Lexend Deca, sans-serif';
       ctx.textAlign = orientation === 'horizontal' ? 'center' : 'left';
       ctx.fillText(p.label, px + (orientation === 'horizontal' ? 0 : 12), py - (orientation === 'horizontal' ? 15 : 0));
+      
+      // Enregistrer la zone de collision
+      this.hitRegions.push({ x: px, y: py, value: p.value, label: p.label });
     });
   }
 
+  drawTooltip() {
+    if (!this.hoveredPoint) return;
+    const { ctx } = this;
+    const p = this.hoveredPoint;
+    const text = `${p.value}`;
+
+    ctx.save();
+    ctx.font = 'bold 12px Lexend Deca, sans-serif';
+    const textMetrics = ctx.measureText(text);
+    const padding = 6;
+    const w = textMetrics.width + padding * 2;
+    const h = 24;
+    const x = p.x - w / 2;
+    const y = p.y - 35; // Au-dessus du point
+
+    // Fond de l'infobulle
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.95)'; // Slate 800
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(x, y, w, h, 4);
+    else ctx.rect(x, y, w, h); // Fallback
+    ctx.fill();
+
+    // Petit triangle vers le bas
+    ctx.beginPath();
+    ctx.moveTo(p.x, y + h + 5);
+    ctx.lineTo(p.x - 5, y + h);
+    ctx.lineTo(p.x + 5, y + h);
+    ctx.fill();
+
+    // Texte
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, p.x, y + h / 2);
+    ctx.restore();
+  }
+
   parseAttributes() {
-    const a = ['min', 'max', 'step', 'width', 'height'];
+    const a = ['min', 'max', 'step', 'width', 'height', 'labelFrequency'];
     a.forEach(at => { if(this.hasAttribute(at)) this.config[at] = parseFloat(this.getAttribute(at)); });
     if(this.hasAttribute('orientation')) this.config.orientation = this.getAttribute('orientation');
     if(this.hasAttribute('points')) {
         try { this.config.points = JSON.parse(this.getAttribute('points')); }
         catch(e) { this.config.points = []; }
+    }
+    if(this.hasAttribute('visibleLabels')) {
+        try { this.config.visibleLabels = JSON.parse(this.getAttribute('visibleLabels')); }
+        catch(e) { this.config.visibleLabels = null; }
     }
   }
 }

@@ -63,6 +63,8 @@ export const visualMetadata = {
       { name: 'min', type: 'number', label: 'Minimum', default: 0 },
       { name: 'max', type: 'number', label: 'Maximum', default: 10 },
       { name: 'step', type: 'number', label: 'Pas', default: 1 },
+      { name: 'visibleLabels', type: 'text', label: 'Labels visibles (ex: 0, 5)', default: '' },
+      { name: 'labelFrequency', type: 'number', label: 'Fréquence Labels (1/N)', default: 1 },
       {
         name: 'orientation',
         type: 'select',
