@@ -33,6 +33,7 @@ questions:
       - texte: "Niveau 4 (Vertical) : Quelle température indique ce thermomètre ?"
         visual:
           type: "axe-gradue"
+          position : "east"
           config:
             min: 15
             max: 25
