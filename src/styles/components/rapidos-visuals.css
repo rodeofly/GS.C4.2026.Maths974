@@ -388,7 +388,47 @@
   color: var(--color-accent);
 }
 
-/* On cache l'ancien bouton s'il existe encore */
-.q-card > .visual-toggle-btn {
-  display: none;
+/* src/styles/components/rapidos-visuals.css */
+
+/* src/styles/components/rapidos-visuals.css */
+
+/* src/styles/components/rapidos-visuals.css */
+
+.q-card {
+  display: grid;
+  /* 🛠️ FIX : On laisse les colonnes s'adapter au contenu */
+  grid-template-columns: minmax(0, auto) 1fr minmax(0, auto);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "north north north"
+    "west content east"
+    "south south south";
+  gap: 1.5rem;
+  position: relative;
+  min-height: 220px;
+}
+
+/* 🛠️ FIX : Suppression des max-width qui écrasaient les visuels de côté */
+.q-card-west, .q-card-east {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 150px;
+}
+
+/* 🛠️ FIX : Suppression de la bordure "trait vertical" sur l'oeil */
+.visual-toggle-btn.mini-eye {
+  border: none !important;
+  background: transparent;
+  color: var(--color-gray-400);
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px; /* Simple espace */
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.visual-toggle-btn.mini-eye.active {
+  color: var(--color-guide-primary);
 }

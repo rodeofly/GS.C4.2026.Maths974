@@ -124,38 +124,41 @@ export async function createVisualElement(type, config, container) {
  * @param {HTMLElement} cardElement - Élément .q-card
  * @param {Object} visualData - Données visual du YAML
  */
+// src/utils/visuals-system.js
+
+// src/utils/visuals-system.js
+
+// src/utils/visuals-system.js
+
 export async function initCardVisuals(cardElement, visualData) {
+  // 🛠️ FIX : Nettoyage systématique des zones existantes
+  const oldZones = cardElement.querySelectorAll(
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
+  );
+  oldZones.forEach(zone => zone.remove());
+
   if (!visualData || !visualData.type) return;
 
   const config = parseVisualConfig(visualData);
   if (config.hidden) return;
 
   const positionClass = `q-card-${config.position}`;
-  let container = cardElement.querySelector(`.${positionClass}`);
+  const container = document.createElement('div');
+  container.className = positionClass;
 
-  // Créer la zone si elle n'existe pas
-  if (!container) {
-    container = document.createElement('div');
-    container.className = positionClass;
-    
-    const contentArea = cardElement.querySelector('.q-card-content');
-    
-    // Logique d'insertion intelligente dans la Grid
-    if (config.position === 'north') {
-      cardElement.prepend(container); // Avant tout le reste
-    } else if (config.position === 'south') {
-      cardElement.append(container);  // Après tout le reste
-    } else {
-      // Pour east, west, front, back, on ajoute simplement
-      cardElement.appendChild(container);
-    }
+  // Placement intelligent dans le DOM pour la Grid
+  if (config.position === 'north') {
+    cardElement.prepend(container);
+  } else {
+    cardElement.appendChild(container);
   }
 
-  // Appliquer l'opacité (utile pour 'back')
   container.style.opacity = config.opacity;
 
   try {
-    return await createVisualElement(config.type, config.config, container);
+    const element = await createVisualElement(config.type, config.config, container);
+    element.visualConfig = config;
+    return element;
   } catch (error) {
     console.error('Failed to init visual:', error);
   }
