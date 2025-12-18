@@ -86,6 +86,28 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
        .variant-content.active { display: block; }
        .content { display: inline-block; line-height: 1.5; font-size: 1.5rem; font-weight: 600; color: #334155; }
        .content :global(mjx-container) { vertical-align: middle !important; margin: 0 0.2em !important; }
+       /* === STYLE BREADCRUMB RAPIDO === */
+  .rapido-breadcrumb {
+    position: absolute;
+    top: 1.5rem;
+    left: 5rem; /* Décalé pour laisser la place au bouton retour */
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+  }
+  .rapido-breadcrumb a {
+    color: white;
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .rapido-breadcrumb a:hover { opacity: 1; text-decoration: underline; }
+  .rapido-breadcrumb .sep { opacity: 0.5; }
+  .rapido-breadcrumb .curr { font-weight: 800; color: white; }
        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -97,7 +119,17 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   <img src={`${base}/images/margouillat.png`} alt="Margouillat" class="deco-margouillat" />
 
   <a href={parentUrl} class="back-btn" aria-label="Retour au menu">⬅</a>
-
+  <nav class="rapido-breadcrumb">
+    <a href={`${base}/`}>Accueil</a>
+    <span class="sep">/</span>
+    <a href={`${base}/rapidos/`}>Rapidos</a>
+    {niveau && (
+      <>
+        <span class="sep">/</span>
+        <span class="curr">{niveau}</span>
+      </>
+    )}
+  </nav>
   <div class="rapido-container">
      <header>
       <h2>Maths974</h2>

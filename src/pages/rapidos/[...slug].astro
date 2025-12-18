@@ -4,115 +4,77 @@ import { getCollection } from 'astro:content';
 import RapidoLayout from '../../layouts/RapidoLayout.astro';
 import A4Layout from '../../layouts/A4.astro';
 
-// 1. Récupération de la Base URL (pour GitHub Pages)
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 export async function getStaticPaths() {
   const entries = await getCollection('rapidos');
-  return entries.map(entry => {
-    let cleanSlug = entry.slug.replace(/\/index$/, '');
-    if (cleanSlug === 'index') {
-        cleanSlug = undefined;
-    }
-    return {
-      params: { slug: cleanSlug },
-      props: { entry },
-    };
-  });
+  return entries.map(entry => ({
+    params: { slug: entry.slug.replace(/\/index$/, '') === 'index' ? undefined : entry.slug.replace(/\/index$/, '') },
+    props: { entry },
+  }));
 }
 
 const { entry } = Astro.props;
 const { slug } = Astro.params;
-
 const isIndex = entry.id.endsWith('index.md');
-
-// Logique pour trouver le parent valide (pour le bouton retour)
 const allRapidos = await getCollection('rapidos');
 
-// 🛠️ CORRECTION 1 : Le parent par défaut doit inclure la base
-let parentUrl = `${base}/rapidos/`; 
+const currentSlug = slug || '';
+const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
 
-if (!isIndex) {
-  const parts = entry.slug.split('/');
-  parts.pop(); 
-  while (parts.length > 0) {
-    const candidateSlug = parts.join('/');
-    const parentEntry = allRapidos.find(e => {
-        const eSlug = e.slug.replace(/\/index$/, '');
-        return eSlug === candidateSlug && e.id.endsWith('index.md');
-    });
-    if (parentEntry) {
-      // 🛠️ CORRECTION 2 : Le lien parent calculé doit inclure la base
-      parentUrl = `${base}/rapidos/${candidateSlug}/`;
-      break; 
-    }
-    parts.pop(); 
-  }
-}
-
+// INITIALISATION GÉNÉRALE POUR ÉVITER LES REFERENCEERROR
+let IndexContent = null;
+let hasIndexContent = false;
 let directChildren = [];
 let subfolders = [];
 
 if (isIndex) {
-  const currentSlug = slug || '';
-  const slugDepth = currentSlug ? currentSlug.split('/').length : 0;
+  const rendered = await entry.render();
+  IndexContent = rendered.Content;
+  hasIndexContent = !!(entry.body && entry.body.trim().length > 0);
 
-  // 1. On récupère les sous-dossiers (index.md au niveau profondeur + 1)
+  // Filtrage des dossiers
   subfolders = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, '');
-    if (eSlug === currentSlug) return false;
-    if (currentSlug && !eSlug.startsWith(currentSlug + '/')) return false;
-    if (!e.id.endsWith('index.md')) return false;
+    // On ignore le fichier racine 'index' et le dossier actuel
+    if (!e.id.endsWith('index.md') || eSlug === 'index' || eSlug === currentSlug) return false;
     
     const parts = eSlug.split('/');
     return parts.length === slugDepth + 1;
-  }).sort((a, b) => (a.data.title || '').localeCompare(b.data.title || ''));
+  });
 
-  // 2. On récupère les Rapidos rituels du dossier actuel (profondeur + 1)
   directChildren = allRapidos.filter(e => {
     const eSlug = e.slug.replace(/\/index$/, '');
-    if (!eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
-    if (e.id.endsWith('index.md')) return false;
-    
-    const parts = eSlug.split('/');
-    return parts.length === slugDepth + 1;
-  }).sort((a, b) => (a.data.numero || '').localeCompare(b.data.numero || ''));
+    if (e.id.endsWith('index.md') || !eSlug.startsWith(currentSlug + (currentSlug ? '/' : ''))) return false;
+    return eSlug.split('/').length === slugDepth + 1;
+  });
 }
+
+let parentUrl = currentSlug.includes('/') ? `${base}/rapidos/${currentSlug.split('/').slice(0, -1).join('/')}/` : `${base}/rapidos/`;
 ---
 
-{/* CAS 1 : Fiche Rapido */}
 {!isIndex && <RapidoLayout info={entry} parentUrl={parentUrl} />}
 
-{/* Dans le template, section Menu / Index */}
 {isIndex && (
   <A4Layout 
     info={entry} 
     title={entry.data.title || "Rapidos"} 
-    niveau={entry.data.niveau}  <-- 🛠️ AJOUTER CECI
-    theme="Rapidos"
     indexContent={hasIndexContent ? IndexContent : null}
   >
     <div class="rapido-menu-grid">
-      {/* AFFICHAGE DES DOSSIERS (Catégories) */}
       {subfolders.map(folder => (
         <a href={`${base}/rapidos/${folder.slug.replace(/\/index$/, '')}/`} class="card folder-card">
           <div class="card-header">
             <span class="rapido-icon">📂</span>
             <span class="rapido-number">{folder.data.title}</span>
           </div>
-          <div class="rapido-meta">Dossier</div>
         </a>
       ))}
-
-      {/* AFFICHAGE DES RAPIDOS (Fiches) */}
       {directChildren.map(child => (
         <a href={`${base}/rapidos/${child.slug}/`} class="card rapido-card-link">
           <div class="card-header">
             <span class="rapido-icon">⚡</span>
             <span class="rapido-number">Rapido {child.data.numero}</span>
-          </div>
-          <div class="rapido-meta">
-            {child.data.questions?.length || 0} questions • {child.data.niveau}
           </div>
         </a>
       ))}

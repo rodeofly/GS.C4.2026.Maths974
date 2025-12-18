@@ -2,13 +2,13 @@
 // src/layouts/A4.astro
 import BasePrintLayout from './BasePrintLayout.astro';
 
-// Récupération de indexContent ici aussi
-const { info, niveau, theme, sousTheme, indexContent } = Astro.props;
+// 1. On extrait 'title' des props pour pouvoir l'utiliser
+const { info, niveau, theme, sousTheme, indexContent, title: propsTitle } = Astro.props;
 const fm = info?.data ?? info?.frontmatter ?? {};
 
-// 🛠️ CORRECTION : Priorité au titre passé en prop, puis au frontmatter
+// 2. Priorité au titre passé par la page, sinon au frontmatter, sinon 'Sans titre'
 const title = propsTitle ?? fm.title ?? fm.sous_theme ?? sousTheme ?? 'Sans titre';
-const themeLabel = fm.theme ?? theme ?? (path.includes('/rapidos/') ? 'Rapidos' : 'Général');
+const themeLabel = fm.theme ?? theme ?? 'Général';
 const niveauLabel = fm.niveau ?? niveau ?? '';
 ---
 

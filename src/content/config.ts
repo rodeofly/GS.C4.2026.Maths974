@@ -37,34 +37,25 @@ const guideCollection = defineCollection({
   }),
 });
 
-// src/content/config.ts
-
 const rapidosCollection = defineCollection({
   type: 'content',
   schema: z.object({
-    // CHAMPS OBLIGATOIRES POUR L'AFFICHAGE
     title: z.string().optional(),
     numero: z.string().optional(),
     niveau: z.string().optional(),
     theme: z.string().optional(),
     periode: z.number().optional(),
     semaine: z.number().optional(),
-    
-    // STRUCTURE DES QUESTIONS
     questions: z.array(
       z.object({
         variantes: z.array(
           z.object({
             texte: z.string(),
             gs: z.string().optional(),
-            difficulte: z.number().optional(),
             visual: z.object({
               type: z.string(),
               position: z.enum(['north', 'south', 'east', 'west', 'front', 'back']).optional(),
               config: z.record(z.any()).optional(),
-              editable: z.boolean().optional(),
-              opacity: z.number().optional(),
-              hidden: z.boolean().optional(),
             }).optional(),
           })
         )
@@ -73,7 +64,4 @@ const rapidosCollection = defineCollection({
   }),
 });
 
-export const collections = {
-  'guide': guideCollection,
-  'rapidos': rapidosCollection,
-};
+export const collections = { 'guide': guideCollection, 'rapidos': rapidosCollection };

@@ -7,46 +7,35 @@ import SubthemeInfo from '../components/SubthemeInfo.astro';
 const { info, title, layoutClass, niveauLabel, indexContent } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-// 🛠️ CORRECTION : Détection fiable basée sur l'URL
+// 🛠️ DÉTECTION FIABLE basée sur l'URL de la page
 const path = Astro.url.pathname;
 const isRapido = path.includes('/rapidos/');
 
 const rootLabel = isRapido ? 'Rapidos' : 'Guide';
 const rootUrl = isRapido ? `${base}/rapidos/` : `${base}/guide/`;
 
-const slug = info?.slug || '';
+// Slug actuel pour la logique d'affichage
+const slug = info?.slug?.replace(/\/index$/, '') || '';
 const niveauSlug = slug.split('/')[0];
 ---
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
-    
-    <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
-    
-    <script is:inline>
-      window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-    <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
-  </head>
-  <body class={`layout ${layoutClass}`}>
+<body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
     
     <header class="layout-header-simple">
       <nav class="breadcrumb no-print" aria-label="Fil d'ariane">
         <ol>
           <li><a href={`${base}/`}>Accueil</a></li>
-          <li class="separator">/</li>
           
-          {/* 🛠️ LIEN VERS LA SECTION (Rapidos ou Guide) */}
-          <li><a href={rootUrl}>{rootLabel}</a></li>
+          {/* Affiche "Rapidos" ou "Guide" seulement si on n'est pas déjà à la racine de la section */}
+          {slug !== "" && slug !== "index" && (
+            <>
+              <li class="separator">/</li>
+              <li><a href={rootUrl}>{rootLabel}</a></li>
+            </>
+          )}
           
-          {/* 🛠️ LIEN VERS LE NIVEAU (ex: Sixième) */}
-          {niveauLabel && niveauSlug && (slug !== niveauSlug) && (slug !== `${niveauSlug}/index`) && (
+          {/* Affiche le Niveau (ex: CM2) seulement si on est dans un sous-dossier ou une fiche */}
+          {niveauLabel && niveauSlug && slug !== niveauSlug && (
             <>
               <li class="separator">/</li>
               <li><a href={`${rootUrl}${niveauSlug}/`}>{niveauLabel}</a></li>
@@ -73,41 +62,7 @@ const niveauSlug = slug.split('/')[0];
     <footer>
       <slot name="footer" />
     </footer>
-
-    {/* Scripts inchangés */}
-    <script is:inline>
-      if (typeof window !== 'undefined') {
-        const convertTikzBlocks = () => {
-          document.querySelectorAll('.etiquette').forEach((container) => {
-            if (container.dataset.tikzProcessed === 'true') return;
-            let html = container.innerHTML;
-            if (!html || !html.includes('\\begin{tikzpicture}')) { container.dataset.tikzProcessed = 'true'; return; }
-            const tikzPattern = /\\\[(?:\s*\\require\{tikz\}\s*)?([\s\S]*?\\begin{tikzpicture}[\s\S]*?\\end{tikzpicture}[\s\S]*?)\\\]/g;
-            html = html.replace(tikzPattern, (_, tikz) => {
-              const cleaned = tikz.replace(/\\require\{tikz\}/g, '').trim();
-              return '<script type="text/tikz">' + cleaned + '</scr' + 'ipt>';
-            });
-            html = html.replace(/\\require\{tikz\}/g, '');
-            container.innerHTML = html;
-            container.dataset.tikzProcessed = 'true';
-          });
-        };
-        const renderTikz = () => { if (window.tikzjax?.renderAll) window.tikzjax.renderAll(); };
-        const runMath = () => {
-          convertTikzBlocks();
-          if (window.MathJax?.typesetPromise) { window.MathJax.typesetPromise().then(renderTikz).catch(renderTikz);
-          } else { renderTikz(); }
-        };
-        const onReady = () => { if (window.MathJax?.startup?.promise) { window.MathJax.startup.promise.then(runMath).catch(renderTikz); } else { runMath(); } };
-        const resetTikzProcessing = () => { document.querySelectorAll('.etiquette').forEach((container) => { delete container.dataset.tikzProcessed; }); };
-        const openAll = () => { document.querySelectorAll('details').forEach((detail) => { detail.setAttribute('open', ''); }); };
-        if (document.readyState === 'complete' || document.readyState === 'interactive') { onReady(); } else { document.addEventListener('DOMContentLoaded', onReady, { once: true });
-        }
-        document.addEventListener('astro:after-swap', () => { resetTikzProcessing(); onReady(); });
-        window.addEventListener('beforeprint', openAll);
-      }
-    </script>
-  </body>
+    </body>
 </html>
 
 <style>
