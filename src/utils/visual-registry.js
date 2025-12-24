@@ -4,6 +4,7 @@
 // ========================================
 
 import { registerVisual } from './visuals-system.js';
+import { metadata as axeGradueMetadata } from '../visuals/axe-gradue/config.js';
 
 /**
  * Enregistrer tous les types de visuels disponibles
@@ -11,19 +12,7 @@ import { registerVisual } from './visuals-system.js';
  */
 
 // 1. AXE GRADUÉ
-registerVisual('axe-gradue', () => import('../components/visuals/axe-gradue.js'));
-
-// 2. REPÈRE CARTÉSIEN (à créer)
-registerVisual('repere-cartesien', () => import('../components/visuals/repere-cartesien.js'));
-
-// 3. TRIANGLE (à créer)
-registerVisual('triangle', () => import('../components/visuals/triangle.js'));
-
-// 4. FRACTION FORME (à créer)
-registerVisual('fraction-forme', () => import('../components/visuals/fraction-forme.js'));
-
-// 5. CUBES NUMÉRATION (à créer)
-registerVisual('cubes-numeration', () => import('../components/visuals/cubes-numeration.js'));
+registerVisual('axe-gradue', () => import('../visuals/axe-gradue/axe-gradue.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -54,40 +43,7 @@ export function getAvailableVisuals() {
  * (Pour l'UI de sélection dans l'éditeur)
  */
 export const visualMetadata = {
-  'axe-gradue': {
-    label: 'Axe Gradué',
-    description: 'Axe numérique horizontal ou vertical avec graduations',
-    icon: '📏',
-    category: 'Repérage',
-    configFields: [
-      { name: 'min', type: 'number', label: 'Minimum', default: 0 },
-      { name: 'max', type: 'number', label: 'Maximum', default: 10 },
-      { name: 'step', type: 'number', label: 'Pas', default: 1 },
-      { name: 'visibleLabels', type: 'text', label: 'Labels visibles (ex: 0, 5)', default: '' },
-      { name: 'labelFrequency', type: 'number', label: 'Fréquence Labels (1/N)', default: 1 },
-      {
-        name: 'orientation',
-        type: 'select',
-        label: 'Orientation',
-        options: ['horizontal', 'vertical'],
-        default: 'horizontal',
-      },
-      { name: 'width', type: 'number', label: 'Largeur (px)', default: 400 },
-      { name: 'height', type: 'number', label: 'Hauteur (px)', default: 80 },
-      { name: 'showNumbers', type: 'boolean', label: 'Afficher nombres', default: true },
-      { name: 'showArrows', type: 'boolean', label: 'Afficher flèches', default: true },
-      {
-        name: 'points',
-        type: 'array',
-        label: 'Points marqués',
-        itemFields: [
-          { name: 'label', type: 'text', label: 'Label' },
-          { name: 'value', type: 'number', label: 'Valeur' },
-          { name: 'color', type: 'color', label: 'Couleur', default: '#f59e0b' },
-        ],
-      },
-    ],
-  },
+  'axe-gradue': axeGradueMetadata,
 
   'repere-cartesien': {
     label: 'Repère Cartésien',

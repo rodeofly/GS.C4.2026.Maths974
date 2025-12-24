@@ -1,0 +1,132 @@
+// src/visuals/axe-gradue/editor.js
+
+export function renderEditor(panel, visualData, helpers) {
+  const { generateFieldHTML } = helpers;
+  const editorBody = panel.querySelector('.editor-body');
+  const config = visualData.config || {};
+  const position = visualData.position || 'north';
+
+  // 1. Charger les préférences aléatoires
+  let randPrefs = { min: '-10:0', count: '5:10', steps: '1, 0.5, 2', visible: '2:4', points: '1:2', snap: true };
+  try {
+    const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
+    if (saved) {
+      randPrefs.min = saved.minRange.join(':');
+      randPrefs.count = saved.countRange.join(':');
+      randPrefs.steps = saved.steps.join(', ');
+      randPrefs.visible = saved.visibleRange.join(':');
+      randPrefs.points = saved.pointsRange.join(':');
+      randPrefs.snap = saved.snap !== undefined ? saved.snap : true;
+    }
+  } catch (e) {}
+
+  // Helper pour les champs range (min/max inputs)
+  const rangeField = (label, name, val) => {
+    const [v1, v2] = val.split(':');
+    return `
+      <div class="editor-field full-width range-group">
+        <label>${label}</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.3rem;">
+            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MIN</span>
+            <input type="number" step="any" value="${v1}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.3rem;">
+            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MAX</span>
+            <input type="number" step="any" value="${v2}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
+          </div>
+        </div>
+        <input type="hidden" name="${name}" value="${val}">
+      </div>
+    `;
+  };
+
+  // 2. HTML Fusionné
+  const html = `
+    <!-- CHAMPS CACHÉS (Pour stocker les valeurs générées) -->
+    <input type="hidden" name="min" value="${config.min}">
+    <input type="hidden" name="max" value="${config.max}">
+    <input type="hidden" name="step" value="${config.step}">
+    <input type="hidden" name="mode" value="${config.mode || 'decimal'}">
+    <input type="hidden" name="denominators" value="${config.denominators || '2,4,5,10'}">
+    <input type="hidden" name="width" value="${config.width || 800}">
+    <input type="hidden" name="height" value="${config.height || 100}">
+    <input type="hidden" name="visibleLabels" value="${Array.isArray(config.visibleLabels) ? config.visibleLabels.join(', ') : ''}">
+    <input type="hidden" name="points" value='${JSON.stringify(config.points || [])}'>
+
+    <!-- LIGNE 1 : POSITION + SUR GRADUATION (SELECT) -->
+    <div class="editor-field" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: end;">
+       <div class="editor-field" style="padding: 0; border: none; background: transparent;">
+          <label for="editor-field-position">POSITION</label>
+          <select id="editor-field-position" name="position">
+            ${['north', 'south', 'east', 'west'].map(opt => `<option value="${opt}" ${opt === position ? 'selected' : ''}>${opt}</option>`).join('')}
+          </select>
+       </div>
+       
+       <div class="editor-field" style="justify-content: flex-end; padding-bottom: 5px; padding: 0; border: none; background: transparent;">
+          <label for="rand-snap-select">SUR GRADUATION</label>
+          <select id="rand-snap-select" name="rand-snap">
+            <option value="true" ${randPrefs.snap ? 'selected' : ''}>OUI</option>
+            <option value="false" ${!randPrefs.snap ? 'selected' : ''}>NON</option>
+          </select>
+       </div>
+    </div>
+
+    <!-- LIGNE 2 : MODE + DÉNOMINATEURS -->
+    <div class="editor-field" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+       <div class="editor-field" style="padding: 0; border: none; background: transparent;">
+          <label>MODE</label>
+          <select name="mode_select" onchange="this.parentElement.parentElement.parentElement.querySelector('[name=mode]').value = this.value; this.parentElement.parentElement.parentElement.querySelector('[name=mode]').dispatchEvent(new Event('input', {bubbles:true}));">
+            ${['decimal', 'fraction', 'mixed'].map(m => `<option value="${m}" ${m === (config.mode || 'decimal') ? 'selected' : ''}>${m}</option>`).join('')}
+          </select>
+       </div>
+       <div class="editor-field" style="padding: 0; border: none; background: transparent;">
+          <label>DÉNOMINATEURS</label>
+          <input type="text" value="${Array.isArray(config.denominators) ? config.denominators.join(',') : (config.denominators || '2,4,5,10')}" onchange="this.parentElement.parentElement.parentElement.querySelector('[name=denominators]').value = this.value; this.parentElement.parentElement.parentElement.querySelector('[name=denominators]').dispatchEvent(new Event('input', {bubbles:true}));">
+       </div>
+    </div>
+
+    <!-- PARAMÈTRES -->
+    ${generateFieldHTML({ name: 'rand-steps', label: 'PAS POSSIBLES', type: 'text' }, randPrefs.steps)}
+    ${rangeField('INTERVALLE MIN', 'rand-min-range', randPrefs.min)}
+    ${rangeField('NB GRADUATIONS (LONGUEUR)', 'rand-count-range', randPrefs.count)}
+    ${rangeField('ABSCISSES AFFICHÉES', 'rand-visible-range', randPrefs.visible)}
+    ${rangeField('NB POINTS', 'rand-points-range', randPrefs.points)}
+  `;
+
+  editorBody.insertAdjacentHTML('beforeend', html);
+
+  // Logique pour mettre à jour les inputs hidden quand on change les ranges
+  panel.querySelectorAll('.range-group').forEach(group => {
+    const hidden = group.querySelector('input[type="hidden"]');
+    const inputs = group.querySelectorAll('input[type="number"]');
+    
+    const updateHidden = () => {
+      hidden.value = `${inputs[0].value}:${inputs[1].value}`;
+      hidden.dispatchEvent(new Event('input'));
+    };
+    
+    inputs.forEach(inp => inp.addEventListener('input', updateHidden));
+  });
+
+  // Sauvegarde automatique des préférences du générateur (FIX: Sauvegarde explicite dans localStorage)
+  ['rand-min-range', 'rand-count-range', 'rand-steps', 'rand-visible-range', 'rand-points-range', 'rand-snap'].forEach(name => {
+    const el = panel.querySelector(`[name="${name}"]`);
+    if (el) {
+      el.addEventListener('input', () => {
+         // Sauvegarder immédiatement les préférences aléatoires
+         const currentPrefs = {
+            minRange: panel.querySelector('[name="rand-min-range"]').value.split(':'),
+            countRange: panel.querySelector('[name="rand-count-range"]').value.split(':'),
+            steps: panel.querySelector('[name="rand-steps"]').value.split(',').map(s => s.trim()),
+            visibleRange: panel.querySelector('[name="rand-visible-range"]').value.split(':'),
+            pointsRange: panel.querySelector('[name="rand-points-range"]').value.split(':'),
+            snap: panel.querySelector('[name="rand-snap"]').value === 'true'
+         };
+         if (panel.currentCard?.id) {
+            localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(currentPrefs));
+         }
+      });
+    }
+  });
+}

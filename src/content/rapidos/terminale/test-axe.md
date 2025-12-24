@@ -20,12 +20,12 @@ questions:
         visual:
           type: "axe-gradue"
           position: "west"
-          config: { min: 0.75, max: 0.85, step: 0.01, orientation: "vertical", width: 120, height: 140, points: [{label: "C", value: 0.79}] }
+          config: { min: 0.75, max: 0.85, step: 0.01, orientation: "vertical", points: [{label: "C", value: 0.79}] }
       - texte: "Niveau 4 (Vertical) : Quelle température indique cet axe ?"
         visual:
           type: "axe-gradue"
           position: "east"
-          config: { min: 10, max: 20, step: 1, orientation: "vertical", width: 130, height: 150, points: [{label: "T", value: 16}] }
+          config: { min: 10, max: 20, step: 1, orientation: "vertical", points: [{label: "T", value: 16}] }
 
   - variantes:
       - texte: "Sur cet axe, quelle est la valeur du point M ?"
@@ -33,7 +33,7 @@ questions:
         visual:
           type: "axe-gradue"
           position: "north"
-          config: { min: -5, max: 5, step: 1, height: 80, points: [{label: "M", value: -2}] }
+          config: { min: -5, max: 5, step: 1, points: [{label: "M", value: -2}] }
       - texte: "Quelle est l'abscisse du point N sur cet axe ?"
         gs: "6N1-5"
         visual:
@@ -53,7 +53,7 @@ questions:
         visual:
           type: "axe-gradue"
           position: "south"
-          config: { min: 2.5, max: 3.5, step: 0.1, height: 70, points: [{label: "D", value: 2.8}] }
+          config: { min: 2.5, max: 3.5, step: 0.1, points: [{label: "D", value: 2.8}] }
       - texte: "Identifiez l'abscisse du point E."
         gs: "5N2-3"
         visual:
@@ -72,38 +72,38 @@ questions:
         gs: "4N1-2"
         visual:
           type: "axe-gradue"
-          position: "east"
-          config: { min: 0, max: 100, step: 10, orientation: "vertical", width: 100, height: 150, points: [{label: "H", value: 60}] }
+          position: "north"
+          config: { min: 0, max: 100, step: 10, orientation: "horizontal", points: [{label: "H", value: 60}] }
       - texte: "Quelle altitude indique le point K sur cet axe ?"
         gs: "4N1-2"
         visual:
           type: "axe-gradue"
           position: "east"
-          config: { min: 50, max: 150, step: 10, orientation: "vertical", width: 120, height: 150, points: [{label: "K", value: 110}] }
+          config: { min: 50, max: 150, step: 10, orientation: "vertical", points: [{label: "K", value: 110}] }
       - texte: "Déterminez la température indiquée par le point R."
         gs: "4N1-2"
         visual:
           type: "axe-gradue"
           position: "east"
-          config: { min: -20, max: 30, step: 5, orientation: "vertical", width: 140, height: 160, points: [{label: "R", value: 15}] }
+          config: { min: -20, max: 30, step: 5, orientation: "vertical", points: [{label: "R", value: 15}] }
 
   - variantes:
       - texte: "Sur cet axe précis, quelle est la valeur du point S ?"
         gs: "4N2-1"
         visual:
           type: "axe-gradue"
-          position: "west"
-          config: { min: 1.2, max: 1.3, step: 0.01, orientation: "vertical", width: 110, height: 130, points: [{label: "S", value: 1.25}] }
+          position: "north"
+          config: { min: 1.2, max: 1.3, step: 0.01, orientation: "horizontal", points: [{label: "S", value: 1.25}] }
       - texte: "Identifiez la mesure exacte du point V."
         gs: "4N2-1"
         visual:
           type: "axe-gradue"
           position: "west"
-          config: { min: 0.4, max: 0.5, step: 0.01, orientation: "vertical", width: 120, height: 140, points: [{label: "V", value: 0.47}] }
+          config: { min: 0.4, max: 0.5, step: 0.01, orientation: "vertical", points: [{label: "V", value: 0.47}] }
       - texte: "Quelle est la valeur du point W sur cet axe millimétrique ?"
         gs: "4N2-1"
         visual:
           type: "axe-gradue"
           position: "west"
-          config: { min: 2.35, max: 2.45, step: 0.01, orientation: "vertical", width: 115, height: 135, points: [{label: "W", value: 2.41}] }
+          config: { min: 2.35, max: 2.45, step: 0.01, orientation: "vertical", points: [{label: "W", value: 2.41}] }
 ---

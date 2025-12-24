@@ -7,6 +7,7 @@
 import VisualsSystem from './visuals-system.js';
 import './visual-registry.js'; // Charge le registre
 import { visualMetadata, getConfigFields, getDefaultConfig } from './visual-registry.js';
+import { renderEditor as renderAxeGradueEditor } from '../visuals/axe-gradue/editor.js';
 
 /**
  * Initialiser le système de visuels pour tous les Rapidos
@@ -267,7 +268,7 @@ function populateEditor(panel, visualType, visualData) {
 
   // --- LAYOUT SPÉCIFIQUE POUR AXE GRADUÉ (FUSIONNÉ) ---
   if (visualType === 'axe-gradue') {
-    renderAxeGradueEditor(panel, visualData);
+    renderAxeGradueEditor(panel, visualData, { generateFieldHTML });
   } else {
     // --- LAYOUT STANDARD POUR LES AUTRES VISUELS ---
     renderStandardEditor(panel, visualType, visualData);
@@ -285,125 +286,6 @@ function populateEditor(panel, visualType, visualData) {
 
   // Event Listeners pour l'éditeur de tableau (Points) - Géré globalement
   // (Le code existant pour click sur .btn-remove-item / .btn-add-item fonctionne car délégué sur editorBody)
-}
-
-/**
- * Rendu spécifique fusionné pour Axe Gradué
- */
-function renderAxeGradueEditor(panel, visualData) {
-  const editorBody = panel.querySelector('.editor-body');
-  const config = visualData.config || {};
-  const position = visualData.position || 'north';
-
-  // 1. Charger les préférences aléatoires
-  let randPrefs = { min: '-10:0', count: '5:10', steps: '1, 0.5, 2', visible: '2:4', points: '1:2', snap: true };
-  try {
-    const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
-    if (saved) {
-      randPrefs.min = saved.minRange.join(':');
-      randPrefs.count = saved.countRange.join(':');
-      randPrefs.steps = saved.steps.join(', ');
-      randPrefs.visible = saved.visibleRange.join(':');
-      randPrefs.points = saved.pointsRange.join(':');
-      randPrefs.snap = saved.snap !== undefined ? saved.snap : true;
-    }
-  } catch (e) {}
-
-  // Helper pour les champs range (min/max inputs)
-  const rangeField = (label, name, val) => {
-    const [v1, v2] = val.split(':');
-    return `
-      <div class="editor-field full-width range-group">
-        <label>${label}</label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-          <div style="display: flex; align-items: center; gap: 0.3rem;">
-            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MIN</span>
-            <input type="number" step="any" value="${v1}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
-          </div>
-          <div style="display: flex; align-items: center; gap: 0.3rem;">
-            <span style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">MAX</span>
-            <input type="number" step="any" value="${v2}" style="padding: 0.2rem 0.4rem; font-size: 0.8rem;">
-          </div>
-        </div>
-        <input type="hidden" name="${name}" value="${val}">
-      </div>
-    `;
-  };
-
-  // 2. HTML Fusionné
-  const html = `
-    <!-- CHAMPS CACHÉS (Pour stocker les valeurs générées) -->
-    <input type="hidden" name="min" value="${config.min}">
-    <input type="hidden" name="max" value="${config.max}">
-    <input type="hidden" name="step" value="${config.step}">
-    <input type="hidden" name="width" value="${config.width || 800}">
-    <input type="hidden" name="height" value="${config.height || 80}">
-    <input type="hidden" name="visibleLabels" value="${Array.isArray(config.visibleLabels) ? config.visibleLabels.join(', ') : ''}">
-    <input type="hidden" name="points" value='${JSON.stringify(config.points || [])}'>
-
-    <!-- LIGNE 1 : POSITION + CHECKBOX -->
-    <div style="grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; align-items: end;">
-       <div class="editor-field">
-          <label for="editor-field-position">POSITION</label>
-          <select id="editor-field-position" name="position">
-            ${['north', 'south', 'east', 'west'].map(opt => `<option value="${opt}" ${opt === position ? 'selected' : ''}>${opt}</option>`).join('')}
-          </select>
-       </div>
-       
-       <div class="editor-field" style="justify-content: flex-end; padding-bottom: 5px; padding: 0; border: none; background: transparent;">
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <input type="checkbox" id="rand-snap-check" name="rand-snap" ${randPrefs.snap ? 'checked' : ''} style="width: auto;" />
-            <label for="rand-snap-check" style="margin:0; cursor:pointer;">SUR GRADUATION</label>
-          </div>
-       </div>
-    </div>
-
-    <!-- PARAMÈTRES -->
-    ${rangeField('INTERVALLE MIN', 'rand-min-range', randPrefs.min)}
-    ${generateFieldHTML({ name: 'rand-steps', label: 'PAS POSSIBLES', type: 'text' }, randPrefs.steps)}
-    ${rangeField('NB GRADUATIONS (LONGUEUR)', 'rand-count-range', randPrefs.count)}
-    ${rangeField('ABSCISSES AFFICHÉES', 'rand-visible-range', randPrefs.visible)}
-    ${rangeField('NB POINTS', 'rand-points-range', randPrefs.points)}
-  `;
-
-  editorBody.insertAdjacentHTML('beforeend', html);
-
-  // Logique pour mettre à jour les inputs hidden quand on change les ranges
-  panel.querySelectorAll('.range-group').forEach(group => {
-    const hidden = group.querySelector('input[type="hidden"]');
-    const inputs = group.querySelectorAll('input[type="number"]');
-    
-    const updateHidden = () => {
-      hidden.value = `${inputs[0].value}:${inputs[1].value}`;
-      hidden.dispatchEvent(new Event('input'));
-    };
-    
-    inputs.forEach(inp => inp.addEventListener('input', updateHidden));
-  });
-
-  // Sauvegarde automatique des préférences du générateur lors de la modification
-  const savePrefs = () => {
-    const getVal = (name) => panel.querySelector(`[name="${name}"]`)?.value || '';
-    const prefs = {
-      minRange: getVal('rand-min-range').split(':').map(Number),
-      countRange: getVal('rand-count-range').split(':').map(Number),
-      steps: getVal('rand-steps').split(',').map(s => parseFloat(s.trim())),
-      visibleRange: getVal('rand-visible-range').split(':').map(Number),
-      pointsRange: getVal('rand-points-range').split(':').map(Number),
-      snap: panel.querySelector('[name="rand-snap"]').value === 'true'
-    };
-    if (panel.currentCard?.id) {
-      localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(prefs));
-    }
-  };
-
-  ['rand-min-range', 'rand-count-range', 'rand-steps', 'rand-visible-range', 'rand-points-range', 'rand-snap'].forEach(name => {
-    const el = panel.querySelector(`[name="${name}"]`);
-    if (el) {
-      el.addEventListener('input', savePrefs);
-      el.addEventListener('change', savePrefs);
-    }
-  });
 }
 
 /**
@@ -589,16 +471,35 @@ async function applyEditorChanges(panel) {
 /**
  * Logique de génération aléatoire (partagée)
  */
-function generateRandomConfigValues(prefs) {
+function generateRandomConfigValues(prefs, currentConfig = {}) {
   const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  const minRange = prefs.minRange || [-10, 0];
-  const countRange = prefs.countRange || [5, 10]; // Nombre de graduations
-  const steps = prefs.steps || [1];
-  const visibleRange = prefs.visibleRange || [2, 4];
-  const pointsRange = prefs.pointsRange || [2, 3];
+  // Conversion explicite en nombres pour éviter les erreurs de type (ex: "0" + 1 = "01")
+  const minRange = (prefs.minRange || [-10, 0]).map(Number);
+  const countRange = (prefs.countRange || [5, 10]).map(Number); // Nombre de graduations
+  let steps = (prefs.steps || [1]).map(Number).filter(s => s > 0);
+  if (steps.length === 0) steps = [1];
+
+  const visibleRange = (prefs.visibleRange || [2, 4]).map(Number);
+  const pointsRange = (prefs.pointsRange || [2, 3]).map(Number);
   const snapToGrid = prefs.snap !== undefined ? prefs.snap : true;
+
+  // INTELLIGENCE DU PAS (STEP) SELON LE MODE
+  const mode = currentConfig.mode || 'decimal';
+
+  if (mode === 'fraction' || mode === 'mixed') {
+    // En mode fraction/mixte : le pas est STRICTEMENT déterminé par les dénominateurs (1/d)
+    // On ignore les "PAS POSSIBLES" configurés pour le mode décimal
+    if (currentConfig.denominators) {
+      let denoms = currentConfig.denominators;
+      if (typeof denoms === 'string') denoms = denoms.split(',').map(Number);
+      
+      if (Array.isArray(denoms) && denoms.length > 0) {
+        steps = denoms.map(d => 1/d);
+      }
+    }
+  }
 
   const newMin = randInt(minRange[0], minRange[1]);
   
@@ -639,8 +540,8 @@ function generateRandomConfigValues(prefs) {
     
     let precision = 0.01;
     if (snapToGrid) {
-      // Exactement sur graduation ou milieu (step / 2)
-      precision = newStep / 2;
+      // Exactement sur la graduation (pas de demi-mesure pour éviter la confusion)
+      precision = newStep;
     } else {
       precision = 0.01;
     }
@@ -696,10 +597,12 @@ async function quickRandomize(cardElement) {
   } catch(e) {}
 
   // 2. Générer
-  const newConfig = generateRandomConfigValues(prefs);
+  const activeVariant = cardElement.querySelector('.variant-content.active');
+  const currentConfig = activeVariant?.visualData?.config || {};
+  
+  const newConfig = generateRandomConfigValues(prefs, currentConfig);
 
   // 3. Appliquer
-  const activeVariant = cardElement.querySelector('.variant-content.active');
   if (activeVariant) {
     // Fusionner avec la config existante pour garder width/height/etc.
     activeVariant.visualData.config = { 

@@ -1,0 +1,29 @@
+export const metadata = {
+  label: 'Axe Gradué',
+  description: 'Axe numérique horizontal ou vertical avec graduations',
+  icon: '📏',
+  category: 'Repérage',
+  configFields: [
+    { name: 'min', type: 'number', label: 'Minimum', default: 0 },
+    { name: 'max', type: 'number', label: 'Maximum', default: 10 },
+    { name: 'step', type: 'number', label: 'Pas', default: 1 },
+    { name: 'visibleLabels', type: 'text', label: 'Labels visibles (ex: 0, 5)', default: '' },
+    { name: 'labelFrequency', type: 'number', label: 'Fréquence Labels (1/N)', default: 1 },
+    {
+      name: 'orientation',
+      type: 'select',
+      label: 'Orientation',
+      options: ['horizontal', 'vertical'],
+      default: 'horizontal',
+    },
+    { name: 'width', type: 'number', label: 'Largeur (px)', default: 400 },
+    { name: 'height', type: 'number', label: 'Hauteur (px)', default: 80 },
+    { name: 'showNumbers', type: 'boolean', label: 'Afficher nombres', default: true },
+    { name: 'showArrows', type: 'boolean', label: 'Afficher flèches', default: true },
+    {
+      name: 'points',
+      type: 'array',
+      label: 'Points marqués',
+    },
+  ],
+};
