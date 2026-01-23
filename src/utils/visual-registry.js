@@ -13,6 +13,7 @@ import { metadata as axeGradueMetadata } from '../visuals/axe-gradue/config.js';
 
 // 1. AXE GRADUÉ
 registerVisual('axe-gradue', () => import('../visuals/axe-gradue/axe-gradue.js'));
+registerVisual('texte-trous', () => import('../visuals/texte-trous/texte-trous.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -107,6 +108,17 @@ export const visualMetadata = {
       { name: 'cubeSize', type: 'number', label: 'Taille cube (px)', default: 20 },
       { name: 'spacing', type: 'number', label: 'Espacement', default: 5 },
       { name: 'showLabels', type: 'boolean', label: 'Afficher étiquettes', default: true },
+    ],
+  },
+
+  'texte-trous': {
+    label: 'Texte à Trous',
+    description: 'Texte avec variables aléatoires et trous calculés',
+    icon: '📝',
+    category: 'Algèbre',
+    configFields: [
+      { name: 'content', type: 'textarea', label: 'Modèle (Markdown)', default: 'Soit [a:2..10] et [b:2..10].\nCalculer $ [a] \\times [b] $. \n\nRéponse : [?a*b]' },
+      { name: 'mode', type: 'select', label: 'Mode', options: ['web', 'print'], default: 'web' },
     ],
   },
 };

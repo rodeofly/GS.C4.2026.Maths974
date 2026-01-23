@@ -321,6 +321,11 @@ function generateFieldHTML(field, value) {
       inputHTML = `<input type="text" id="${fieldId}" name="${field.name}" value="${value}" />`;
       break;
 
+    case 'textarea':
+      containerClass += ' full-width';
+      inputHTML = `<textarea id="${fieldId}" name="${field.name}" rows="6" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; font-family: monospace; font-size: 0.9em;">${value}</textarea>`;
+      break;
+
     case 'boolean':
       inputHTML = `
         <div style="display: flex; align-items: center; gap: 0.5rem;">

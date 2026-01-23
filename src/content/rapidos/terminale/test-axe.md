@@ -5,27 +5,35 @@ periode: 3
 semaine: 21
 questions:
   - variantes:
-      - texte: "Niveau 1 (Unités) : Quelle est la valeur du point A ?"
+      - texte: ""
         gs: "6N1-3.14"
         visual:
-          type: "axe-gradue"
+          type: "texte-trous"
           position: "north"
-          config: { min: 42, max: 52, step: 1, points: [{label: "A", value: 47}] }
-      - texte: "Niveau 2 (Dixièmes) : Quelle est la valeur du point B ?"
+          config:
+            mode: "web"
+            content: "Calculer : $ [a:2..9] \\times [b:2..9] = $ [?a*b]"
+      - texte: "Géométrie : calculer le périmètre du rectangle."
         visual:
-          type: "axe-gradue"
-          position: "south"
-          config: { min: 5.4, max: 6.4, step: 0.1, points: [{label: "B", value: 5.9}] }
-      - texte: "Niveau 3 (Centièmes) : Identifiez la position de C."
+          type: "texte-trous"
+          position: "north"
+          config:
+            mode: "web"
+            content: "Un rectangle de longueur $L=[L:10..20]$ m et largeur $l=[l:2..8]$ m.\nPérimètre = [?2*(L+l)] m"
+      - texte: "Problème : calculer le coût total."
         visual:
-          type: "axe-gradue"
-          position: "west"
-          config: { min: 0.75, max: 0.85, step: 0.01, orientation: "vertical", points: [{label: "C", value: 0.79}] }
-      - texte: "Niveau 4 (Vertical) : Quelle température indique cet axe ?"
+          type: "texte-trous"
+          position: "north"
+          config:
+            mode: "web"
+            content: "J'achète [n:3..8] stylos à [p:1.5..4.5, 0.5] €.\n\nTotal = [?n*p] €"
+      - texte: "Aire du triangle : appliquer la formule."
         visual:
-          type: "axe-gradue"
-          position: "east"
-          config: { min: 10, max: 20, step: 1, orientation: "vertical", points: [{label: "T", value: 16}] }
+          type: "texte-trous"
+          position: "north"
+          config:
+            mode: "web"
+            content: "Base $b=[b:4..12, 2]$ cm, hauteur $h=[h:3..9]$ cm.\n\nAire = [?b*h/2] cm²"
 
   - variantes:
       - texte: "Sur cet axe, quelle est la valeur du point M ?"
