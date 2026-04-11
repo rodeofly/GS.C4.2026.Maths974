@@ -1,6 +1,8 @@
 ---
 import { randomUUID } from 'node:crypto';
-const { page, x, y, w, h, pdfUrl = '/pdf/guide-survie-c3.pdf', etiquetteUrl = '#' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const { page, x, y, w, h, etiquetteUrl = '#' } = Astro.props;
+const pdfUrl = Astro.props.pdfUrl ?? `${base}/pdf/guide-survie-c3.pdf`;
 const uid = randomUUID().slice(0, 8);
 ---
 
