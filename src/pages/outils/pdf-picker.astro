@@ -1,0 +1,285 @@
+---
+// Outil de sélection de coordonnées PDF
+// Accessible sur : /outils/pdf-picker
+---
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PDF Picker — Maths974</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #f1f5f9; display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Panneau gauche : contrôles ── */
+    #sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      background: #1e293b;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      overflow-y: auto;
+    }
+
+    h1 { font-size: 1rem; font-weight: 700; color: #38bdf8; }
+
+    label { font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 0.25rem; }
+
+    input[type=number], input[type=text], select {
+      width: 100%; padding: 0.4rem 0.6rem;
+      background: #0f172a; border: 1px solid #334155;
+      color: #f1f5f9; border-radius: 4px; font-size: 0.85rem;
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+    button {
+      padding: 0.5rem 1rem; border: none; border-radius: 6px;
+      font-size: 0.85rem; cursor: pointer; font-weight: 600;
+    }
+    .btn-primary { background: #0ea5e9; color: white; }
+    .btn-secondary { background: #334155; color: #f1f5f9; }
+
+    #yaml-output {
+      background: #0f172a; border: 1px solid #334155;
+      border-radius: 6px; padding: 0.75rem;
+      font-family: monospace; font-size: 0.75rem; color: #86efac;
+      white-space: pre; min-height: 120px;
+      cursor: pointer; position: relative;
+    }
+    #yaml-output::after {
+      content: 'Clic pour copier';
+      position: absolute; top: 0.4rem; right: 0.4rem;
+      font-size: 0.65rem; color: #475569; font-family: system-ui;
+    }
+
+    .preview-box {
+      border: 1px solid #334155; border-radius: 6px;
+      overflow: hidden; background: white;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 80px;
+    }
+
+    #preview-canvas { display: block; }
+
+    hr { border: none; border-top: 1px solid #334155; }
+
+    .hint { font-size: 0.7rem; color: #475569; line-height: 1.4; }
+
+    /* ── Zone principale : rendu PDF ── */
+    #viewer {
+      flex: 1;
+      overflow: auto;
+      position: relative;
+      background: #1a1a2e;
+    }
+
+    #pdf-canvas {
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* Rectangle de sélection */
+    #selection-rect {
+      position: absolute;
+      border: 2px solid #f59e0b;
+      background: rgba(245,158,11,0.15);
+      pointer-events: none;
+      display: none;
+    }
+
+    .nav-bar {
+      display: flex; gap: 0.5rem; align-items: center;
+    }
+    #page-info { font-size: 0.8rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>📐 PDF Coord Picker</h1>
+
+  <div>
+    <label>Page PDF</label>
+    <div class="nav-bar">
+      <button class="btn-secondary" id="prev-page">◀</button>
+      <input type="number" id="page-num" value="4" min="1" style="width:60px; text-align:center;" />
+      <button class="btn-secondary" id="next-page">▶</button>
+      <span id="page-info">/ ?</span>
+    </div>
+  </div>
+
+  <div>
+    <label>Zoom</label>
+    <select id="scale-select">
+      <option value="1">100%</option>
+      <option value="1.5" selected>150%</option>
+      <option value="2">200%</option>
+    </select>
+  </div>
+
+  <hr />
+  <p class="hint">🖱️ Dessine un rectangle sur la page pour sélectionner une étiquette.</p>
+
+  <div>
+    <label>ID de l'étiquette</label>
+    <input type="text" id="etiquette-id" placeholder="C3-NC-1.1" />
+  </div>
+
+  <div class="row">
+    <div><label>X</label><input type="number" id="sel-x" value="0" /></div>
+    <div><label>Y</label><input type="number" id="sel-y" value="0" /></div>
+  </div>
+  <div class="row">
+    <div><label>W</label><input type="number" id="sel-w" value="0" /></div>
+    <div><label>H</label><input type="number" id="sel-h" value="0" /></div>
+  </div>
+
+  <button class="btn-primary" id="generate-btn">Générer YAML</button>
+
+  <div id="yaml-output">← Sélectionne une région</div>
+
+  <hr />
+  <label>Aperçu</label>
+  <div class="preview-box">
+    <canvas id="preview-canvas"></canvas>
+  </div>
+</div>
+
+<div id="viewer">
+  <canvas id="pdf-canvas"></canvas>
+  <div id="selection-rect"></div>
+</div>
+
+<script>
+  const PDF_URL = '/pdf/guide-survie-c3.pdf';
+  let pdfDoc = null, currentPage = 4, currentScale = 1.5;
+  let pageWidth = 0, pageHeight = 0; // en pts PDF
+
+  // ── Init PDF.js ──
+  const pdfjs = await import('pdfjs-dist');
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
+
+  pdfDoc = await pdfjs.getDocument(PDF_URL).promise;
+  document.getElementById('page-info').textContent = `/ ${pdfDoc.numPages}`;
+  document.getElementById('page-num').max = pdfDoc.numPages;
+
+  const mainCanvas = document.getElementById('pdf-canvas');
+  const ctx = mainCanvas.getContext('2d');
+
+  // ── Rendu de page ──
+  async function renderPage(num, scale) {
+    const page = await pdfDoc.getPage(num);
+    const vp = page.getViewport({ scale });
+    pageWidth  = page.getViewport({ scale: 1 }).width;
+    pageHeight = page.getViewport({ scale: 1 }).height;
+
+    mainCanvas.width  = vp.width;
+    mainCanvas.height = vp.height;
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  }
+
+  await renderPage(currentPage, currentScale);
+
+  // ── Navigation ──
+  document.getElementById('prev-page').onclick = async () => {
+    if (currentPage > 1) { currentPage--; document.getElementById('page-num').value = currentPage; await renderPage(currentPage, currentScale); }
+  };
+  document.getElementById('next-page').onclick = async () => {
+    if (currentPage < pdfDoc.numPages) { currentPage++; document.getElementById('page-num').value = currentPage; await renderPage(currentPage, currentScale); }
+  };
+  document.getElementById('page-num').onchange = async (e) => {
+    currentPage = parseInt(e.target.value); await renderPage(currentPage, currentScale);
+  };
+  document.getElementById('scale-select').onchange = async (e) => {
+    currentScale = parseFloat(e.target.value); await renderPage(currentPage, currentScale);
+  };
+
+  // ── Sélection rectangulaire ──
+  const selRect = document.getElementById('selection-rect');
+  const viewer  = document.getElementById('viewer');
+  let dragging = false, startX = 0, startY = 0;
+
+  mainCanvas.addEventListener('mousedown', e => {
+    const r = mainCanvas.getBoundingClientRect();
+    startX = e.clientX - r.left;
+    startY = e.clientY - r.top;
+    dragging = true;
+    selRect.style.display = 'block';
+    selRect.style.left = startX + 'px';
+    selRect.style.top  = startY + 'px';
+    selRect.style.width  = '0';
+    selRect.style.height = '0';
+    selRect.style.position = 'absolute';
+  });
+
+  mainCanvas.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const r = mainCanvas.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    const x = Math.min(cx, startX), y = Math.min(cy, startY);
+    const w = Math.abs(cx - startX), h = Math.abs(cy - startY);
+    selRect.style.left   = (x + mainCanvas.offsetLeft) + 'px';
+    selRect.style.top    = (y + mainCanvas.offsetTop)  + 'px';
+    selRect.style.width  = w + 'px';
+    selRect.style.height = h + 'px';
+  });
+
+  mainCanvas.addEventListener('mouseup', e => {
+    if (!dragging) return;
+    dragging = false;
+    const r = mainCanvas.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    // Convertir pixels → coords PDF (pt, scale=1)
+    const x = Math.round(Math.min(cx, startX) / currentScale);
+    const y = Math.round(Math.min(cy, startY) / currentScale);
+    const w = Math.round(Math.abs(cx - startX) / currentScale);
+    const h = Math.round(Math.abs(cy - startY) / currentScale);
+    document.getElementById('sel-x').value = x;
+    document.getElementById('sel-y').value = y;
+    document.getElementById('sel-w').value = w;
+    document.getElementById('sel-h').value = h;
+    updateYaml();
+    renderPreview(x, y, w, h);
+  });
+
+  // ── Génération YAML ──
+  function updateYaml() {
+    const id   = document.getElementById('etiquette-id').value || 'C3-XX-X.X';
+    const page = currentPage;
+    const x = parseInt(document.getElementById('sel-x').value);
+    const y = parseInt(document.getElementById('sel-y').value);
+    const w = parseInt(document.getElementById('sel-w').value);
+    const h = parseInt(document.getElementById('sel-h').value);
+    const yaml = `pdf:\n  page: ${page}\n  x: ${x}\n  y: ${y}\n  w: ${w}\n  h: ${h}`;
+    document.getElementById('yaml-output').textContent = yaml;
+  }
+
+  document.getElementById('generate-btn').onclick = updateYaml;
+  document.getElementById('yaml-output').onclick = () => {
+    navigator.clipboard.writeText(document.getElementById('yaml-output').textContent);
+    document.getElementById('yaml-output').style.color = '#fbbf24';
+    setTimeout(() => { document.getElementById('yaml-output').style.color = '#86efac'; }, 800);
+  };
+
+  // ── Aperçu ──
+  async function renderPreview(x, y, w, h) {
+    if (!w || !h) return;
+    const previewCanvas = document.getElementById('preview-canvas');
+    const sc = 2;
+    const page = await pdfDoc.getPage(currentPage);
+    const vp = page.getViewport({ scale: sc, offsetX: -x * sc, offsetY: -y * sc });
+    previewCanvas.width  = w * sc;
+    previewCanvas.height = h * sc;
+    previewCanvas.style.width  = Math.min(w, 280) + 'px';
+    previewCanvas.style.height = Math.min(w, 280) * (h/w) + 'px';
+    await page.render({ canvasContext: previewCanvas.getContext('2d'), viewport: vp }).promise;
+  }
+</script>
+</body>
+</html>

@@ -25,7 +25,6 @@ const etiquettesData = allEtiquettes.map(e => {
     tags: data.tags || [],
     competences: data.competences || [],
     format: data.format || '1/1',
-    contenus: data.contenus || [],
     // 🛠️ CORRECTION : Ajout de la base URL ici
     url: `${base}/guide/${e.slug}/`
   };
@@ -141,7 +140,6 @@ const allThemes = [...new Set(etiquettesData.map(e => e.theme).filter(Boolean))]
           return (
             e.title.toLowerCase().includes(searchLower) ||
             e.tags.some(tag => tag.toLowerCase().includes(searchLower)) ||
-            e.contenus.some(c => c.toLowerCase().includes(searchLower)) ||
             (e.sous_theme && e.sous_theme.toLowerCase().includes(searchLower))
           );
         });

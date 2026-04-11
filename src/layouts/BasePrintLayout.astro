@@ -28,6 +28,91 @@ const niveauSlug = slug.split('/')[0];
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
     <script src="https://tikzjax.com/v1/tikzjax.js" defer></script>
   </head>
+  <!-- PDF.js viewer — chargé une seule fois pour toutes les PdfEtiquette -->
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
+
+    const pdfCache: Map<string, Promise<any>> = new Map();
+
+    async function getPdf(url: string) {
+      if (!pdfCache.has(url)) {
+        pdfCache.set(url, pdfjsLib.getDocument(url).promise);
+      }
+      return pdfCache.get(url)!;
+    }
+
+    async function renderRegion(canvas: HTMLCanvasElement, region: { pdfUrl: string; page: number; x: number; y: number; w: number; h: number }, scale: number) {
+      const pdf  = await getPdf(region.pdfUrl);
+      const page = await pdf.getPage(region.page);
+      const vp   = page.getViewport({ scale, offsetX: -region.x * scale, offsetY: -region.y * scale });
+      canvas.width  = region.w * scale;
+      canvas.height = region.h * scale;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    }
+
+    function initCard(wrap: HTMLElement) {
+      const region = {
+        pdfUrl: wrap.dataset.pdf!,
+        page:   +wrap.dataset.page!,
+        x:      +wrap.dataset.x!,
+        y:      +wrap.dataset.y!,
+        w:      +wrap.dataset.w!,
+        h:      +wrap.dataset.h!,
+      };
+
+      const canvas  = wrap.querySelector<HTMLCanvasElement>('.pdf-canvas')!;
+      const loading = wrap.querySelector<HTMLElement>('.pdf-loading')!;
+      const lbId    = wrap.dataset.lightbox!;
+      const lb      = document.getElementById(lbId)!;
+      // Échapper à tout stacking context créé par les ancêtres (transform, etc.)
+      document.body.appendChild(lb);
+      const lbCanvas= lb.querySelector<HTMLCanvasElement>('.lb-canvas')!;
+
+      const dpr = window.devicePixelRatio || 1;
+
+      async function renderCard() {
+        const sc = (wrap.clientWidth / region.w) * dpr;
+        await renderRegion(canvas, region, sc);
+        loading.classList.add('hidden');
+      }
+
+      const obs = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          obs.disconnect();
+          renderCard().catch(console.error);
+        }
+      }, { rootMargin: '400px' });
+      obs.observe(wrap);
+
+      let t: ReturnType<typeof setTimeout>;
+      window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(renderCard, 250); });
+
+      let lbRendered = false;
+      async function openLb() {
+        lb.classList.add('open');
+        if (lbRendered) return;
+        lbRendered = true;
+        const sc = Math.min((window.innerWidth * 0.9) / region.w, 3) * dpr;
+        lbCanvas.style.width  = Math.min(region.w * sc / dpr, window.innerWidth * 0.9) + 'px';
+        lbCanvas.style.height = 'auto';
+        await renderRegion(lbCanvas, region, sc);
+      }
+
+      function closeLb() {
+        lb.classList.remove('open');
+      }
+
+      wrap.addEventListener('click', e => {
+        if ((e.target as HTMLElement).closest('.isolate-btn')) return;
+        openLb();
+      });
+      lb.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeLb));
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+    }
+
+    document.querySelectorAll<HTMLElement>('.pdf-wrap').forEach(initCard);
+  </script>
   <body class={`layout ${layoutClass}`}>
     <Navbar title={title} />
     

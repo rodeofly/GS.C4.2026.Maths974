@@ -148,10 +148,17 @@ if (!isIndex) {
 
 </A4Layout>
 
-{/* Le script JS corrigé avec import statique */}
+{/* Passage des données via window pour compatibilité define:vars + import */}
 <script define:vars={{ etiquetteData, isIndex }}>
-  // Import statique pour que Astro bundle le fichier correctement
+  window.__etiquetteData = etiquetteData;
+  window.__isIndex = isIndex;
+</script>
+
+<script>
   import { Favoris, Historique } from '../../utils/storage.js';
+
+  const etiquetteData = window.__etiquetteData;
+  const isIndex = window.__isIndex;
 
   // 1. Gestion Historique (seulement si ce n'est pas un index)
   if (!isIndex) {
@@ -160,7 +167,7 @@ if (!isIndex) {
 
   // 2. Gestion Bouton Favoris
   const favBtn = document.getElementById('fav-btn');
-  
+
   if (favBtn) {
     const icon = favBtn.querySelector('.icon');
     const text = favBtn.querySelector('.text');
@@ -169,12 +176,12 @@ if (!isIndex) {
       const isFav = Favoris.isFavori(etiquetteData.slug);
       if (isFav) {
         favBtn.classList.add('active');
-        if(icon) icon.textContent = '⭐';
-        if(text) text.textContent = 'Retirer des favoris';
+        if (icon) icon.textContent = '⭐';
+        if (text) text.textContent = 'Retirer des favoris';
       } else {
         favBtn.classList.remove('active');
-        if(icon) icon.textContent = '☆';
-        if(text) text.textContent = 'Ajouter aux favoris';
+        if (icon) icon.textContent = '☆';
+        if (text) text.textContent = 'Ajouter aux favoris';
       }
     };
 
@@ -187,7 +194,6 @@ if (!isIndex) {
       updateUI();
     });
 
-    // Initialisation état bouton
     updateUI();
   }
 </script>

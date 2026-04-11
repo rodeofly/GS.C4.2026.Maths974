@@ -28,6 +28,21 @@
   transform: translateY(-2px);
 }
 
+/* Mode PDF : carte sans cadre, sans padding, juste l'image */
+.etiquette--pdf {
+  padding: 0;
+  border: none;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  background: transparent;
+}
+
+.etiquette--pdf:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-guide);
+  border: none;
+}
+
 /* ========================================
    HEADER
    ======================================== */
@@ -85,37 +100,6 @@
   color: var(--color-gray-600);
 }
 
-.meta-item {
-  display: inline-flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-guide-bg);
-  border: 1px solid var(--color-guide-light);
-  border-radius: var(--radius-md);
-}
-
-.meta-label {
-  text-transform: uppercase;
-  font-size: var(--text-xs);
-  letter-spacing: 0.05em;
-  color: var(--color-guide-primary);
-  font-weight: var(--font-semibold);
-}
-
-.meta-value {
-  font-size: var(--text-sm);
-  color: var(--color-gray-900);
-}
-
-.meta-subtheme {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: rgba(19, 41, 61, 0.08);
-  border: 1px solid rgba(19, 41, 61, 0.15);
-  font-weight: var(--font-medium);
-}
-
 /* ========================================
    SECTIONS DE CONTENU
    ======================================== */
@@ -138,6 +122,29 @@
   color: var(--color-guide-primary);
 }
 
+/* Énoncé de l'exercice */
+.etiquette-enonce {
+  font-style: italic;
+  color: var(--color-gray-700);
+  border-left: 3px solid var(--color-guide-primary);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-guide-bg);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  line-height: var(--leading-relaxed);
+}
+
+/* Illustration */
+.etiquette-illustration {
+  margin: 0;
+  text-align: center;
+}
+
+.etiquette-illustration img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
 /* Section Texte (contenu principal) */
 .section-texte {
   background: var(--color-guide-bg);
@@ -151,6 +158,12 @@
 
 .section-texte p + p {
   margin-top: var(--space-3);
+}
+
+/* Alignement vertical MathJax inline */
+.etiquette mjx-container {
+  vertical-align: middle !important;
+  margin: 0 0.1em !important;
 }
 
 /* TikZ graphics */
@@ -313,31 +326,6 @@
 /* Pleine largeur (via YAML full_width: true) */
 .etiquette-full-width {
   grid-column: 1 / -1; /* Prend toutes les colonnes */
-}
-
-/* ========================================
-   ÉTIQUETTE INDEX (intro sous-thème)
-   ======================================== */
-
-.etiquette-index {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 2px solid var(--color-guide-primary);
-  border-left-width: 6px;
-  order: -999; /* Toujours en premier */
-}
-
-.etiquette-index:hover {
-  transform: none; /* Pas d'animation hover */
-}
-
-.etiquette-index .etiquette-title {
-  color: var(--color-guide-primary);
-  font-size: clamp(var(--text-xl), 4vw, var(--text-3xl));
-}
-
-.etiquette-index .etiquette-title::after {
-  width: 100px;
-  height: 4px;
 }
 
 /* ========================================
