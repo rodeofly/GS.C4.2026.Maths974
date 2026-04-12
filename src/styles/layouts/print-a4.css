@@ -27,21 +27,17 @@
 .layout-a4 .etiquettes-grid {
   display: flex;
   flex-direction: column;
-  justify-content: stretch;
-  gap: 0;
-  height: 100%;
-}
-
-.layout-a4 .etiquettes-grid > * {
-  flex: 1;
+  justify-content: flex-start;
+  gap: 0.4cm;
+  height: auto;
 }
 
 .layout-a4 .etiquette {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   padding: 0.9cm 0.8cm;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 @media print {

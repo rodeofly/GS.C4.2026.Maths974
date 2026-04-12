@@ -14,6 +14,7 @@ import { metadata as axeGradueMetadata } from '../visuals/axe-gradue/config.js';
 // 1. AXE GRADUÉ
 registerVisual('axe-gradue', () => import('../visuals/axe-gradue/axe-gradue.js'));
 registerVisual('texte-trous', () => import('../visuals/texte-trous/texte-trous.js'));
+registerVisual('cubes-numeration', () => import('../visuals/cubes-numeration/cubes-numeration.js'));
 
 /**
  * Fonction helper pour précharger certains visuels

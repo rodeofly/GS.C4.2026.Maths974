@@ -331,54 +331,89 @@ footer {
    Contrôlés par le bouton Paramètres
    ======================================== */
 
-/* --- MODE : ÉCRAN FLUIDE (Screen) --- */
-/* On force le conteneur à prendre toute la largeur disponible, 
-   en annulant les contraintes fixes A4/A5 */
-body[data-layout-mode="screen"] .layout-a4,
-body[data-layout-mode="screen"] .layout-a5 {
-  max-width: 1400px; /* Largeur max confortable pour la lecture écran */
+/* Fond gris ardoise derrière la feuille en mode papier (style aperçu impression) */
+html:has(body[data-layout-mode="a4"]),
+html:has(body[data-layout-mode="a5"]) {
+  background: #6b7280;
+  min-height: 100vh;
+}
+
+/* --- MODE : ÉCRAN FLUIDE (défaut) --- */
+/* Rien à forcer : les styles .layout-a4/.layout-a5 de base s'appliquent normalement */
+body[data-layout-mode="screen"] {
+  max-width: 1400px;
   width: 100%;
-  min-height: auto;
-  aspect-ratio: auto;
-  padding: var(--space-6);
-  /* On garde un peu de style carte mais adapté écran */
+  margin: 0 auto;
+}
+
+body[data-layout-mode="screen"] .etiquettes-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* --- MODE PAPIER : navbar fixe plein écran, sort de la feuille --- */
+body[data-layout-mode="a4"] .main-navbar,
+body[data-layout-mode="a5"] .main-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 200;
 }
 
 /* --- MODE : FORCER A4 --- */
-body[data-layout-mode="a4"] .layout-a5, 
-body[data-layout-mode="a4"] .layout-a4,
-body[data-layout-mode="a4"] .layout {
-  /* Dimensions A4 exactes */
+/* Le body lui-même devient la feuille A4 centrée sur fond gris */
+body[data-layout-mode="a4"] {
   width: 21cm;
   min-height: 29.7cm;
-  padding: 1cm; /* Marges d'impression simulées */
-  margin: 0 auto;
-  
-  /* On remet la grille A4 si on était en A5 */
-  grid-template-columns: 1fr; 
-  display: flex; 
-  flex-direction: column;
-}
-/* Si on force A4 sur un layout prévu A5, on adapte la grille grid A5 */
-body[data-layout-mode="a4"] .layout-a5 .etiquettes-grid {
-    grid-template-columns: repeat(2, 1fr); /* Retour à 2 colonnes standard */
+  padding: calc(56px + 0.6cm) 1cm 1cm; /* top = navbar + marge */
+  margin: var(--space-4) auto;
+  background: white;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 0;
+  animation: none;
 }
 
+/* Réplique exacte de print-a4.css pour l'écran — WYSIWYG */
+body[data-layout-mode="a4"] .etiquettes-grid {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.4cm;
+}
+
+body[data-layout-mode="a4"] .etiquette {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9cm 0.8cm;
+}
 
 /* --- MODE : FORCER A5 --- */
-body[data-layout-mode="a5"] .layout-a4,
-body[data-layout-mode="a5"] .layout-a5,
-body[data-layout-mode="a5"] .layout {
-  /* Dimensions A5 exactes */
+/* Le body lui-même devient la feuille A5 centrée sur fond gris */
+body[data-layout-mode="a5"] {
   width: 14.8cm;
   min-height: 21cm;
-  padding: 0.5cm;
-  margin: 0 auto;
-  font-size: 0.9em; /* On réduit un peu le texte pour que ça rentre */
+  padding: calc(56px + 0.3cm) 0.35cm 0.35cm; /* top = navbar + marge */
+  margin: var(--space-4) auto;
+  background: white;
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.45);
+  border-radius: 0;
+  animation: none;
 }
 
-/* Ajustement spécifique pour le contenu en mode A5 forcé */
+/* Réplique exacte de print-a5.css pour l'écran — WYSIWYG */
 body[data-layout-mode="a5"] .etiquettes-grid {
-  grid-template-columns: 1fr; /* Une seule colonne en A5 */
-  gap: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: 0.2cm;
+}
+
+body[data-layout-mode="a5"] .format-1_1 { grid-column: span 8; }
+body[data-layout-mode="a5"] .format-1_2 { grid-column: span 4; }
+body[data-layout-mode="a5"] .format-1_4 { grid-column: span 2; }
+body[data-layout-mode="a5"] .format-1_8 { grid-column: span 1; }
+
+body[data-layout-mode="a5"] .etiquette {
+  padding: 0.45cm 0.55cm;
 }
