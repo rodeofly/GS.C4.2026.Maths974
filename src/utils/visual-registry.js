@@ -15,6 +15,8 @@ import { metadata as axeGradueMetadata } from '../visuals/axe-gradue/config.js';
 registerVisual('axe-gradue', () => import('../visuals/axe-gradue/axe-gradue.js'));
 registerVisual('texte-trous', () => import('../visuals/texte-trous/texte-trous.js'));
 registerVisual('cubes-numeration', () => import('../visuals/cubes-numeration/cubes-numeration.js'));
+registerVisual('figure-geo', () => import('../visuals/figure-geo/figure-geo.js'));
+registerVisual('polygone-perimetre', () => import('../visuals/polygone-perimetre/polygone-perimetre.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -109,6 +111,41 @@ export const visualMetadata = {
       { name: 'cubeSize', type: 'number', label: 'Taille cube (px)', default: 20 },
       { name: 'spacing', type: 'number', label: 'Espacement', default: 5 },
       { name: 'showLabels', type: 'boolean', label: 'Afficher étiquettes', default: true },
+    ],
+  },
+
+  'polygone-perimetre': {
+    label: 'Polygone Périmètre',
+    description: 'Polygone étiqueté pour le calcul de périmètre (main levée)',
+    icon: '📐',
+    category: 'Géométrie',
+    configFields: [
+      { name: 'seed',       type: 'text',   label: 'Graine',        default: 'poly' },
+      { name: 'shape',      type: 'select', label: 'Forme',         default: 'rect',
+        options: ['rect','carre','losange','kite','quad','L','escalier','tri_rect','tri_iso','random'] },
+      { name: 'unit',       type: 'select', label: 'Unité',         default: 'cm',
+        options: ['cm','m','dm','mm'] },
+      { name: 'level',      type: 'number', label: 'Niveau (1–3)',  default: 1 },
+      { name: 'showmetrics',type: 'boolean',label: 'Afficher P=',   default: false },
+      { name: 'color',      type: 'color',  label: 'Couleur',       default: '#1d4ed8' },
+    ],
+  },
+
+  'figure-geo': {
+    label: 'Figure Géométrique',
+    description: 'Figure rectilinéaire sur quadrillage (périmètre & aire)',
+    icon: '📐',
+    category: 'Géométrie',
+    configFields: [
+      { name: 'seed',        type: 'text',    label: 'Graine',      default: 'fig' },
+      { name: 'level',       type: 'number',  label: 'Niveau (1/2)', default: 1 },
+      { name: 'gridsize',    type: 'number',  label: 'Grille N×N',  default: 7 },
+      { name: 'cellsize',    type: 'number',  label: 'Case (px)',   default: 16 },
+      { name: 'mincells',    type: 'number',  label: 'Cases min',   default: 6 },
+      { name: 'maxcells',    type: 'number',  label: 'Cases max',   default: 16 },
+      { name: 'showgrid',    type: 'boolean', label: 'Grille',      default: true },
+      { name: 'showmetrics', type: 'boolean', label: 'Métriques',   default: false },
+      { name: 'color',       type: 'color',   label: 'Couleur',     default: '#1d4ed8' },
     ],
   },
 

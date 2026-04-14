@@ -12,7 +12,7 @@
 
 class CubesNumerationComponent extends HTMLElement {
   static get observedAttributes() {
-    return ['centaines', 'dizaines', 'unites', 'milliers', 'showlabels'];
+    return ['centaines', 'dizaines', 'unites', 'milliers', 'showLabels'];
   }
 
   connectedCallback()  { this.render(); }
@@ -24,9 +24,10 @@ class CubesNumerationComponent extends HTMLElement {
     const d = Math.min(9, Math.max(0, parseInt(this.getAttribute('dizaines')  || '0')));
     const u = Math.min(9, Math.max(0, parseInt(this.getAttribute('unites')    || '0')));
     // false par défaut — les labels chevauchent le texte de la question
-    const showLabels = this.getAttribute('showlabels') === 'true';
-    this.style.display = 'block';
-    this.style.width   = '100%';
+    const showLabels = this.getAttribute('showLabels') === 'true';
+    this.style.display      = 'block';
+    this.style.width        = '100%';
+    this.style.marginBottom = '6px';
     this.innerHTML = this.buildSVG(m, c, d, u, showLabels);
   }
 
@@ -63,7 +64,7 @@ class CubesNumerationComponent extends HTMLElement {
 
   // ── MILLIER : grand cube (S=18) ──────────────────────────────────────────────
   renderMillierCube(gx, S, color) {
-    const hw = S * 0.866;
+    const hw = S * 0.866; // Demi-largeur
     return { svg: this.cube(gx + hw, -S, S, color), width: 2 * hw, rowH: 2 * S };
   }
 
@@ -222,28 +223,21 @@ class CubesNumerationComponent extends HTMLElement {
     const GRP_GAP = 14;
     const GAP     = { m:6, c:5, d:4, u:4 };
 
-    let shapes  = '';
-    let labels  = '';
-    let curX    = PAD;
-    let minTopY = 0;
-
-    const addLabel = (x, w, text, color) => {
-      if (!showLabels) return;
-      labels += `<text x="${x + w/2}" y="10" text-anchor="middle"
-                       font-size="5" fill="${color}"
-                       font-family="sans-serif" font-weight="700">${text}</text>`;
-    };
+    let shapes    = '';
+    let curX      = PAD;
+    let minTopY   = 0;
+    const groupBounds = []; // { x, w, text, color }
 
     const render = (nb, fn, gap, label, color) => {
       if (nb <= 0) return;
       const { svg, width, topY } = this.renderGroup(nb, fn, curX, gap);
       shapes  += svg;
       minTopY  = Math.min(minTopY, topY);
-      addLabel(curX, width, label, color);
+      if (showLabels) groupBounds.push({ x: curX, w: width, text: label, color });
       curX    += width + GRP_GAP;
     };
 
-    render(nbM, (gx) => this.renderMillierCube(gx,  Sm, COLORS.m), GAP.m, 'milliers',  COLORS.m);
+    render(nbM, (gx) => this.renderMillierCube(gx,  Sm, COLORS.m), GAP.m, 'milliers', COLORS.m);
     render(nbC, (gx) => this.renderCentainePlate(gx, Sc, COLORS.c), GAP.c, 'centaines', COLORS.c);
     render(nbD, (gx) => this.renderDizaineBar(gx,   Sd, COLORS.d), GAP.d, 'dizaines',  COLORS.d);
     render(nbU, (gx) => this.renderUnitCube(gx,     Su, COLORS.u), GAP.u, 'unités',    COLORS.u);
@@ -252,16 +246,26 @@ class CubesNumerationComponent extends HTMLElement {
     if (curX > PAD) curX -= GRP_GAP;
 
     const totalW   = curX + PAD;
-    const labelH   = showLabels ? 18 : 2;
     const viewBoxY = minTopY - 4;
-    const viewBoxH = -viewBoxY + labelH;
+    const viewBoxH = -viewBoxY + 2; // plus de place réservée pour les labels dans le SVG
+
+    // Labels HTML en dehors du SVG — taille fixe indépendante du scaling
+    let labelsHTML = '';
+    if (showLabels && groupBounds.length > 0) {
+      const items = groupBounds.map(({ x, w, text, color }) => {
+        const pct = ((x + w / 2) / totalW * 100).toFixed(2);
+        return `<span style="position:absolute;left:${pct}%;transform:translateX(-50%);`
+             + `color:${color};font-weight:700;font-size:0.55rem;`
+             + `white-space:nowrap;font-family:sans-serif;">${text}</span>`;
+      }).join('');
+      labelsHTML = `<div style="position:relative;height:1.1em;margin-top:2px;">${items}</div>`;
+    }
 
     return `<svg viewBox="0 ${viewBoxY} ${totalW} ${viewBoxH}"
                  xmlns="http://www.w3.org/2000/svg"
-                 style="width:100%;height:auto;max-height:160px;display:block">
+                 style="width:100%;height:auto;max-height:120px;display:block">
       ${shapes}
-      ${labels}
-    </svg>`;
+    </svg>${labelsHTML}`;
   }
 }
 

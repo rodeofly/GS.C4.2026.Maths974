@@ -138,6 +138,8 @@ export async function initCardVisuals(cardElement, visualData) {
     '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
   );
   existingZones.forEach(zone => zone.remove());
+  // Réinitialiser les classes de grille latérale
+  cardElement.classList.remove('has-visual-west', 'has-visual-east');
 
   if (!visualData || !visualData.type) return;
 
@@ -192,6 +194,9 @@ export async function initCardVisuals(cardElement, visualData) {
   try {
     const element = await createVisualElement(config.type, config.config, container);
     element.visualConfig = config;
+    // Signaler la présence de la zone latérale pour adapter la grille CSS
+    if (config.position === 'west') cardElement.classList.add('has-visual-west');
+    if (config.position === 'east') cardElement.classList.add('has-visual-east');
     return element;
   } catch (error) {
     console.error('Failed to init visual:', error);

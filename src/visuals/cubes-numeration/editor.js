@@ -1,18 +1,17 @@
 // src/visuals/cubes-numeration/editor.js
 // Éditeur dédié au visuel "Cubes Numération"
-// Affiche les valeurs actuelles + les plages de randomisation.
-
-export function renderEditor(panel, visualData) {
+// Retourne du HTML — les listeners sont gérés par populateEditor dans rapidos-visuals-integration.js
+export function renderEditor(panel, visualData, prefs = {}) {
   const config  = visualData.config || {};
   const cardId  = panel.currentCard?.id || 'default';
-  const editorBody = panel.querySelector('.editor-body');
 
-  // Charger les préférences de randomisation depuis localStorage
-  let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' };
-  try {
-    const saved = JSON.parse(localStorage.getItem(`cn-rand-prefs-${cardId}`));
-    if (saved) prefs = { ...prefs, ...saved };
-  } catch (e) {}
+  // Plages par défaut si prefs partiel
+  const p = {
+    milliers:  prefs.milliers  ?? '0:1',
+    centaines: prefs.centaines ?? '1:3',
+    dizaines:  prefs.dizaines  ?? '0:9',
+    unites:    prefs.unites    ?? '0:9',
+  };
 
   // ── Helper : paire MIN/MAX ─────────────────────────────────────────────
   const rangePair = (name, label, val) => {
@@ -33,7 +32,7 @@ export function renderEditor(panel, visualData) {
       </div>`;
   };
 
-  editorBody.innerHTML += `
+  const html = `
     <!-- ── VALEURS ACTUELLES ── -->
     <div class="editor-field full-width" style="padding:0;border:none;background:transparent;">
       <label style="font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.05em;">VALEURS</label>
@@ -56,7 +55,7 @@ export function renderEditor(panel, visualData) {
     <!-- ── ÉTIQUETTES ── -->
     <div class="editor-field full-width" style="padding:0;border:none;background:transparent;display:flex;align-items:center;gap:8px;">
       <input type="checkbox" id="cn-showlabels-${cardId}" name="showLabels"
-             ${config.showLabels !== false ? 'checked' : ''}>
+             ${config.showLabels ? 'checked' : ''}>
       <label for="cn-showlabels-${cardId}" style="margin:0;font-size:0.75rem;font-weight:600;color:#374151;">
         Afficher les étiquettes
       </label>
@@ -66,24 +65,13 @@ export function renderEditor(panel, visualData) {
     <div class="editor-field full-width" style="border-top:1px solid #e2e8f0;padding-top:10px;margin-top:6px;padding-left:0;border-left:none;background:transparent;">
       <label style="font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.05em;">PLAGES ALÉATOIRES</label>
       <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:6px;">
-        ${rangePair('milliers',  'MILLIERS',  prefs.milliers)}
-        ${rangePair('centaines', 'CENTAINES', prefs.centaines)}
-        ${rangePair('dizaines',  'DIZAINES',  prefs.dizaines)}
-        ${rangePair('unites',    'UNITÉS',    prefs.unites)}
+        ${rangePair('milliers',  'MILLIERS',  p.milliers)}
+        ${rangePair('centaines', 'CENTAINES', p.centaines)}
+        ${rangePair('dizaines',  'DIZAINES',  p.dizaines)}
+        ${rangePair('unites',    'UNITÉS',    p.unites)}
       </div>
     </div>
   `;
 
-  // Sauvegarder les plages dès qu'elles changent
-  editorBody.querySelectorAll('.rand-range').forEach(input => {
-    input.addEventListener('input', () => {
-      const newPrefs = {};
-      ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
-        const minEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="min"]`);
-        const maxEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="max"]`);
-        if (minEl && maxEl) newPrefs[name] = `${minEl.value}:${maxEl.value}`;
-      });
-      localStorage.setItem(`cn-rand-prefs-${cardId}`, JSON.stringify(newPrefs));
-    });
-  });
+  return html;
 }

@@ -51,6 +51,23 @@
   justify-content: center;
 }
 
+/* Zone west/east : pas de height fixe, laisser le SVG définir sa taille */
+.q-card-west .visual-wrapper,
+.q-card-east .visual-wrapper {
+  height: auto;
+  width: auto;
+}
+
+/* Dans west/east, le SVG ne doit pas être contraint par le max-width:100%
+   du wrapper (qui n'a pas de largeur intrinsèque) — laisser ses propres max-width/max-height */
+.q-card-west .visual-wrapper svg,
+.q-card-west .visual-wrapper canvas,
+.q-card-east .visual-wrapper svg,
+.q-card-east .visual-wrapper canvas {
+  max-width: none;
+  max-height: none;
+}
+
 .visual-wrapper canvas,
 .visual-wrapper svg {
   max-width: 100%;
@@ -63,11 +80,10 @@
    ======================================== */
 
 .q-card-north:empty,
-.q-card-south:empty,
-.q-card-west:empty,
-.q-card-east:empty {
+.q-card-south:empty {
   display: none; /* Masquer les zones vides */
 }
+/* Note: west/east ne sont PAS masqués par :empty car ils sont insérés vides (async) */
 
 /* ========================================
    BOUTON TOGGLE VISUEL
@@ -448,8 +464,9 @@
 }
 
 /* Quand il y a un visuel west ou east : passer à 3 colonnes */
-.q-card:has(.q-card-west),
-.q-card:has(.q-card-east) {
+/* Utilise des classes JS (has-visual-west/east) ajoutées après le rendu du visuel */
+.q-card.has-visual-west,
+.q-card.has-visual-east {
   grid-template-columns: auto 1fr auto;
   grid-template-areas:
     "north north north"
@@ -458,10 +475,11 @@
 }
 
 /* Zone vide ne prend pas de place */
-.q-card-west:empty,
-.q-card-east:empty {
+.q-card-north:empty,
+.q-card-south:empty {
   display: none;
 }
+/* west/east : pas de masquage :empty (ils sont insérés async, vides au début) */
 
 /* Zone Nord (en haut) */
 .q-card-north {

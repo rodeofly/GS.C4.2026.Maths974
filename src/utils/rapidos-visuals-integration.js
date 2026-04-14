@@ -9,6 +9,7 @@ import './visual-registry.js'; // Charge le registre
 import { visualMetadata, getConfigFields, getDefaultConfig } from './visual-registry.js';
 import { renderEditor as renderAxeGradueEditor } from '../visuals/axe-gradue/editor.js';
 import { renderEditor as renderCubesNumerationEditor } from '../visuals/cubes-numeration/editor.js';
+import { renderEditor as renderPolygonePerimetreEditor } from '../visuals/polygone-perimetre/editor.js';
 
 /**
  * Initialiser le système de visuels pour tous les Rapidos
@@ -23,9 +24,11 @@ export async function initRapidosVisuals(questionData) {
 
   console.log('🎨 Initializing Rapidos Visuals System...');
 
-  // Pour chaque question
+  // Pour chaque question — on sélectionne par ordre DOM, indépendamment de l'ID
+  const cardElements = Array.from(document.querySelectorAll('.q-card'));
+
   questionData.forEach((question, qIndex) => {
-    const cardElement = document.getElementById(`card-${qIndex}`);
+    const cardElement = cardElements[qIndex];
     if (!cardElement) return;
 
     // Restructurer la carte en Grid
@@ -40,12 +43,16 @@ export async function initRapidosVisuals(questionData) {
         `.variant-content[data-index="${vIndex}"]`
       );
       if (variantContent) {
-        variantContent.visualData = variante.visual;
+        // On stocke la config MD originale et la config surchargée par localStorage
+        const originalData = JSON.parse(JSON.stringify(variante.visual));
+        variantContent.originalVisualData = originalData;
+        variantContent.visualData = JSON.parse(JSON.stringify(originalData)); // copie de travail
       }
     });
 
     // Charger le visuel de la variante active (index 0 par défaut)
     const activeVariant = cardElement.querySelector('.variant-content.active');
+    loadConfigFromLocalStorage(cardElement, activeVariant); // Charger la config pour la variante active
     if (activeVariant?.visualData) {
       VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
     }
@@ -58,6 +65,28 @@ export async function initRapidosVisuals(questionData) {
   });
 
   console.log('✅ Rapidos Visuals System initialized');
+}
+
+/**
+ * Charge la configuration du localStorage pour une variante donnée.
+ */
+function loadConfigFromLocalStorage(cardElement, variantContent) {
+  if (!cardElement || !variantContent || !variantContent.visualData) return;
+
+  const cardId = cardElement.id;
+  const storedConfig = localStorage.getItem(`visual-config-${cardId}`);
+  if (storedConfig) {
+    try {
+      const parsedConfig = JSON.parse(storedConfig);
+      // On utilise une copie de l'original pour fusionner
+      const originalData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
+      originalData.config = { ...originalData.config, ...parsedConfig };
+      variantContent.visualData = originalData;
+    } catch (e) { console.error('Error parsing stored visual config:', e); }
+  } else {
+    // S'il n'y a rien dans le storage, on s'assure d'utiliser la config originale
+    variantContent.visualData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
+  }
 }
 
 /**
@@ -172,7 +201,17 @@ export async function handleVariantChange(cardElement, newVariantIndex) {
   }
 
   // Charger le nouveau visuel
+  // S'assurer que la config du localStorage est bien chargée pour cette variante
+  loadConfigFromLocalStorage(cardElement, variantContent);
   await VisualsSystem.initCardVisuals(cardElement, variantContent.visualData);
+
+  // Si l'éditeur est ouvert pour cette carte, le mettre à jour aussi
+  const editorPanel = document.getElementById('visual-editor-panel');
+  if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
+    const visualData = variantContent.visualData;
+    const originalVisualData = variantContent.originalVisualData;
+    populateEditor(editorPanel, visualData.type, visualData, originalVisualData);
+  }
 }
 
 /**
@@ -199,6 +238,7 @@ export function openVisualEditor(cardElement) {
   }
 
   const visualData = activeVariant.visualData;
+  const originalVisualData = activeVariant.originalVisualData;
   const visualType = visualData.type;
 
   // Créer le panneau éditeur s'il n'existe pas
@@ -208,14 +248,14 @@ export function openVisualEditor(cardElement) {
     document.body.appendChild(editorPanel);
   }
 
+  // Stocker la carte en cours d'édition AVANT de peupler l'éditeur
+  editorPanel.currentCard = cardElement;
+
   // Remplir l'éditeur avec la config actuelle
-  populateEditor(editorPanel, visualType, visualData);
+  populateEditor(editorPanel, visualType, visualData, originalVisualData);
 
   // Afficher le panneau
   editorPanel.classList.add('open');
-
-  // Stocker la carte en cours d'édition
-  editorPanel.currentCard = cardElement;
 }
 
 /**
@@ -247,16 +287,20 @@ function createEditorPanel() {
 /**
  * Remplir l'éditeur avec les champs du type de visuel
  */
-function populateEditor(panel, visualType, visualData) {
+function populateEditor(panel, visualType, visualData, originalVisualData) {
   panel.currentType = visualType;
 
   const metadata = visualMetadata[visualType];
+  const cardId = panel.currentCard.id;
   if (!metadata) {
     console.error(`Unknown visual type: ${visualType}`);
     return;
   }
 
   const editorBody = panel.querySelector('.editor-body');
+
+  // 1. Injecter la partie commune EN PREMIER (type + éventuel warning localStorage)
+  const storedConfig = localStorage.getItem(`visual-config-${cardId}`);
   editorBody.innerHTML = `
     <div class="editor-field full-width">
       <label>Type de Visuel</label>
@@ -265,48 +309,124 @@ function populateEditor(panel, visualType, visualData) {
         <span style="font-weight: 600;">${metadata.label}</span>
       </div>
     </div>
+    ${storedConfig ? `
+    <div class="editor-field full-width" style="padding: 8px; background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 0.75rem; color: #92400e; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+      <span>Les valeurs par défaut ont été surchargées.</span>
+      <button id="reset-visual-config" style="background: transparent; border: 1px solid #f59e0b; color: #b45309; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Réinitialiser</button>
+    </div>` : ''}
   `;
 
-  // --- LAYOUT SPÉCIFIQUE POUR AXE GRADUÉ (FUSIONNÉ) ---
-  if (visualType === 'axe-gradue') {
-    renderAxeGradueEditor(panel, visualData, { generateFieldHTML });
-  } else if (visualType === 'cubes-numeration') {
-    renderCubesNumerationEditor(panel, visualData);
-  } else {
-    // --- LAYOUT STANDARD POUR LES AUTRES VISUELS ---
-    renderStandardEditor(panel, visualType, visualData);
+  // 2. Listener bouton réinitialisation (attaché immédiatement après injection)
+  const resetBtn = editorBody.querySelector('#reset-visual-config');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      const cardElement = panel.currentCard;
+      if (!cardElement) return;
+      localStorage.removeItem(`visual-config-${cardId}`);
+      localStorage.removeItem(`cn-rand-prefs-${cardId}`);
+      const activeVariant = cardElement.querySelector('.variant-content.active');
+      if (activeVariant?.originalVisualData) {
+        activeVariant.visualData = JSON.parse(JSON.stringify(activeVariant.originalVisualData));
+      }
+      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+      populateEditor(panel, visualType, activeVariant.visualData, activeVariant.originalVisualData);
+    });
   }
 
-  // Activer le "Live Edit" sur tous les inputs
-  const inputs = editorBody.querySelectorAll('input, select, textarea');
+  // 3. Rendre l'éditeur spécifique au type (insertAdjacentHTML + listeners propres)
+  if (visualType === 'axe-gradue') {
+    // renderAxeGradueEditor utilise insertAdjacentHTML et attache ses propres listeners
+    renderAxeGradueEditor(panel, visualData, { generateFieldHTML });
+
+  } else if (visualType === 'cubes-numeration') {
+    const markdownPrefs = visualData.editor_prefs;
+    let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' };
+    if (markdownPrefs) {
+      prefs = { ...prefs, ...markdownPrefs };
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`cn-rand-prefs-${cardId}`));
+        if (saved) prefs = { ...prefs, ...saved };
+      } catch (e) {}
+    }
+    editorBody.insertAdjacentHTML('beforeend', renderCubesNumerationEditor(panel, visualData, prefs));
+    // Listener sauvegarde plages aléatoires (localStorage)
+    editorBody.querySelectorAll('.rand-range').forEach(input => {
+      input.addEventListener('input', () => {
+        if (visualData.editor_prefs) return;
+        const newPrefs = {};
+        ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
+          const minEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="min"]`);
+          const maxEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="max"]`);
+          if (minEl && maxEl) newPrefs[name] = `${minEl.value}:${maxEl.value}`;
+        });
+        localStorage.setItem(`cn-rand-prefs-${cardId}`, JSON.stringify(newPrefs));
+      });
+    });
+
+  } else if (visualType === 'polygone-perimetre') {
+    const markdownPrefs = visualData.editor_prefs;
+    let prefs = { valueMin: 2, valueMax: 9 };
+    if (markdownPrefs) {
+      if (markdownPrefs.valueRange) {
+        prefs.valueMin = markdownPrefs.valueRange[0] ?? 2;
+        prefs.valueMax = markdownPrefs.valueRange[1] ?? 9;
+      }
+      if (markdownPrefs.shapes) prefs.shapes = markdownPrefs.shapes;
+      if (markdownPrefs.level)  prefs.level  = markdownPrefs.level;
+    } else {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`pp-rand-prefs-${cardId}`));
+        if (saved) prefs = { ...prefs, ...saved };
+      } catch (e) {}
+    }
+    editorBody.insertAdjacentHTML('beforeend', renderPolygonePerimetreEditor(panel, visualData, prefs));
+    // Listener sauvegarde plages aléatoires
+    editorBody.querySelectorAll('.pp-range').forEach(input => {
+      input.addEventListener('input', () => {
+        if (visualData.editor_prefs) return;
+        const minEl = editorBody.querySelector('.pp-range[data-part="min"]');
+        const maxEl = editorBody.querySelector('.pp-range[data-part="max"]');
+        if (minEl && maxEl) {
+          const newPrefs = { ...prefs, valueMin: parseInt(minEl.value), valueMax: parseInt(maxEl.value) };
+          localStorage.setItem(`pp-rand-prefs-${cardId}`, JSON.stringify(newPrefs));
+        }
+      });
+    });
+
+  } else {
+    editorBody.insertAdjacentHTML('beforeend', renderStandardEditor(panel, visualType, visualData));
+  }
+
+  // 4. Live Edit sur tous les inputs — APRÈS le rendu des éditeurs spécifiques
+  //    Exclure .rand-range (déjà gérés) et les inputs cachés d'axe-gradue (name=rand-*)
+  const inputs = editorBody.querySelectorAll('input:not(.rand-range):not([type="hidden"]), select, textarea');
   inputs.forEach(input => {
     input.addEventListener('change', () => applyEditorChanges(panel));
-    // Pour les sliders ou text, on peut aussi utiliser 'input' pour plus de réactivité
     if (input.type === 'range' || input.type === 'text' || input.type === 'number') {
-       input.addEventListener('input', () => applyEditorChanges(panel));
+      input.addEventListener('input', () => applyEditorChanges(panel));
     }
   });
-
-  // Event Listeners pour l'éditeur de tableau (Points) - Géré globalement
-  // (Le code existant pour click sur .btn-remove-item / .btn-add-item fonctionne car délégué sur editorBody)
 }
 
 /**
  * Rendu standard pour les autres visuels
  */
 function renderStandardEditor(panel, visualType, visualData) {
-  const editorBody = panel.querySelector('.editor-body');
+  let html = '';
   // Générer les champs selon metadata
   const configFields = getConfigFields(visualType);
   const currentConfig = visualData.config || {};
 
   configFields.forEach((field) => {
     const fieldValue = currentConfig[field.name] ?? field.default;
-    const fieldHTML = generateFieldHTML(field, fieldValue);
-    editorBody.innerHTML += fieldHTML;
+    html += generateFieldHTML(field, fieldValue);
   });
+
+  return html;
 }
 
+// ... (le reste du fichier)
 /**
  * Générer le HTML d'un champ selon son type
  */
@@ -333,7 +453,7 @@ function generateFieldHTML(field, value) {
       inputHTML = `
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <input type="checkbox" id="${fieldId}" name="${field.name}" ${value ? 'checked' : ''} />
-          <label for="${fieldId}" style="margin:0;">${field.label}</label>
+          <label for="${fieldId}" style="margin:0;white-space:normal;overflow:visible;text-overflow:unset;text-transform:uppercase;font-size:0.75rem;font-weight:600;color:#1e293b;">${field.label}</label>
         </div>
       `;
       return `<div class="${containerClass}" style="grid-column: 1 / -1;">${inputHTML}</div>`;
@@ -395,6 +515,41 @@ function generateFieldHTML(field, value) {
 }
 
 /**
+ * Appliquer les changements de l'éditeur pour "cubes-numeration"
+ */
+async function applyCubesNumerationChanges(panel) {
+  const cardElement = panel.currentCard;
+  if (!cardElement) return;
+
+  const activeVariant = cardElement.querySelector('.variant-content.active');
+  const editorBody = panel.querySelector('.editor-body');
+
+  // 1. Collecter les valeurs des champs de configuration
+  const newConfig = { ...activeVariant?.visualData?.config };
+  ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
+    const input = editorBody.querySelector(`input[name="${name}"]`);
+    if (input) {
+      newConfig[name] = parseInt(input.value, 10) || 0;
+    }
+  });
+
+  // 2. Gérer la checkbox "showLabels"
+  const showLabelsInput = editorBody.querySelector(`input[name="showLabels"]`);
+  if (showLabelsInput) {
+    newConfig.showLabels = showLabelsInput.checked;
+  }
+
+  // 3. Mettre à jour le visuel et sauvegarder
+  if (activeVariant) {
+    activeVariant.visualData.config = newConfig;
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+
+    const cardId = cardElement.id;
+    localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
+  }
+}
+
+/**
  * Appliquer les changements de l'éditeur
  */
 async function applyEditorChanges(panel) {
@@ -404,6 +559,12 @@ async function applyEditorChanges(panel) {
   const activeVariant = cardElement.querySelector('.variant-content.active');
   const visualType = panel.currentType;
   const editorBody = panel.querySelector('.editor-body');
+
+  // Branche spécifique pour cubes-numeration
+  if (visualType === 'cubes-numeration') {
+    await applyCubesNumerationChanges(panel);
+    return;
+  }
 
   // Collecter les valeurs des champs
   const newConfig = { ...activeVariant?.visualData?.config }; // Garder les valeurs existantes (pour les champs cachés)
@@ -546,22 +707,25 @@ function generateRandomConfigValues(prefs, currentConfig = {}) {
     const range = newMax - newMin;
     let val = newMin + (Math.random() * range);
     
-    let precision = 0.01;
-    if (snapToGrid) {
-      // Exactement sur la graduation (pas de demi-mesure pour éviter la confusion)
-      precision = newStep;
-    } else {
-      precision = 0.01;
-    }
-    val = Math.round(val / precision) * precision;
-    
+    // Snap à la graduation la plus proche (offset depuis newMin, pas depuis 0)
+    const snapToGrad = (v) => {
+      if (snapToGrid) {
+        const k = Math.round((v - newMin) / newStep);
+        const snapped = newMin + k * newStep;
+        // Clamp dans [newMin, newMax]
+        return Math.max(newMin, Math.min(newMax, parseFloat(snapped.toFixed(10))));
+      }
+      return parseFloat(v.toFixed(2));
+    };
+
+    val = snapToGrad(val);
+
     // Si possible, forcer une valeur qui n'est PAS dans visibleLabels
     // On a 5 essais pour trouver une valeur cachée
     for (let attempt = 0; attempt < 5; attempt++) {
         if (!visibleLabels.includes(val)) break; // C'est bon, c'est caché
         // Sinon on réessaie
-        val = newMin + (Math.random() * range);
-        val = Math.round(val / precision) * precision;
+        val = snapToGrad(newMin + Math.random() * range);
     }
     
     // Éviter les doublons exacts
@@ -588,16 +752,42 @@ function generateRandomConfigValues(prefs, currentConfig = {}) {
  */
 async function quickRandomize(cardElement) {
   const activeVariant = cardElement.querySelector('.variant-content.active');
-  const visualType = activeVariant?.visualData?.type;
+  const visualData = activeVariant?.visualData;
+  const visualType = visualData?.type;
 
   // ── Branche cubes-numération ──────────────────────────────────────────
   if (visualType === 'cubes-numeration') {
-    await quickRandomizeCubes(cardElement, activeVariant);
+    await quickRandomizeCubes(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
+  // ── Branche figure-geo ────────────────────────────────────────────────
+  if (visualType === 'figure-geo') {
+    const cardId = cardElement.id;
+    const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
+    if (activeVariant) {
+      // Repartir de la config originale (MD), seulement changer le seed
+      const originalConfig = activeVariant.originalVisualData?.config || activeVariant.visualData.config;
+      const editorPrefs = visualData?.editor_prefs || {};
+      const newConfig = { ...originalConfig, ...editorPrefs, seed: newSeed };
+      activeVariant.visualData.config = newConfig;
+      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+      localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
+      const editorPanel = document.getElementById('visual-editor-panel');
+      if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
+        const seedInput = editorPanel.querySelector('[name="seed"]');
+        if (seedInput) seedInput.value = newSeed;
+      }
+    }
     return;
   }
 
   // ── Branche axe-gradué (logique existante) ────────────────────────────
   const cardId = cardElement.id;
+
+  // 1. Lire les préférences depuis le Markdown (editor_prefs)
+  const markdownPrefs = visualData?.editor_prefs;
+
   let prefs = {
     minRange: [-10, 0],
     countRange: [5, 10],
@@ -606,12 +796,19 @@ async function quickRandomize(cardElement) {
     pointsRange: [2, 3],
     snap: true
   };
-  try {
-    const stored = localStorage.getItem(`visual-random-prefs-${cardId}`);
-    if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
-  } catch(e) {}
 
-  const currentConfig = activeVariant?.visualData?.config || {};
+  if (markdownPrefs) {
+    // Priorité au Markdown
+    prefs = { ...prefs, ...markdownPrefs };
+  } else {
+    // Sinon, fallback sur le localStorage
+    try {
+      const stored = localStorage.getItem(`visual-random-prefs-${cardId}`);
+      if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
+    } catch(e) {}
+  }
+
+  const currentConfig = visualData?.config || {};
   const newConfig = generateRandomConfigValues(prefs, currentConfig);
 
   if (activeVariant) {
@@ -620,7 +817,11 @@ async function quickRandomize(cardElement) {
     localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(activeVariant.visualData.config));
     const editorPanel = document.getElementById('visual-editor-panel');
     if (editorPanel && editorPanel.classList.contains('open') && editorPanel.currentCard === cardElement) {
-      populateEditor(editorPanel, activeVariant.visualData.type, activeVariant.visualData);
+      // Mettre à jour les champs de l'éditeur
+      Object.entries(newConfig).forEach(([key, value]) => {
+        const input = editorPanel.querySelector(`[name="${key}"]`);
+        if (input) input.value = value;
+      });
     }
   }
 }
@@ -628,32 +829,25 @@ async function quickRandomize(cardElement) {
 /**
  * Randomisation dédiée cubes-numération
  */
-async function quickRandomizeCubes(cardElement, activeVariant) {
+async function quickRandomizeCubes(cardElement, activeVariant, markdownPrefs) {
   const cardId    = cardElement.id;
   const editorPanel = document.getElementById('visual-editor-panel');
   const editorOpen  = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
+  const visualData = activeVariant?.visualData;
 
-  // 1. Lire les plages directement depuis le DOM de l'éditeur (plus fiable que
-  //    d'attendre que l'événement `input` ait eu le temps de sauvegarder).
-  if (editorOpen) {
-    const editorBody = editorPanel.querySelector('.editor-body');
-    const domPrefs   = {};
-    ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
-      const minEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="min"]`);
-      const maxEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="max"]`);
-      if (minEl && maxEl) domPrefs[name] = `${minEl.value}:${maxEl.value}`;
-    });
-    if (Object.keys(domPrefs).length) {
-      localStorage.setItem(`cn-rand-prefs-${cardId}`, JSON.stringify(domPrefs));
-    }
+  // Charger les préférences de randomisation
+  let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' }; // Valeurs par défaut
+
+  // La configuration du Markdown (editor_prefs) est TOUJOURS prioritaire,
+  // que ce soit pour l'éditeur ou pour la randomisation.
+  if (markdownPrefs) {
+    prefs = { ...prefs, ...markdownPrefs };
+  } else {
+    try {
+      const stored = localStorage.getItem(`cn-rand-prefs-${cardId}`);
+      if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
+    } catch(e) {}
   }
-
-  // 2. Charger les prefs (garanties en localStorage à ce stade)
-  let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' };
-  try {
-    const stored = localStorage.getItem(`cn-rand-prefs-${cardId}`);
-    if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
-  } catch(e) {}
 
   const randInt = (range) => {
     const [min, max] = String(range).split(':').map(Number);
@@ -661,14 +855,14 @@ async function quickRandomizeCubes(cardElement, activeVariant) {
   };
 
   const newConfig = {
-    ...activeVariant.visualData.config,
+    ...visualData.config,
     milliers:  randInt(prefs.milliers),
     centaines: randInt(prefs.centaines),
     dizaines:  randInt(prefs.dizaines),
     unites:    randInt(prefs.unites),
   };
 
-  activeVariant.visualData.config = newConfig;
+  visualData.config = newConfig;
   await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
   localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
 

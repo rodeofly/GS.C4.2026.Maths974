@@ -54,6 +54,7 @@ const rapidosCollection = defineCollection({
               type: z.string(),
               position: z.enum(['north', 'south', 'east', 'west', 'front', 'back']).optional(),
               config: z.record(z.any()).optional(),
+              editor_prefs: z.record(z.any()).optional(),
             }).optional(),
           })
         )

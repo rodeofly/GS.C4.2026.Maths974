@@ -6,19 +6,31 @@ export function renderEditor(panel, visualData, helpers) {
   const config = visualData.config || {};
   const position = visualData.position || 'north';
 
-  // 1. Charger les préférences aléatoires
-  let randPrefs = { min: '-10:0', count: '5:10', steps: '1, 0.5, 2', visible: '2:4', points: '1:2', snap: true };
-  try {
-    const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
-    if (saved) {
-      randPrefs.min = saved.minRange.join(':');
-      randPrefs.count = saved.countRange.join(':');
-      randPrefs.steps = saved.steps.join(', ');
-      randPrefs.visible = saved.visibleRange.join(':');
-      randPrefs.points = saved.pointsRange.join(':');
-      randPrefs.snap = saved.snap !== undefined ? saved.snap : true;
-    }
-  } catch (e) {}
+  // 1. Charger les préférences aléatoires — Priorité : editor_prefs du MD > localStorage
+  let randPrefs = { min: '0:50', count: '5:8', steps: '10, 20, 5', visible: '2:4', points: '1:1', snap: true };
+
+  const markdownPrefs = visualData.editor_prefs;
+  if (markdownPrefs) {
+    // Format markdown : { minRange: [0,50], countRange: [5,8], steps: [10,20,5], ... }
+    if (markdownPrefs.minRange)    randPrefs.min     = Array.isArray(markdownPrefs.minRange)    ? markdownPrefs.minRange.join(':')    : markdownPrefs.minRange;
+    if (markdownPrefs.countRange)  randPrefs.count   = Array.isArray(markdownPrefs.countRange)  ? markdownPrefs.countRange.join(':')  : markdownPrefs.countRange;
+    if (markdownPrefs.steps)       randPrefs.steps   = Array.isArray(markdownPrefs.steps)       ? markdownPrefs.steps.join(', ')      : markdownPrefs.steps;
+    if (markdownPrefs.visibleRange) randPrefs.visible = Array.isArray(markdownPrefs.visibleRange) ? markdownPrefs.visibleRange.join(':') : markdownPrefs.visibleRange;
+    if (markdownPrefs.pointsRange) randPrefs.points  = Array.isArray(markdownPrefs.pointsRange) ? markdownPrefs.pointsRange.join(':') : markdownPrefs.pointsRange;
+    if (markdownPrefs.snap !== undefined) randPrefs.snap = markdownPrefs.snap;
+  } else {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
+      if (saved) {
+        randPrefs.min     = saved.minRange.join(':');
+        randPrefs.count   = saved.countRange.join(':');
+        randPrefs.steps   = saved.steps.join(', ');
+        randPrefs.visible = saved.visibleRange.join(':');
+        randPrefs.points  = saved.pointsRange.join(':');
+        randPrefs.snap    = saved.snap !== undefined ? saved.snap : true;
+      }
+    } catch (e) {}
+  }
 
   // Helper pour les champs range (min/max inputs)
   const rangeField = (label, name, val) => {

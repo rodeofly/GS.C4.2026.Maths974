@@ -149,7 +149,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     
     <div class="questions-grid">
       {questions.map((q, qIndex) => (
-        <article class="q-card" id={`card-${qIndex}`}>
+        <article class="q-card" id={`${niveau}-${numero}-card-${qIndex}`}>
           <div class="q-num">{qIndex + 1}</div>
            <div class="card-header-controls">
             {q.variantes.map((v, vIndex) => (
@@ -177,17 +177,19 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     </div>
   </div>
 
-  <script is:inline define:vars={{ questions }}>
+  <script is:inline define:vars={{ questions, niveau, numero }}>
     window.__RAPIDO_QUESTIONS__ = questions;
+    window.__RAPIDO_CARD_PREFIX__ = `${niveau}-${numero}`;
   </script>
 
   <script>
         import RapidosVisuals from '../utils/rapidos-visuals-integration.js';
 
-        // IMPORTANT : Passer les données des questions avec visuels
-        const questionData = window.__RAPIDO_QUESTIONS__;
-
         document.addEventListener('DOMContentLoaded', async () => {
+            // Lire APRÈS le parsing complet du DOM — garantit que le script inline
+            // define:vars a déjà positionné window.__RAPIDO_QUESTIONS__
+            const questionData = window.__RAPIDO_QUESTIONS__;
+
             // Initialiser le système de visuels
             await RapidosVisuals.initRapidosVisuals(questionData);
 
@@ -197,7 +199,8 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
                 bullet.addEventListener('click', async (e) => {
                     const cardIndex = e.target.dataset.card;
                     const variantIndex = parseInt(e.target.dataset.variant);
-                    const card = document.getElementById(`card-${cardIndex}`);
+                    const prefix = window.__RAPIDO_CARD_PREFIX__ || '';
+                    const card = document.getElementById(`${prefix}-card-${cardIndex}`);
 
                     // Mettre à jour les bullets actifs
                     const cardBullets = card.querySelectorAll('.bullet');
