@@ -58,6 +58,12 @@
   width: auto;
 }
 
+/* schema-additif dans la zone content : pas de contrainte de hauteur */
+.sa-content-wrapper .visual-wrapper {
+  height: auto;
+  width: 100%;
+}
+
 /* Dans west/east, le SVG ne doit pas être contraint par le max-width:100%
    du wrapper (qui n'a pas de largeur intrinsèque) — laisser ses propres max-width/max-height */
 .q-card-west .visual-wrapper svg,
@@ -527,4 +533,10 @@
   text-align: center;
   padding: 0rem 0rem;
   z-index: 2; /* Au-dessus du background */
+}
+
+/* Quand schema-additif occupe la zone content, le wrapper prend toute la largeur */
+.q-card-content .sa-content-wrapper {
+  width: 100%;
+  text-align: left;
 }

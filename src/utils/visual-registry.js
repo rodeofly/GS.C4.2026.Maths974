@@ -17,6 +17,7 @@ registerVisual('texte-trous', () => import('../visuals/texte-trous/texte-trous.j
 registerVisual('cubes-numeration', () => import('../visuals/cubes-numeration/cubes-numeration.js'));
 registerVisual('figure-geo', () => import('../visuals/figure-geo/figure-geo.js'));
 registerVisual('polygone-perimetre', () => import('../visuals/polygone-perimetre/polygone-perimetre.js'));
+registerVisual('schema-additif', () => import('../visuals/schema-additif/schema-additif.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -128,6 +129,27 @@ export const visualMetadata = {
       { name: 'level',      type: 'number', label: 'Niveau (1–3)',  default: 1 },
       { name: 'showmetrics',type: 'boolean',label: 'Afficher P=',   default: false },
       { name: 'color',      type: 'color',  label: 'Couleur',       default: '#1d4ed8' },
+    ],
+  },
+
+  'schema-additif': {
+    label: 'Schéma Additif',
+    description: 'Bande de référence pour la modélisation additive (total = partie 1 + partie 2)',
+    icon: '➕',
+    category: 'Nombres',
+    configFields: [
+      { name: 'total',   type: 'number', label: 'Total',              default: 60 },
+      { name: 'part1',   type: 'number', label: 'Partie gauche',      default: 20 },
+      { name: 'unknown', type: 'select', label: 'Valeur inconnue',
+        options: ['total', 'part1', 'part2'],                          default: 'part1' },
+      { name: 'level',   type: 'number', label: 'Niveau (1–2)',       default: 1 },
+      { name: 'unit',      type: 'text',   label: 'Unité',                 default: '' },
+      { name: 'content',   type: 'text',   label: 'Énoncé (DSL)',          default: '' },
+      { name: 'part1expr', type: 'text',   label: 'Partie 1 = (expr)',     default: '' },
+      { name: 'totalexpr', type: 'text',   label: 'Total = (expr)',        default: '' },
+      { name: 'labelt',    type: 'text',   label: 'Étiquette barre totale',default: '' },
+      { name: 'label1',    type: 'text',   label: 'Étiquette barre gauche',default: '' },
+      { name: 'label2',    type: 'text',   label: 'Étiquette barre droite',default: '' },
     ],
   },
 

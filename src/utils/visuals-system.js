@@ -146,7 +146,29 @@ export async function initCardVisuals(cardElement, visualData) {
   const config = parseVisualConfig(visualData);
   if (config.hidden) return;
 
-  // 2. Création du nouveau conteneur
+  // Cas particulier : schema-additif en mode dynamique (content fourni)
+  // → placé dans la zone .q-card-content, position contrôle le layout interne
+  if (config.type === 'schema-additif' && config.config.content) {
+    const contentEl = cardElement.querySelector('.q-card-content');
+    if (contentEl) {
+      contentEl.querySelector('.sa-content-wrapper')?.remove();
+      const saWrapper = document.createElement('div');
+      saWrapper.className = 'sa-content-wrapper';
+      contentEl.appendChild(saWrapper);
+      // On passe position au composant pour son layout interne
+      const saConfig = { ...config.config, position: config.position };
+      try {
+        const element = await createVisualElement(config.type, saConfig, saWrapper);
+        element.visualConfig = config;
+        return element;
+      } catch (error) {
+        console.error('Failed to init schema-additif:', error);
+        return;
+      }
+    }
+  }
+
+  // 2. Création du nouveau conteneur (zone grille classique)
   const container = document.createElement('div');
   container.className = `q-card-${config.position}`;
   container.style.opacity = config.opacity;
@@ -210,7 +232,7 @@ export async function initCardVisuals(cardElement, visualData) {
  */
 export function toggleVisual(cardElement, visible) {
   const visualZones = cardElement.querySelectorAll(
-    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .sa-content-wrapper'
   );
 
   visualZones.forEach((zone) => {
@@ -220,27 +242,10 @@ export function toggleVisual(cardElement, visible) {
       zone.classList.add('visual-hidden');
     }
   });
-
-  // Sauvegarder l'état en localStorage
-  const cardId = cardElement.id;
-  if (cardId) {
-    localStorage.setItem(`visual-state-${cardId}`, visible ? 'visible' : 'hidden');
-  }
 }
 
-/**
- * Restaurer l'état des visuels depuis localStorage
- * @param {HTMLElement} cardElement
- */
-export function restoreVisualState(cardElement) {
-  const cardId = cardElement.id;
-  if (!cardId) return;
-
-  const state = localStorage.getItem(`visual-state-${cardId}`);
-  if (state === 'hidden') {
-    toggleVisual(cardElement, false);
-  }
-}
+/** No-op conservé pour compatibilité d'interface */
+export function restoreVisualState(_cardElement) {}
 
 // ========================================
 // EXPORT DU SYSTÈME

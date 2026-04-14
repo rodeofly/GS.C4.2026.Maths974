@@ -1,9 +1,9 @@
 // src/visuals/cubes-numeration/editor.js
 // Éditeur dédié au visuel "Cubes Numération"
 // Retourne du HTML — les listeners sont gérés par populateEditor dans rapidos-visuals-integration.js
-export function renderEditor(panel, visualData, prefs = {}) {
-  const config  = visualData.config || {};
-  const cardId  = panel.currentCard?.id || 'default';
+export function renderEditor(_panel, visualData, prefs = {}) {
+  const config   = visualData.config   || {};
+  const position = visualData.position || 'north';
 
   // Plages par défaut si prefs partiel
   const p = {
@@ -33,6 +33,17 @@ export function renderEditor(panel, visualData, prefs = {}) {
   };
 
   const html = `
+    <!-- ── PARAMÈTRES ── -->
+    <div class="editor-field full-width" style="padding:0;border:none;background:transparent;">
+      <label style="font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.05em;">PARAMÈTRES</label>
+      <div style="margin-top:4px;">
+        <label style="font-size:0.65rem;">POSITION</label>
+        <select name="position" style="width:100%;font-size:0.8rem;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;">
+          ${['north','south','east','west'].map(opt => `<option value="${opt}" ${opt === position ? 'selected' : ''}>${opt}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
     <!-- ── VALEURS ACTUELLES ── -->
     <div class="editor-field full-width" style="padding:0;border:none;background:transparent;">
       <label style="font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.05em;">VALEURS</label>
@@ -54,9 +65,9 @@ export function renderEditor(panel, visualData, prefs = {}) {
 
     <!-- ── ÉTIQUETTES ── -->
     <div class="editor-field full-width" style="padding:0;border:none;background:transparent;display:flex;align-items:center;gap:8px;">
-      <input type="checkbox" id="cn-showlabels-${cardId}" name="showLabels"
+      <input type="checkbox" id="cn-showlabels" name="showLabels"
              ${config.showLabels ? 'checked' : ''}>
-      <label for="cn-showlabels-${cardId}" style="margin:0;font-size:0.75rem;font-weight:600;color:#374151;">
+      <label for="cn-showlabels" style="margin:0;font-size:0.75rem;font-weight:600;color:#374151;">
         Afficher les étiquettes
       </label>
     </div>

@@ -1,7 +1,6 @@
 // src/visuals/axe-gradue/editor.js
 
-export function renderEditor(panel, visualData, helpers) {
-  const { generateFieldHTML } = helpers;
+export function renderEditor(panel, visualData) {
   const editorBody = panel.querySelector('.editor-body');
   const config = visualData.config || {};
   const position = visualData.position || 'north';
@@ -18,18 +17,6 @@ export function renderEditor(panel, visualData, helpers) {
     if (markdownPrefs.visibleRange) randPrefs.visible = Array.isArray(markdownPrefs.visibleRange) ? markdownPrefs.visibleRange.join(':') : markdownPrefs.visibleRange;
     if (markdownPrefs.pointsRange) randPrefs.points  = Array.isArray(markdownPrefs.pointsRange) ? markdownPrefs.pointsRange.join(':') : markdownPrefs.pointsRange;
     if (markdownPrefs.snap !== undefined) randPrefs.snap = markdownPrefs.snap;
-  } else {
-    try {
-      const saved = JSON.parse(localStorage.getItem(`visual-random-prefs-${panel.currentCard?.id}`));
-      if (saved) {
-        randPrefs.min     = saved.minRange.join(':');
-        randPrefs.count   = saved.countRange.join(':');
-        randPrefs.steps   = saved.steps.join(', ');
-        randPrefs.visible = saved.visibleRange.join(':');
-        randPrefs.points  = saved.pointsRange.join(':');
-        randPrefs.snap    = saved.snap !== undefined ? saved.snap : true;
-      }
-    } catch (e) {}
   }
 
   // Helper pour les champs range (min/max inputs)
@@ -99,7 +86,10 @@ export function renderEditor(panel, visualData, helpers) {
     </div>
 
     <!-- PARAMÈTRES -->
-    ${generateFieldHTML({ name: 'rand-steps', label: 'PAS POSSIBLES', type: 'text' }, randPrefs.steps)}
+    <div class="editor-field full-width">
+      <label for="editor-field-rand-steps">PAS POSSIBLES</label>
+      <input type="text" id="editor-field-rand-steps" name="rand-steps" value="${randPrefs.steps}" />
+    </div>
     ${rangeField('INTERVALLE MIN', 'rand-min-range', randPrefs.min)}
     ${rangeField('NB GRADUATIONS (LONGUEUR)', 'rand-count-range', randPrefs.count)}
     ${rangeField('ABSCISSES AFFICHÉES', 'rand-visible-range', randPrefs.visible)}
@@ -121,24 +111,4 @@ export function renderEditor(panel, visualData, helpers) {
     inputs.forEach(inp => inp.addEventListener('input', updateHidden));
   });
 
-  // Sauvegarde automatique des préférences du générateur (FIX: Sauvegarde explicite dans localStorage)
-  ['rand-min-range', 'rand-count-range', 'rand-steps', 'rand-visible-range', 'rand-points-range', 'rand-snap'].forEach(name => {
-    const el = panel.querySelector(`[name="${name}"]`);
-    if (el) {
-      el.addEventListener('input', () => {
-         // Sauvegarder immédiatement les préférences aléatoires
-         const currentPrefs = {
-            minRange: panel.querySelector('[name="rand-min-range"]').value.split(':'),
-            countRange: panel.querySelector('[name="rand-count-range"]').value.split(':'),
-            steps: panel.querySelector('[name="rand-steps"]').value.split(',').map(s => s.trim()),
-            visibleRange: panel.querySelector('[name="rand-visible-range"]').value.split(':'),
-            pointsRange: panel.querySelector('[name="rand-points-range"]').value.split(':'),
-            snap: panel.querySelector('[name="rand-snap"]').value === 'true'
-         };
-         if (panel.currentCard?.id) {
-            localStorage.setItem(`visual-random-prefs-${panel.currentCard.id}`, JSON.stringify(currentPrefs));
-         }
-      });
-    }
-  });
 }

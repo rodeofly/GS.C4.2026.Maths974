@@ -13,9 +13,9 @@ const SHAPES = [
   { value: 'tri_iso',  label: 'Triangle isocèle' },
 ];
 
-export function renderEditor(panel, visualData, prefs = {}) {
-  const config = visualData.config  || {};
-  const cardId = panel.currentCard?.id || 'default';
+export function renderEditor(_panel, visualData, prefs = {}) {
+  const config   = visualData.config   || {};
+  const position = visualData.position || 'north';
 
   // Valeurs par défaut pour les plages de randomisation
   const p = {
@@ -34,6 +34,13 @@ export function renderEditor(panel, visualData, prefs = {}) {
     <div class="editor-field full-width" style="padding:0;border:none;background:transparent;">
       <label style="font-size:0.65rem;color:#64748b;font-weight:800;letter-spacing:0.05em;">PARAMÈTRES</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+
+        <div>
+          <label style="font-size:0.65rem;">POSITION</label>
+          <select name="position" style="width:100%;font-size:0.8rem;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;">
+            ${['north','south','east','west'].map(opt => `<option value="${opt}" ${opt === position ? 'selected' : ''}>${opt}</option>`).join('')}
+          </select>
+        </div>
 
         <div>
           <label style="font-size:0.65rem;">FORME</label>

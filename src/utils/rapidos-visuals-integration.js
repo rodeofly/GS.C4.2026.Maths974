@@ -6,10 +6,11 @@
 
 import VisualsSystem from './visuals-system.js';
 import './visual-registry.js'; // Charge le registre
-import { visualMetadata, getConfigFields, getDefaultConfig } from './visual-registry.js';
+import { visualMetadata, getConfigFields } from './visual-registry.js';
 import { renderEditor as renderAxeGradueEditor } from '../visuals/axe-gradue/editor.js';
 import { renderEditor as renderCubesNumerationEditor } from '../visuals/cubes-numeration/editor.js';
-import { renderEditor as renderPolygonePerimetreEditor } from '../visuals/polygone-perimetre/editor.js';
+import { renderEditor as renderPolygonePerimetreEditor, randomizeSeed as polygoneRandomizeSeed } from '../visuals/polygone-perimetre/editor.js';
+import { renderEditor as renderSchemaAdditifEditor, randomize as randomizeSchemaAdditif } from '../visuals/schema-additif/editor.js';
 
 /**
  * Initialiser le système de visuels pour tous les Rapidos
@@ -43,7 +44,7 @@ export async function initRapidosVisuals(questionData) {
         `.variant-content[data-index="${vIndex}"]`
       );
       if (variantContent) {
-        // On stocke la config MD originale et la config surchargée par localStorage
+        // On stocke la config MD originale et la config courante (session)
         const originalData = JSON.parse(JSON.stringify(variante.visual));
         variantContent.originalVisualData = originalData;
         variantContent.visualData = JSON.parse(JSON.stringify(originalData)); // copie de travail
@@ -52,41 +53,15 @@ export async function initRapidosVisuals(questionData) {
 
     // Charger le visuel de la variante active (index 0 par défaut)
     const activeVariant = cardElement.querySelector('.variant-content.active');
-    loadConfigFromLocalStorage(cardElement, activeVariant); // Charger la config pour la variante active
     if (activeVariant?.visualData) {
       VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
     }
 
     // Ajouter le bouton toggle
     addVisualToggleButton(cardElement);
-
-    // Restaurer l'état depuis localStorage
-    VisualsSystem.restoreVisualState(cardElement);
   });
 
   console.log('✅ Rapidos Visuals System initialized');
-}
-
-/**
- * Charge la configuration du localStorage pour une variante donnée.
- */
-function loadConfigFromLocalStorage(cardElement, variantContent) {
-  if (!cardElement || !variantContent || !variantContent.visualData) return;
-
-  const cardId = cardElement.id;
-  const storedConfig = localStorage.getItem(`visual-config-${cardId}`);
-  if (storedConfig) {
-    try {
-      const parsedConfig = JSON.parse(storedConfig);
-      // On utilise une copie de l'original pour fusionner
-      const originalData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
-      originalData.config = { ...originalData.config, ...parsedConfig };
-      variantContent.visualData = originalData;
-    } catch (e) { console.error('Error parsing stored visual config:', e); }
-  } else {
-    // S'il n'y a rien dans le storage, on s'assure d'utiliser la config originale
-    variantContent.visualData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
-  }
 }
 
 /**
@@ -178,39 +153,48 @@ function addVisualToggleButton(cardElement) {
       <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16"></path>
     </svg>`;
 
-  reloadBtn.addEventListener('click', (e) => {
+  const thunderBtn = document.createElement('button');
+  thunderBtn.className = 'visual-toggle-btn mini-eye';
+  thunderBtn.title = "Variante aléatoire (mystère)";
+  thunderBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+    </svg>`;
+
+  thunderBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    quickRandomize(cardElement);
+    thunderRandomize(cardElement);
   });
 
-  nav.appendChild(reloadBtn);
+  nav.appendChild(thunderBtn);
 }
 /**
  * Gérer le changement de variante (hook dans le système existant)
  * À appeler quand l'utilisateur clique sur un bullet
  */
-export async function handleVariantChange(cardElement, newVariantIndex) {
+export async function handleVariantChange(cardElement, newVariantIndex, resetToOriginal = true) {
   const variantContent = cardElement.querySelector(
     `.variant-content[data-index="${newVariantIndex}"]`
   );
 
   if (!variantContent?.visualData) {
-    // Pas de visuel pour cette variante, nettoyer
     clearCardVisuals(cardElement);
     return;
   }
 
-  // Charger le nouveau visuel
-  // S'assurer que la config du localStorage est bien chargée pour cette variante
-  loadConfigFromLocalStorage(cardElement, variantContent);
+  // Retour au config MD original si demandé (comportement par défaut sur clic bullet)
+  if (resetToOriginal && variantContent.originalVisualData) {
+    variantContent.visualData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
+  }
+
   await VisualsSystem.initCardVisuals(cardElement, variantContent.visualData);
 
-  // Si l'éditeur est ouvert pour cette carte, le mettre à jour aussi
+  // Mettre à jour l'éditeur si ouvert sur cette carte
   const editorPanel = document.getElementById('visual-editor-panel');
   if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
-    const visualData = variantContent.visualData;
-    const originalVisualData = variantContent.originalVisualData;
-    populateEditor(editorPanel, visualData.type, visualData, originalVisualData);
+    populateEditor(editorPanel, variantContent.visualData.type, variantContent.visualData, variantContent.originalVisualData);
   }
 }
 
@@ -219,12 +203,13 @@ export async function handleVariantChange(cardElement, newVariantIndex) {
  */
 function clearCardVisuals(cardElement) {
   const visualZones = cardElement.querySelectorAll(
-    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .sa-content-wrapper'
   );
 
   visualZones.forEach((zone) => {
     zone.remove();
   });
+  cardElement.classList.remove('has-visual-west', 'has-visual-east');
 }
 
 /**
@@ -269,29 +254,160 @@ function createEditorPanel() {
   panel.innerHTML = `
     <div class="editor-header">
       <h3 style="color: white; margin: 0;">Éditeur de Visuel</h3>
-      <button class="editor-close" aria-label="Fermer" style="color: white;">✕</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="editor-yaml-btn" title="Exporter le YAML pour le fichier .md"
+          style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+                 color:white;font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:4px;
+                 cursor:pointer;letter-spacing:0.05em;">YAML</button>
+        <button class="editor-close" aria-label="Fermer" style="color: white;">✕</button>
+      </div>
     </div>
     <div class="editor-body">
       <!-- Rempli dynamiquement -->
     </div>
   `;
 
-  // Events
   panel.querySelector('.editor-close').addEventListener('click', () => {
     panel.classList.remove('open');
+  });
+
+  panel.querySelector('.editor-yaml-btn').addEventListener('click', () => {
+    const card = panel.currentCard;
+    if (!card) return;
+    const activeVariant = card.querySelector('.variant-content.active');
+    if (!activeVariant?.visualData) return;
+    showYAMLExport(activeVariant.visualData);
   });
 
   return panel;
 }
 
 /**
+ * Sérialise une valeur en YAML inline
+ */
+function toYAMLValue(val) {
+  if (val === null || val === undefined) return 'null';
+  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  if (typeof val === 'number') return `${val}`;
+  if (typeof val === 'string') {
+    const escaped = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+    return `"${escaped}"`;
+  }
+  if (Array.isArray(val)) {
+    return `[${val.map(toYAMLValue).join(', ')}]`;
+  }
+  if (typeof val === 'object') {
+    // Objets inline (ex: points axe-gradué) → JSON-like
+    return `{${Object.entries(val).map(([k, v]) => `${k}: ${toYAMLValue(v)}`).join(', ')}}`;
+  }
+  return `${val}`;
+}
+
+/**
+ * Génère le YAML d'un visualData (type + position + config + editor_prefs)
+ * avec l'indentation attendue dans les fichiers .md (10 espaces)
+ */
+function generateVisualYAML(visualData) {
+  const I = '          '; // 10 espaces (niveau visual: dans le frontmatter)
+  const lines = [];
+  lines.push(`${I}visual:`);
+  lines.push(`${I}  type: "${visualData.type}"`);
+  lines.push(`${I}  position: "${visualData.position || 'north'}"`);
+
+  const config = visualData.config || {};
+  if (Object.keys(config).length > 0) {
+    lines.push(`${I}  config:`);
+    for (const [k, v] of Object.entries(config)) {
+      if (v === '' || v === null || v === undefined) continue;
+      lines.push(`${I}    ${k}: ${toYAMLValue(v)}`);
+    }
+  }
+
+  const prefs = visualData.editor_prefs;
+  if (prefs && Object.keys(prefs).length > 0) {
+    lines.push(`${I}  editor_prefs:`);
+    for (const [k, v] of Object.entries(prefs)) {
+      lines.push(`${I}    ${k}: ${toYAMLValue(v)}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Affiche une modale avec le YAML généré
+ */
+function showYAMLExport(visualData) {
+  // Supprimer modale existante
+  document.getElementById('yaml-export-modal')?.remove();
+
+  const yaml = generateVisualYAML(visualData);
+
+  const modal = document.createElement('div');
+  modal.id = 'yaml-export-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;
+    display:flex;align-items:center;justify-content:center;`;
+
+  modal.innerHTML = `
+    <div style="background:white;border-radius:10px;padding:20px;width:90%;max-width:520px;
+                max-height:85vh;display:flex;flex-direction:column;gap:10px;
+                box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:800;font-size:0.9rem;color:#1e293b;letter-spacing:0.05em;">
+          YAML — à coller dans le fichier .md
+        </span>
+        <button id="yaml-modal-close"
+          style="background:transparent;border:none;font-size:1.2rem;cursor:pointer;color:#64748b;">✕</button>
+      </div>
+      <textarea id="yaml-modal-content" readonly
+        style="flex:1;font-family:monospace;font-size:0.78rem;line-height:1.5;
+               border:1px solid #e2e8f0;border-radius:6px;padding:10px;
+               min-height:220px;resize:vertical;background:#f8fafc;color:#1e293b;"
+      >${yaml}</textarea>
+      <div style="display:flex;gap:8px;">
+        <button id="yaml-modal-copy"
+          style="flex:1;background:#0f766e;color:white;border:none;border-radius:6px;
+                 padding:8px;font-weight:700;font-size:0.85rem;cursor:pointer;">
+          Copier dans le presse-papiers
+        </button>
+        <button id="yaml-modal-close2"
+          style="background:#e2e8f0;color:#1e293b;border:none;border-radius:6px;
+                 padding:8px 16px;font-weight:600;cursor:pointer;">Fermer</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('#yaml-modal-close').addEventListener('click', close);
+  modal.querySelector('#yaml-modal-close2').addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+  modal.querySelector('#yaml-modal-copy').addEventListener('click', async () => {
+    const btn = modal.querySelector('#yaml-modal-copy');
+    try {
+      await navigator.clipboard.writeText(yaml);
+      btn.textContent = '✓ Copié !';
+      btn.style.background = '#059669';
+      setTimeout(() => {
+        btn.textContent = 'Copier dans le presse-papiers';
+        btn.style.background = '#0f766e';
+      }, 2000);
+    } catch {
+      // Fallback sélection manuelle
+      modal.querySelector('#yaml-modal-content').select();
+    }
+  });
+}
+
+/**
  * Remplir l'éditeur avec les champs du type de visuel
  */
-function populateEditor(panel, visualType, visualData, originalVisualData) {
+function populateEditor(panel, visualType, visualData, _originalVisualData) {
   panel.currentType = visualType;
 
   const metadata = visualMetadata[visualType];
-  const cardId = panel.currentCard.id;
   if (!metadata) {
     console.error(`Unknown visual type: ${visualType}`);
     return;
@@ -299,70 +415,42 @@ function populateEditor(panel, visualType, visualData, originalVisualData) {
 
   const editorBody = panel.querySelector('.editor-body');
 
-  // 1. Injecter la partie commune EN PREMIER (type + éventuel warning localStorage)
-  const storedConfig = localStorage.getItem(`visual-config-${cardId}`);
+  // 1. Injecter la partie commune EN PREMIER (type + bouton reset)
   editorBody.innerHTML = `
     <div class="editor-field full-width">
       <label>Type de Visuel</label>
-      <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.5rem;">
-        <span style="font-size: 1.5rem;">${metadata.icon}</span>
-        <span style="font-weight: 600;">${metadata.label}</span>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; background: #f8fafc; border-radius: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 1.5rem;">${metadata.icon}</span>
+          <span style="font-weight: 600;">${metadata.label}</span>
+        </div>
+        <button id="reset-visual-config" style="background: transparent; border: 1px solid #cbd5e1; color: #64748b; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Réinitialiser</button>
       </div>
     </div>
-    ${storedConfig ? `
-    <div class="editor-field full-width" style="padding: 8px; background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 0.75rem; color: #92400e; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-      <span>Les valeurs par défaut ont été surchargées.</span>
-      <button id="reset-visual-config" style="background: transparent; border: 1px solid #f59e0b; color: #b45309; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;">Réinitialiser</button>
-    </div>` : ''}
   `;
 
-  // 2. Listener bouton réinitialisation (attaché immédiatement après injection)
-  const resetBtn = editorBody.querySelector('#reset-visual-config');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', async () => {
-      const cardElement = panel.currentCard;
-      if (!cardElement) return;
-      localStorage.removeItem(`visual-config-${cardId}`);
-      localStorage.removeItem(`cn-rand-prefs-${cardId}`);
-      const activeVariant = cardElement.querySelector('.variant-content.active');
-      if (activeVariant?.originalVisualData) {
-        activeVariant.visualData = JSON.parse(JSON.stringify(activeVariant.originalVisualData));
-      }
-      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-      populateEditor(panel, visualType, activeVariant.visualData, activeVariant.originalVisualData);
-    });
-  }
+  // 2. Listener bouton réinitialisation — repart de la config markdown originale
+  editorBody.querySelector('#reset-visual-config').addEventListener('click', async () => {
+    const cardElement = panel.currentCard;
+    if (!cardElement) return;
+    const activeVariant = cardElement.querySelector('.variant-content.active');
+    if (activeVariant?.originalVisualData) {
+      activeVariant.visualData = JSON.parse(JSON.stringify(activeVariant.originalVisualData));
+    }
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+    populateEditor(panel, visualType, activeVariant.visualData, activeVariant.originalVisualData);
+  });
 
   // 3. Rendre l'éditeur spécifique au type (insertAdjacentHTML + listeners propres)
   if (visualType === 'axe-gradue') {
     // renderAxeGradueEditor utilise insertAdjacentHTML et attache ses propres listeners
-    renderAxeGradueEditor(panel, visualData, { generateFieldHTML });
+    renderAxeGradueEditor(panel, visualData);
 
   } else if (visualType === 'cubes-numeration') {
     const markdownPrefs = visualData.editor_prefs;
-    let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' };
-    if (markdownPrefs) {
-      prefs = { ...prefs, ...markdownPrefs };
-    } else {
-      try {
-        const saved = JSON.parse(localStorage.getItem(`cn-rand-prefs-${cardId}`));
-        if (saved) prefs = { ...prefs, ...saved };
-      } catch (e) {}
-    }
+    const prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9',
+                    ...(markdownPrefs || {}) };
     editorBody.insertAdjacentHTML('beforeend', renderCubesNumerationEditor(panel, visualData, prefs));
-    // Listener sauvegarde plages aléatoires (localStorage)
-    editorBody.querySelectorAll('.rand-range').forEach(input => {
-      input.addEventListener('input', () => {
-        if (visualData.editor_prefs) return;
-        const newPrefs = {};
-        ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
-          const minEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="min"]`);
-          const maxEl = editorBody.querySelector(`.rand-range[data-pref="${name}"][data-part="max"]`);
-          if (minEl && maxEl) newPrefs[name] = `${minEl.value}:${maxEl.value}`;
-        });
-        localStorage.setItem(`cn-rand-prefs-${cardId}`, JSON.stringify(newPrefs));
-      });
-    });
 
   } else if (visualType === 'polygone-perimetre') {
     const markdownPrefs = visualData.editor_prefs;
@@ -374,33 +462,31 @@ function populateEditor(panel, visualType, visualData, originalVisualData) {
       }
       if (markdownPrefs.shapes) prefs.shapes = markdownPrefs.shapes;
       if (markdownPrefs.level)  prefs.level  = markdownPrefs.level;
-    } else {
-      try {
-        const saved = JSON.parse(localStorage.getItem(`pp-rand-prefs-${cardId}`));
-        if (saved) prefs = { ...prefs, ...saved };
-      } catch (e) {}
     }
     editorBody.insertAdjacentHTML('beforeend', renderPolygonePerimetreEditor(panel, visualData, prefs));
-    // Listener sauvegarde plages aléatoires
-    editorBody.querySelectorAll('.pp-range').forEach(input => {
-      input.addEventListener('input', () => {
-        if (visualData.editor_prefs) return;
-        const minEl = editorBody.querySelector('.pp-range[data-part="min"]');
-        const maxEl = editorBody.querySelector('.pp-range[data-part="max"]');
-        if (minEl && maxEl) {
-          const newPrefs = { ...prefs, valueMin: parseInt(minEl.value), valueMax: parseInt(maxEl.value) };
-          localStorage.setItem(`pp-rand-prefs-${cardId}`, JSON.stringify(newPrefs));
-        }
-      });
-    });
+
+  } else if (visualType === 'schema-additif') {
+    const markdownPrefs = visualData.editor_prefs;
+    const prefs = { totalMin: 20, totalMax: 99, totalStep: 10, ...(markdownPrefs || {}) };
+    editorBody.insertAdjacentHTML('beforeend', renderSchemaAdditifEditor(panel, visualData, prefs));
+
+    // Mise à jour live du champ "partie 2" en fonction de total et part1
+    const updatePart2 = () => {
+      const t  = parseFloat(editorBody.querySelector('[name="total"]')?.value  || '0');
+      const p1 = parseFloat(editorBody.querySelector('[name="part1"]')?.value || '0');
+      const p2Display = editorBody.querySelector('[name="part2-display"]');
+      if (p2Display) p2Display.value = Math.round((t - p1) * 1000) / 1000;
+    };
+    editorBody.querySelector('[name="total"]') ?.addEventListener('input', updatePart2);
+    editorBody.querySelector('[name="part1"]') ?.addEventListener('input', updatePart2);
 
   } else {
     editorBody.insertAdjacentHTML('beforeend', renderStandardEditor(panel, visualType, visualData));
   }
 
   // 4. Live Edit sur tous les inputs — APRÈS le rendu des éditeurs spécifiques
-  //    Exclure .rand-range (déjà gérés) et les inputs cachés d'axe-gradue (name=rand-*)
-  const inputs = editorBody.querySelectorAll('input:not(.rand-range):not([type="hidden"]), select, textarea');
+  //    Exclure les inputs de plages de randomisation et les inputs cachés/désactivés
+  const inputs = editorBody.querySelectorAll('input:not(.rand-range):not(.sa-range):not(.pp-range):not([type="hidden"]):not([disabled]), select, textarea');
   inputs.forEach(input => {
     input.addEventListener('change', () => applyEditorChanges(panel));
     if (input.type === 'range' || input.type === 'text' || input.type === 'number') {
@@ -412,7 +498,7 @@ function populateEditor(panel, visualType, visualData, originalVisualData) {
 /**
  * Rendu standard pour les autres visuels
  */
-function renderStandardEditor(panel, visualType, visualData) {
+function renderStandardEditor(_panel, visualType, visualData) {
   let html = '';
   // Générer les champs selon metadata
   const configFields = getConfigFields(visualType);
@@ -426,7 +512,6 @@ function renderStandardEditor(panel, visualType, visualData) {
   return html;
 }
 
-// ... (le reste du fichier)
 /**
  * Générer le HTML d'un champ selon son type
  */
@@ -515,41 +600,6 @@ function generateFieldHTML(field, value) {
 }
 
 /**
- * Appliquer les changements de l'éditeur pour "cubes-numeration"
- */
-async function applyCubesNumerationChanges(panel) {
-  const cardElement = panel.currentCard;
-  if (!cardElement) return;
-
-  const activeVariant = cardElement.querySelector('.variant-content.active');
-  const editorBody = panel.querySelector('.editor-body');
-
-  // 1. Collecter les valeurs des champs de configuration
-  const newConfig = { ...activeVariant?.visualData?.config };
-  ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
-    const input = editorBody.querySelector(`input[name="${name}"]`);
-    if (input) {
-      newConfig[name] = parseInt(input.value, 10) || 0;
-    }
-  });
-
-  // 2. Gérer la checkbox "showLabels"
-  const showLabelsInput = editorBody.querySelector(`input[name="showLabels"]`);
-  if (showLabelsInput) {
-    newConfig.showLabels = showLabelsInput.checked;
-  }
-
-  // 3. Mettre à jour le visuel et sauvegarder
-  if (activeVariant) {
-    activeVariant.visualData.config = newConfig;
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-
-    const cardId = cardElement.id;
-    localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
-  }
-}
-
-/**
  * Appliquer les changements de l'éditeur
  */
 async function applyEditorChanges(panel) {
@@ -559,12 +609,6 @@ async function applyEditorChanges(panel) {
   const activeVariant = cardElement.querySelector('.variant-content.active');
   const visualType = panel.currentType;
   const editorBody = panel.querySelector('.editor-body');
-
-  // Branche spécifique pour cubes-numeration
-  if (visualType === 'cubes-numeration') {
-    await applyCubesNumerationChanges(panel);
-    return;
-  }
 
   // Collecter les valeurs des champs
   const newConfig = { ...activeVariant?.visualData?.config }; // Garder les valeurs existantes (pour les champs cachés)
@@ -625,16 +669,6 @@ async function applyEditorChanges(panel) {
     activeVariant.visualData.config = newConfig;
     await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
   }
-
-  // Sauvegarder en localStorage
-  const cardId = cardElement.id;
-  if (cardId) {
-    const storageKey = `visual-config-${cardId}`;
-    localStorage.setItem(storageKey, JSON.stringify(newConfig));
-  }
-
-  // Fermer le panneau
-  console.log('✅ Visual config updated:', newConfig);
 }
 
 /**
@@ -761,18 +795,25 @@ async function quickRandomize(cardElement) {
     return;
   }
 
+  // ── Branche polygone-périmètre ────────────────────────────────────────
+  if (visualType === 'polygone-perimetre') {
+    await quickRandomizePolygone(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
+  // ── Branche schéma additif ───────────────────────────────────────────
+  if (visualType === 'schema-additif') {
+    await quickRandomizeSchemaAdditif(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
   // ── Branche figure-geo ────────────────────────────────────────────────
+  // On ne change que le seed : level, gridsize, cellsize, etc. viennent du config MD
   if (visualType === 'figure-geo') {
-    const cardId = cardElement.id;
     const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
     if (activeVariant) {
-      // Repartir de la config originale (MD), seulement changer le seed
-      const originalConfig = activeVariant.originalVisualData?.config || activeVariant.visualData.config;
-      const editorPrefs = visualData?.editor_prefs || {};
-      const newConfig = { ...originalConfig, ...editorPrefs, seed: newSeed };
-      activeVariant.visualData.config = newConfig;
+      activeVariant.visualData.config = { ...activeVariant.visualData.config, seed: newSeed };
       await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-      localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
       const editorPanel = document.getElementById('visual-editor-panel');
       if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
         const seedInput = editorPanel.querySelector('[name="seed"]');
@@ -783,8 +824,6 @@ async function quickRandomize(cardElement) {
   }
 
   // ── Branche axe-gradué (logique existante) ────────────────────────────
-  const cardId = cardElement.id;
-
   // 1. Lire les préférences depuis le Markdown (editor_prefs)
   const markdownPrefs = visualData?.editor_prefs;
 
@@ -798,14 +837,7 @@ async function quickRandomize(cardElement) {
   };
 
   if (markdownPrefs) {
-    // Priorité au Markdown
     prefs = { ...prefs, ...markdownPrefs };
-  } else {
-    // Sinon, fallback sur le localStorage
-    try {
-      const stored = localStorage.getItem(`visual-random-prefs-${cardId}`);
-      if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
-    } catch(e) {}
   }
 
   const currentConfig = visualData?.config || {};
@@ -814,7 +846,6 @@ async function quickRandomize(cardElement) {
   if (activeVariant) {
     activeVariant.visualData.config = { ...activeVariant.visualData.config, ...newConfig };
     await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(activeVariant.visualData.config));
     const editorPanel = document.getElementById('visual-editor-panel');
     if (editorPanel && editorPanel.classList.contains('open') && editorPanel.currentCard === cardElement) {
       // Mettre à jour les champs de l'éditeur
@@ -827,27 +858,123 @@ async function quickRandomize(cardElement) {
 }
 
 /**
+ * Randomisation dédiée polygone-périmètre
+ * - Conserve la forme et le niveau tels que définis dans l'éditeur
+ * - Génère un nouveau seed
+ * - Choisit une unité aléatoire
+ */
+async function quickRandomizePolygone(cardElement, activeVariant, markdownPrefs) {
+  const editorPanel   = document.getElementById('visual-editor-panel');
+  const editorOpen    = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
+  const visualData    = activeVariant?.visualData;
+  const currentConfig = visualData?.config || {};
+
+  // Lire la forme et le niveau depuis l'éditeur (si ouvert) ou la config courante
+  let shape = currentConfig.shape ?? 'rect';
+  let level = currentConfig.level ?? 1;
+  if (editorOpen) {
+    const editorBody = editorPanel.querySelector('.editor-body');
+    const shapeInput = editorBody.querySelector('[name="shape"]');
+    const levelInput = editorBody.querySelector('[name="level"]');
+    if (shapeInput) shape = shapeInput.value;
+    if (levelInput) level = parseInt(levelInput.value) || 1;
+  }
+
+  // Unité aléatoire
+  const units = ['cm', 'm', 'dm', 'mm'];
+  const unit  = units[Math.floor(Math.random() * units.length)];
+
+  // Plage de valeurs depuis les prefs (markdown > défaut)
+  let valueMin = 2, valueMax = 9;
+  if (markdownPrefs?.valueRange) {
+    valueMin = markdownPrefs.valueRange[0] ?? 2;
+    valueMax = markdownPrefs.valueRange[1] ?? 9;
+  }
+
+  const newConfig = {
+    ...currentConfig,
+    seed:       polygoneRandomizeSeed(),
+    shape,
+    level,
+    unit,
+    valuerange: [valueMin, valueMax],
+  };
+
+  if (activeVariant) {
+    activeVariant.visualData.config = newConfig;
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+
+    if (editorOpen) {
+      const editorBody = editorPanel.querySelector('.editor-body');
+      const seedInput = editorBody.querySelector('[name="seed"]');
+      const unitInput = editorBody.querySelector('[name="unit"]');
+      if (seedInput) seedInput.value = newConfig.seed;
+      if (unitInput) unitInput.value = newConfig.unit;
+    }
+  }
+}
+
+/**
+ * Randomisation dédiée schéma additif
+ */
+async function quickRandomizeSchemaAdditif(cardElement, activeVariant, markdownPrefs) {
+  const editorPanel   = document.getElementById('visual-editor-panel');
+  const editorOpen    = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
+  const visualData    = activeVariant?.visualData;
+  const currentConfig = visualData?.config || {};
+
+  // ── Mode dynamique : le composant se régénère seul via TemplateEngine ──
+  if (currentConfig.content) {
+    // Re-créer l'élément suffit — Math.random() produit de nouvelles valeurs
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+    return;
+  }
+
+  // ── Mode statique : générer de nouvelles valeurs ────────────────────────
+  let prefs = { totalMin: 20, totalMax: 99, totalStep: 10, ...(markdownPrefs || {}) };
+
+  if (editorOpen) {
+    const editorBody = editorPanel.querySelector('.editor-body');
+    const get = (part) => parseInt(editorBody.querySelector(`.sa-range[data-part="${part}"]`)?.value);
+    if (!isNaN(get('totalMin')))  prefs.totalMin  = get('totalMin');
+    if (!isNaN(get('totalMax')))  prefs.totalMax  = get('totalMax');
+    if (!isNaN(get('totalStep'))) prefs.totalStep = get('totalStep');
+  }
+
+  let level = currentConfig.level ?? 1;
+  if (editorOpen) {
+    const lvl = parseInt(editorPanel.querySelector('.editor-body [name="level"]')?.value);
+    if (!isNaN(lvl)) level = lvl;
+  }
+
+  const newConfig = randomizeSchemaAdditif({ ...currentConfig, level }, prefs);
+
+  if (activeVariant) {
+    activeVariant.visualData.config = newConfig;
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+
+    if (editorOpen) {
+      const editorBody = editorPanel.querySelector('.editor-body');
+      ['total', 'part1', 'unknown'].forEach(name => {
+        const input = editorBody.querySelector(`[name="${name}"]`);
+        if (input) input.value = newConfig[name] ?? '';
+      });
+      const p2 = editorBody.querySelector('[name="part2-display"]');
+      if (p2) p2.value = newConfig.total - newConfig.part1;
+    }
+  }
+}
+
+/**
  * Randomisation dédiée cubes-numération
  */
 async function quickRandomizeCubes(cardElement, activeVariant, markdownPrefs) {
-  const cardId    = cardElement.id;
   const editorPanel = document.getElementById('visual-editor-panel');
   const editorOpen  = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
-  const visualData = activeVariant?.visualData;
+  const visualData  = activeVariant?.visualData;
 
-  // Charger les préférences de randomisation
-  let prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9' }; // Valeurs par défaut
-
-  // La configuration du Markdown (editor_prefs) est TOUJOURS prioritaire,
-  // que ce soit pour l'éditeur ou pour la randomisation.
-  if (markdownPrefs) {
-    prefs = { ...prefs, ...markdownPrefs };
-  } else {
-    try {
-      const stored = localStorage.getItem(`cn-rand-prefs-${cardId}`);
-      if (stored) prefs = { ...prefs, ...JSON.parse(stored) };
-    } catch(e) {}
-  }
+  const prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9',
+                  ...(markdownPrefs || {}) };
 
   const randInt = (range) => {
     const [min, max] = String(range).split(':').map(Number);
@@ -864,10 +991,7 @@ async function quickRandomizeCubes(cardElement, activeVariant, markdownPrefs) {
 
   visualData.config = newConfig;
   await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-  localStorage.setItem(`visual-config-${cardId}`, JSON.stringify(newConfig));
 
-  // 3. Mettre à jour uniquement les valeurs dans l'éditeur sans le reconstruire —
-  //    les plages aléatoires restent intactes dans le DOM.
   if (editorOpen) {
     const editorBody = editorPanel.querySelector('.editor-body');
     ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
@@ -877,9 +1001,50 @@ async function quickRandomizeCubes(cardElement, activeVariant, markdownPrefs) {
   }
 }
 
+/**
+ * Randomisation rapide de la variante active — appelé par double-clic bullet
+ */
+export async function quickRandomizeCard(cardElement) {
+  await quickRandomize(cardElement);
+}
+
+/**
+ * Thunder : variante aléatoire silencieuse (sans mise à jour des bullets ni du badge GS)
+ * Réinitialise d'abord au config MD puis quickRandomize
+ */
+export async function thunderRandomize(cardElement) {
+  const variants = Array.from(cardElement.querySelectorAll('.variant-content'));
+  if (variants.length === 0) return;
+
+  const randomIndex = Math.floor(Math.random() * variants.length);
+
+  // Afficher la variante choisie sans toucher aux bullets ni aux badges GS
+  variants.forEach((v, idx) => v.classList.toggle('active', idx === randomIndex));
+
+  // Réinitialiser au config MD original avant de randomiser
+  const variantContent = variants[randomIndex];
+  if (variantContent?.originalVisualData) {
+    variantContent.visualData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
+  }
+
+  if (variantContent?.visualData) {
+    await VisualsSystem.initCardVisuals(cardElement, variantContent.visualData);
+  } else {
+    clearCardVisuals(cardElement);
+    return;
+  }
+
+  // Générer de nouvelles valeurs aléatoires
+  await quickRandomize(cardElement);
+
+  if (window.MathJax) window.MathJax.typesetPromise([cardElement]).catch(() => {});
+}
+
 // Export pour utilisation dans RapidoLayout
 export default {
   initRapidosVisuals,
   handleVariantChange,
   openVisualEditor,
+  quickRandomizeCard,
+  thunderRandomize,
 };
