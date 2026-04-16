@@ -2,7 +2,7 @@
 // src/layouts/RapidoLayout.astro
 import '../styles/main.css';
 import '../styles/components/rapidos-visuals.css';
-
+import { getCollection } from 'astro:content';
 
 // src/layouts/RapidoLayout.astro
 const { info, parentUrl = ".." } = Astro.props;
@@ -23,6 +23,25 @@ function nl2br(text) {
 
 const pageTitle = `Rapido ${numero} - ${niveau}`;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// Collecte des IDs GS uniques référencés dans les questions
+const gsIdsUsed = new Set<string>();
+for (const q of questions) {
+  for (const v of q.variantes ?? []) {
+    if (v.gs) gsIdsUsed.add(v.gs);
+  }
+}
+
+// Charge les données PDF de chaque fiche guide correspondante
+const guideFiches = await getCollection('guide');
+const gsPdfData: Record<string, { title: string; page: number; x: number; y: number; w: number; h: number }> = {};
+for (const fiche of guideFiches) {
+  if (!fiche.data.id || !fiche.data.pdf) continue;
+  const key = `GS ${fiche.data.id}`;
+  if (gsIdsUsed.has(key)) {
+    gsPdfData[key] = { title: fiche.data.title ?? key, ...fiche.data.pdf };
+  }
+}
 ---
 
 <!DOCTYPE html>
@@ -75,8 +94,21 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
        .questions-grid:has(> :last-child:nth-child(5)) > :last-child { grid-column: 1 / -1; width: 70%; margin: 0 auto; }
        .q-num { position: absolute; top: -15px; right: -15px; width: 2.5rem; height: 2.5rem; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 3px solid white; z-index: 20; }
        .card-header-controls { position: absolute; top: 10px; left: 0; width: 100%; padding: 0 15px; display: flex; align-items: center; gap: 10px; z-index: 30; }
-       .gs-ref-badge { display: none; background: #0f766e; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 12px 12px 12px 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: default; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+       .gs-ref-badge { display: none; background: #0f766e; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 12px 12px 12px 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transition: opacity 0.15s, transform 0.15s; }
        .gs-ref-badge.active { display: block; }
+       .gs-ref-badge:hover { opacity: 0.85; transform: scale(1.08); }
+       /* Overlay Guide de Survie */
+       .gs-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+       .gs-overlay.open { display: flex; }
+       .gs-overlay-inner { background: white; border-radius: 1.5rem; padding: 1.5rem 1.5rem 1rem; max-width: 92vw; max-height: 90vh; overflow: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.45); position: relative; min-width: 260px; }
+       .gs-overlay-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; }
+       .gs-overlay-title { font-size: 0.95rem; font-weight: 800; color: #0f766e; text-transform: uppercase; letter-spacing: 0.05em; }
+       .gs-overlay-close { background: #f1f5f9; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #475569; transition: background 0.15s; flex-shrink: 0; }
+       .gs-overlay-close:hover { background: #e2e8f0; }
+       .gs-overlay-canvas-wrap { position: relative; }
+       .gs-overlay-canvas { display: block; max-width: 100%; height: auto; }
+       .gs-overlay-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.875rem; }
+       .gs-overlay-loading.hidden { display: none; }
        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
        .bullet { min-width: auto !important; min-height: auto !important; width: 10px; height: 10px; border-radius: 50%; background-color: #cbd5e1; border: none; padding: 0; cursor: pointer; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
        .bullet::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -10px; right: -10px; }
@@ -177,9 +209,112 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     </div>
   </div>
 
-  <script is:inline define:vars={{ questions, niveau, numero }}>
+  <!-- Overlay Guide de Survie -->
+  <div id="gs-overlay" class="gs-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="gs-overlay-inner">
+      <div class="gs-overlay-header">
+        <div class="gs-overlay-title" id="gs-overlay-title"></div>
+        <button class="gs-overlay-close" data-close aria-label="Fermer">✕</button>
+      </div>
+      <div class="gs-overlay-canvas-wrap">
+        <canvas class="gs-overlay-canvas" id="gs-overlay-canvas"></canvas>
+        <div class="gs-overlay-loading" id="gs-overlay-loading">Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline define:vars={{ questions, niveau, numero, gsPdfData, base }}>
     window.__RAPIDO_QUESTIONS__ = questions;
     window.__RAPIDO_CARD_PREFIX__ = `${niveau}-${numero}`;
+    window.__GS_PDF_DATA__ = gsPdfData;
+    window.__BASE_URL__ = base;
+  </script>
+
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
+
+    const pdfCache = new Map<string, Promise<any>>();
+
+    async function getPdf(url: string) {
+      if (!pdfCache.has(url)) pdfCache.set(url, pdfjsLib.getDocument(url).promise);
+      return pdfCache.get(url)!;
+    }
+
+    async function renderRegion(
+      canvas: HTMLCanvasElement,
+      region: { pdfUrl: string; page: number; x: number; y: number; w: number; h: number },
+      scale: number
+    ) {
+      const pdf  = await getPdf(region.pdfUrl);
+      const page = await pdf.getPage(region.page);
+      const vp   = page.getViewport({ scale, offsetX: -region.x * scale, offsetY: -region.y * scale });
+      canvas.width  = region.w * scale;
+      canvas.height = region.h * scale;
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    }
+
+    const overlay     = document.getElementById('gs-overlay')!;
+    const overlayTitle= document.getElementById('gs-overlay-title')!;
+    const overlayCanvas = document.getElementById('gs-overlay-canvas') as HTMLCanvasElement;
+    const overlayLoading = document.getElementById('gs-overlay-loading')!;
+
+    let lastRenderedKey: string | null = null;
+
+    async function openGsOverlay(gsKey: string) {
+      const gsPdfData: Record<string, any> = (window as any).__GS_PDF_DATA__ ?? {};
+      const base: string = (window as any).__BASE_URL__ ?? '';
+      const info = gsPdfData[gsKey];
+      if (!info) return;
+
+      overlay.classList.add('open');
+      overlay.setAttribute('aria-hidden', 'false');
+      overlayTitle.textContent = info.title ?? gsKey;
+
+      if (lastRenderedKey === gsKey) return; // déjà rendu
+      lastRenderedKey = gsKey;
+
+      overlayLoading.classList.remove('hidden');
+      overlayCanvas.width = 0;
+      overlayCanvas.height = 0;
+
+      const dpr = window.devicePixelRatio || 1;
+      const maxW = Math.min(window.innerWidth * 0.85, 600);
+      const scale = (maxW / info.w) * dpr;
+
+      await renderRegion(overlayCanvas, {
+        pdfUrl: `${base}/pdf/guide-survie-c3.pdf`,
+        page: info.page,
+        x: info.x,
+        y: info.y,
+        w: info.w,
+        h: info.h,
+      }, scale);
+
+      overlayCanvas.style.width  = Math.min(info.w * scale / dpr, maxW) + 'px';
+      overlayCanvas.style.height = 'auto';
+      overlayLoading.classList.add('hidden');
+    }
+
+    function closeGsOverlay() {
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+      lastRenderedKey = null;
+    }
+
+    overlay.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeGsOverlay));
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeGsOverlay(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGsOverlay(); });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll<HTMLElement>('.gs-ref-badge').forEach(badge => {
+        badge.addEventListener('click', e => {
+          e.stopPropagation();
+          const gsKey = badge.textContent?.trim();
+          if (gsKey) openGsOverlay(gsKey);
+        });
+      });
+    });
   </script>
 
   <script>
