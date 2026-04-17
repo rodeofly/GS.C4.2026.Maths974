@@ -547,9 +547,11 @@ function generateFieldHTML(field, value) {
       inputHTML = `
         <select id="${fieldId}" name="${field.name}">
           ${field.options
-            .map(
-              (opt) => `<option value="${opt}" ${opt === value ? 'selected' : ''}>${opt}</option>`
-            )
+            .map((opt) => {
+              const v = typeof opt === 'object' ? opt.value : opt;
+              const l = typeof opt === 'object' ? opt.label : opt;
+              return `<option value="${v}" ${v === value ? 'selected' : ''}>${l}</option>`;
+            })
             .join('')}
         </select>
       `;
@@ -813,6 +815,24 @@ async function quickRandomize(cardElement) {
     const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
     if (activeVariant) {
       activeVariant.visualData.config = { ...activeVariant.visualData.config, seed: newSeed };
+      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+      const editorPanel = document.getElementById('visual-editor-panel');
+      if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
+        const seedInput = editorPanel.querySelector('[name="seed"]');
+        if (seedInput) seedInput.value = newSeed;
+      }
+    }
+    return;
+  }
+
+  // ── Branche angle-triangle ────────────────────────────────────────────
+  // Nouveau seed aléatoire → triangle, lettres et angle inconnu régénérés
+  if (visualType === 'angle-triangle') {
+    const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
+    if (activeVariant) {
+      // Nouveau seed + mode conservé ; angles/letters/unknown supprimés
+      const currentConfig = activeVariant.visualData.config || {};
+      activeVariant.visualData.config = { seed: newSeed, mode: currentConfig.mode || 'scalene' };
       await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
       const editorPanel = document.getElementById('visual-editor-panel');
       if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {

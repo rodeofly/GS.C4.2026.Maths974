@@ -215,6 +215,20 @@ mjx-container {
   margin: 0.5em 0;
 }
 
+/* Alignement vertical du math inline dans les cartes rapido
+   (évite que \widehat ou les fractions décalent la ligne de base) */
+.content mjx-container {
+  vertical-align: -0.2em;
+  margin: 0 0.1em;
+}
+
+/* Annuler le margin vertical global pour le math inline dans .content */
+.content mjx-container[display="false"],
+.content mjx-container:not([display="true"]) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .tikzjax {
   display: flex;
   justify-content: center;

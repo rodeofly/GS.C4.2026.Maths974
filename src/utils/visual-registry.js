@@ -17,7 +17,8 @@ registerVisual('texte-trous', () => import('../visuals/texte-trous/texte-trous.j
 registerVisual('cubes-numeration', () => import('../visuals/cubes-numeration/cubes-numeration.js'));
 registerVisual('figure-geo', () => import('../visuals/figure-geo/figure-geo.js'));
 registerVisual('polygone-perimetre', () => import('../visuals/polygone-perimetre/polygone-perimetre.js'));
-registerVisual('schema-additif', () => import('../visuals/schema-additif/schema-additif.js'));
+registerVisual('schema-additif',    () => import('../visuals/schema-additif/schema-additif.js'));
+registerVisual('angle-triangle',   () => import('../visuals/angle-triangle/angle-triangle.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -150,6 +151,27 @@ export const visualMetadata = {
       { name: 'labelt',    type: 'text',   label: 'Étiquette barre totale',default: '' },
       { name: 'label1',    type: 'text',   label: 'Étiquette barre gauche',default: '' },
       { name: 'label2',    type: 'text',   label: 'Étiquette barre droite',default: '' },
+    ],
+  },
+
+  'angle-triangle': {
+    label: 'Angle dans un triangle',
+    description: 'Triangle avec angle(s) connu(s) et 1 angle inconnu (GS 19.3)',
+    icon: '📐',
+    category: 'Géométrie',
+    configFields: [
+      { name: 'seed', type: 'text',   label: 'Graine (mode aléatoire)', default: 'triangle' },
+      { name: 'mode', type: 'select', label: 'Type de triangle',
+        options: [
+          { value: 'scalene',        label: 'Scalène' },
+          { value: 'isoscele',       label: 'Isocèle' },
+          { value: 'equilateral',    label: 'Équilatéral' },
+          { value: 'scalene-rect',   label: 'Scalène rectangle' },
+          { value: 'isoscele-rect',  label: 'Isocèle rectangle' },
+        ],
+        default: 'scalene' },
+      { name: 'width',  type: 'number', label: 'Largeur (px)',  default: 220 },
+      { name: 'height', type: 'number', label: 'Hauteur (px)', default: 160 },
     ],
   },
 

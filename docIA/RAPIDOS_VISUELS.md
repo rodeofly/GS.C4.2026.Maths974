@@ -401,23 +401,135 @@ Exemple : "6e-r2-q3-v1"
 
 ---
 
-## 📝 Texte à Trous
+## Texte à Trous
 
-**Fichier :** `src/visuals/texte-trous/texte-trous.js`  
 **Position recommandée :** `north`
 
-Texte avec variables aléatoires inline et expressions calculées. Voir `docIA/NewPluginTexteATrous.md` pour la doc complète.
+Texte avec variables aléatoires inline `[x:min..max]` et expressions calculées `[?expr]`.  
+Mode `web` : affiche `. . .` avec tooltip. Mode `print` : affiche `□`.
 
 ---
 
-## 🛠️ Checklist Création d'un Visuel dans un Rapido
+## 📐 Angle dans un Triangle
 
-```markdown
-- [ ] Choisir le bon type (cubes-numeration / axe-gradue / figure-geo)
-- [ ] Définir la position (north pour la plupart, west pour figure-geo)
-- [ ] Définir la config initiale (valeurs par défaut pédagogiquement pertinentes)
-- [ ] Donner une seed unique pour figure-geo : {niveau}-r{N}-q{Q}-v{V}
+**Fichier :** `src/visuals/angle-triangle/angle-triangle.js`  
+**Tag HTML :** `<math974-angle-triangle>`  
+**Position recommandée :** `east`  
+**GS couverts :** GS 19.3 — Rapidos R21 (Q4), R25 (Q3), R30 (Q3)
+
+Triangle Canvas (Retina ×2) avec angle(s) connus et 1 angle inconnu à trouver. Construction par loi des sinus à partir d'une graine déterministe. Hover sur l'angle `?` affiche la réponse en tooltip.
+
+### Modes (`mode`)
+
+| Valeur | Triangle | Codage | Données affichées |
+|--------|----------|--------|-------------------|
+| `scalene` (défaut) | Quelconque | aucun | 2 angles connus + `?` |
+| `isoscele` | Apex en P0, base en P1/P2 | 1 tiret sur les 2 jambes | 1 angle (apex ou base) + `?` |
+| `equilateral` | 60°/60°/60° | 1 tiret sur les 3 côtés | `?` uniquement |
+| `scalene-rect` | Angle droit en P1 | carré en P1 | 1 angle + `?` |
+| `isoscele-rect` | Angle droit en P0, jambes égales | carré en P0 + 1 tiret/jambe | `?` uniquement |
+
+Le principe "minimum de données" s'applique automatiquement : les angles déductibles par le codage (côtés égaux, angle droit) ne sont pas affichés en chiffres.
+
+### Convention du nom de l'angle inconnu
+
+L'angle inconnu à l'indice `i` est nommé :
+```
+letters[(i+2)%3] + letters[i] + letters[(i+1)%3]
+```
+Exemple : `unknown=0`, `letters=["O","K","T"]` → **T̂OK** (`\widehat{TOK}`)
+
+Le widehat est dessiné en rouge sur le canvas ; le même nom peut être repris dans le texte de la question.
+
+### Attributs / Config
+
+| Champ | Type | Défaut | Description |
+|-------|------|--------|-------------|
+| `seed` | string | `"triangle"` | Graine PRNG — détermine angles, lettres, indice inconnu |
+| `mode` | string | `"scalene"` | Type de triangle (voir tableau ci-dessus) |
+| `width` | number | `220` | Largeur canvas (px) |
+| `height` | number | `160` | Hauteur canvas (px) |
+| `angles` | JSON | — | Angles fixes `[A,B,C]` — désactive la génération aléatoire |
+| `unknown` | number | — | Indice de l'angle inconnu (0/1/2) — utilisé avec `angles` |
+| `letters` | JSON | — | Lettres fixes `["X","Y","Z"]` — utilisé avec `angles` |
+
+> En mode `seed` seul (sans `angles`/`letters`/`unknown`), tout est généré de manière déterministe. C'est le mode recommandé pour les Rapidos.
+
+### Placement des labels
+
+- **Angle < 40°** : label perpendiculaire à la bissectrice, extérieur au triangle, avec trait pointillé
+- **Angle ≥ 40°** : label sur la bissectrice intérieure
+- **Triangle plat** (bissectrice trop courte) : label extérieur dans la direction opposée à la bissectrice, avec trait pointillé
+- **Angle droit** : carré à la place de l'arc, pas de label en degrés
+
+### Exemple YAML — Mode seed (recommandé)
+
+```yaml
+- texte: "Détermine l'angle inconnu."
+  gs: "GS 19.3"
+  visual:
+    type: angle-triangle
+    position: east
+    config:
+      seed: "6e-r21-q4-v1"
+      mode: scalene
+```
+
+### Exemple YAML — Angles fixes (usage ponctuel)
+
+```yaml
+- texte: "Calcule $\\widehat{TOK}$."
+  gs: "GS 19.3"
+  visual:
+    type: angle-triangle
+    position: east
+    config:
+      angles: "[131, 33, 16]"
+      unknown: "0"
+      letters: '["O","K","T"]'
+```
+
+### Randomisation (clic variante)
+
+Un clic sur le bouton de variante active génère un nouveau triangle aléatoire (`rndXXXXX`) en conservant le `mode`. Les champs `angles`/`letters`/`unknown` sont supprimés du config au profit du nouveau seed.
+
+### Convention de nommage des graines
+
+```
+{niveau}-r{rapido}-q{question}-v{variante}
+Exemple : "6e-r21-q4-v1"
+```
+
+---
+
+## Visuels planifiés (non encore codés)
+
+Ces types sont référencés dans les MD mais n'ont pas de composant — affichés en `texte` descriptif pour l'instant.
+
+| Type à créer | GS concernés | Rapidos concernés | Priorité |
+|---|---|---|---|
+| **`balance-equilibre`** | GS 29.2, 28.3 | R14, R21, R30 | haute — récurrent |
+| **`programme-scratch`** | GS 25.2, 25.3 | R22, R26, R30, R32 | moyenne |
+| **`suite-figures`** | GS 8.4 | R22, R26, R30, R31 | moyenne |
+| **`symetrie-axiale`** | GS 20.2 | R24, R29 | moyenne |
+| **`aire-quadrillage`** | GS 11.1 | R13 | basse |
+| **`chemin-quadrillage`** | GS 25.1 | R11 | basse |
+| **`solide-3d`** | GS 21.2 | R32 | basse |
+| **`roue-probabilite`** | GS 23.2, 23.3 | R31 | basse |
+
+### Spec `balance-equilibre`
+
+Balance à deux plateaux. Gauche : N boîtes + éventuellement un poids. Droite : poids(s).  
+Config : `{ left: { boxes: 2, weight: 20 }, right: { weight: 30 } }`.
+
+---
+
+## Checklist création d'un visuel dans un Rapido
+
+```
+- [ ] Choisir le bon type (axe-gradue / polygone-perimetre / figure-geo / …)
+- [ ] Définir la position (north, south, east, west selon le type)
+- [ ] Donner une seed unique : {niveau}-r{N}-q{Q}-v{V}  ex: "6e-r8-q1-v1"
 - [ ] Définir editor_prefs pour contraindre la randomisation
-- [ ] Tester via le bouton 🎲 que les variantes restent pédagogiques
-- [ ] Vérifier l'affichage sur la page Rapido (npm run dev)
+- [ ] Vérifier l'affichage : npm run dev
 ```
