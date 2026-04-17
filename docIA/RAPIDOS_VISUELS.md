@@ -1,7 +1,7 @@
-# 🎨 RAPIDOS — Composants Visuels
+# RAPIDOS — Composants Visuels
 
-Documentation des Web Components visuels intégrés dans les Rapidos.  
-Dernière mise à jour : 2026-04-12
+Documentation des composants visuels intégrés dans les Rapidos.  
+Dernière mise à jour : 2026-04-17
 
 ---
 
@@ -56,7 +56,7 @@ Le système insère le Web Component dans la zone correspondante après que la c
 
 ## 📦 Cubes de Numération
 
-**Fichier :** `src/visuals/cubes-numeration/cubes-numeration.js`  
+**Fichier :** `src/components/visuals.bin/cubes-numeration.js`  
 **Tag HTML :** `<math974-cubes-numeration>`  
 **Position recommandée :** `north`
 
@@ -112,7 +112,7 @@ editor_prefs:
 
 ## 📏 Axe Gradué
 
-**Fichier :** `src/visuals/axe-gradue/axe-gradue.js`  
+**Fichier :** `src/components/visuals.bin/axe-gradue.js`  
 **Tag HTML :** `<math974-axe-gradue>`  
 **Position recommandée :** `north`
 
@@ -204,7 +204,7 @@ visual:
 
 ## 🔲 Figure Géométrique (Périmètre)
 
-**Fichier :** `src/visuals/figure-geo/figure-geo.js`  
+**Fichier :** `src/components/visuals.bin/` *(vérifier nom exact)*  
 **Tag HTML :** `<math974-figure-geo>`  
 **Position recommandée :** `west`
 
@@ -300,7 +300,7 @@ Cette convention garantit l'unicité des figures à travers tous les Rapidos.
 
 ## 🔷 Polygone Périmètre
 
-**Fichier :** `src/visuals/polygone-perimetre/polygone-perimetre.js`  
+**Fichier :** `src/components/visuals.bin/` *(vérifier nom exact)*  
 **Tag HTML :** `<math974-polygone-perimetre>`  
 **Position recommandée :** `west`
 
@@ -319,6 +319,10 @@ Polygone étiqueté avec tracé "main levée" (courbes de Bézier + léger offse
 | `escalier` | Escalier | 8 | Rectilinéaire, 4 côtés déductibles au level 2 |
 | `tri_rect` | Triangle rectangle | 3 | Triple pythagoricienne (3-4-5, 5-12-13…) |
 | `tri_iso` | Triangle isocèle | 3 | 2 côtés égaux (marques) |
+| `triangle_equi` | Triangle équilatéral | 3 | 1 seule valeur (tous côtés égaux) |
+| `trapeze` | Trapèze | 4 | 4 valeurs indépendantes |
+| `hexa_reg` | Hexagone régulier | 6 | 1 seule valeur |
+| `penta_reg` | Pentagone régulier | 5 | 1 seule valeur |
 | `random` | Aléatoire | — | Choisit une forme parmi toutes |
 
 ### Système de niveaux
