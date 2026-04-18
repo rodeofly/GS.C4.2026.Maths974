@@ -6,7 +6,7 @@
 
 import VisualsSystem from './visuals-system.js';
 import './visual-registry.js'; // Charge le registre
-import { visualMetadata, getConfigFields } from './visual-registry.js';
+import { visualMetadata, getConfigFields, getPrefsFields } from './visual-registry.js';
 import { renderEditor as renderAxeGradueEditor } from '../visuals/axe-gradue/editor.js';
 import { renderEditor as renderCubesNumerationEditor } from '../visuals/cubes-numeration/editor.js';
 import { renderEditor as renderPolygonePerimetreEditor, randomizeSeed as polygoneRandomizeSeed } from '../visuals/polygone-perimetre/editor.js';
@@ -500,14 +500,31 @@ function populateEditor(panel, visualType, visualData, _originalVisualData) {
  */
 function renderStandardEditor(_panel, visualType, visualData) {
   let html = '';
-  // Générer les champs selon metadata
+
+  // Champs de config
   const configFields = getConfigFields(visualType);
   const currentConfig = visualData.config || {};
-
   configFields.forEach((field) => {
     const fieldValue = currentConfig[field.name] ?? field.default;
     html += generateFieldHTML(field, fieldValue);
   });
+
+  // Section Randomiseur (prefsFields)
+  const prefsFields = getPrefsFields(visualType);
+  if (prefsFields.length) {
+    const currentPrefs = visualData.editor_prefs || {};
+    html += `<div class="editor-section-title" style="grid-column:1/-1;margin:10px 0 4px;
+      font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;
+      border-top:1px solid #e2e8f0;padding-top:10px;letter-spacing:.05em;">
+      ⚡ Randomiseur
+    </div>`;
+    prefsFields.forEach((field) => {
+      // loop : normaliser en string pour le select
+      let raw = currentPrefs[field.name] ?? field.default;
+      if (field.name === 'loop') raw = raw === null ? 'null' : String(raw);
+      html += generateFieldHTML(field, raw);
+    });
+  }
 
   return html;
 }
@@ -585,6 +602,35 @@ function generateFieldHTML(field, value) {
       `;
       break;
 
+    case 'range': {
+      const v0 = Array.isArray(value) ? value[0] : (field.default?.[0] ?? 0);
+      const v1 = Array.isArray(value) ? value[1] : (field.default?.[1] ?? 10);
+      inputHTML = `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="number" step="1" name="${field.name}_0" value="${v0}"
+            style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;text-align:center;" />
+          <span style="color:#64748b">—</span>
+          <input type="number" step="1" name="${field.name}_1" value="${v1}"
+            style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;text-align:center;" />
+        </div>`;
+      break;
+    }
+
+    case 'multicheck': {
+      const checked = Array.isArray(value) ? value : (field.default || []);
+      inputHTML = `
+        <div data-field="${field.name}" style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 0;">
+          ${(field.options || []).map(opt => `
+            <label style="display:flex;align-items:center;gap:4px;font-weight:600;font-size:13px;cursor:pointer;">
+              <input type="checkbox" class="prefs-multicheck" data-field="${field.name}" value="${opt}"
+                ${checked.includes(opt) ? 'checked' : ''}
+                style="width:14px;height:14px;cursor:pointer;" />
+              ${opt}
+            </label>`).join('')}
+        </div>`;
+      break;
+    }
+
     default:
       containerClass += ' full-width';
       inputHTML = `<input type="text" id="${fieldId}" name="${field.name}" value="${value}" />`;
@@ -659,14 +705,35 @@ async function applyEditorChanges(panel) {
   const posInput = editorBody.querySelector('[name="position"]');
   if (posInput) {
     activeVariant.visualData.position = posInput.value;
-    // Définir l'orientation automatiquement selon la position
     const isVertical = ['east', 'west'].includes(posInput.value);
     newConfig.orientation = isVertical ? 'vertical' : 'horizontal';
   }
 
+  // ── Lire les prefsFields → editor_prefs ──────────────────────────────────
+  const prefsFields = getPrefsFields(visualType);
+  if (prefsFields.length) {
+    const newPrefs = { ...(activeVariant?.visualData?.editor_prefs || {}) };
+    prefsFields.forEach((field) => {
+      if (field.type === 'range') {
+        const i0 = editorBody.querySelector(`[name="${field.name}_0"]`);
+        const i1 = editorBody.querySelector(`[name="${field.name}_1"]`);
+        if (i0 && i1) newPrefs[field.name] = [parseFloat(i0.value), parseFloat(i1.value)];
+      } else if (field.type === 'multicheck') {
+        const boxes = editorBody.querySelectorAll(`.prefs-multicheck[data-field="${field.name}"]:checked`);
+        newPrefs[field.name] = Array.from(boxes).map(b => b.value);
+      } else if (field.name === 'loop') {
+        const sel = editorBody.querySelector(`[name="loop"]`);
+        if (sel) newPrefs.loop = sel.value === 'null' ? null : sel.value === 'true';
+      } else {
+        const inp = editorBody.querySelector(`[name="${field.name}"]`);
+        if (inp) newPrefs[field.name] = field.type === 'number' ? parseFloat(inp.value) : inp.value;
+      }
+    });
+    if (activeVariant) activeVariant.visualData.editor_prefs = newPrefs;
+  }
+
   // Mettre à jour le visuel
   if (activeVariant) {
-    // On s'assure que points est bien un tableau
     if (typeof newConfig.points === 'string') try { newConfig.points = JSON.parse(newConfig.points); } catch(e) {}
     activeVariant.visualData.config = newConfig;
     await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
@@ -825,6 +892,18 @@ async function quickRandomize(cardElement) {
     return;
   }
 
+  // ── Branche balance-equilibre ─────────────────────────────────────────
+  if (visualType === 'balance-equilibre') {
+    await quickRandomizeBalance(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
+  // ── Branche programme-scratch ─────────────────────────────────────────
+  if (visualType === 'programme-scratch') {
+    await quickRandomizeProgramme(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
   // ── Branche angle-triangle ────────────────────────────────────────────
   // Nouveau seed aléatoire → triangle, lettres et angle inconnu régénérés
   if (visualType === 'angle-triangle') {
@@ -932,6 +1011,159 @@ async function quickRandomizePolygone(cardElement, activeVariant, markdownPrefs)
       if (unitInput) unitInput.value = newConfig.unit;
     }
   }
+}
+
+/**
+ * Randomisation dédiée balance-equilibre
+ * Génère une équation valide du type "Nx + C_left = C_right"
+ * avec solution entière positive dans la plage configurée.
+ *
+ * editor_prefs :
+ *   boxRange      [min, max]  — nb de variables côté gauche  (défaut [1, 4])
+ *   boxMassRange  [min, max]  — masse d'une boîte en g        (défaut [5, 20])
+ *   leftWeights   [min, max]  — poids extra côté gauche       (défaut [0, 50])
+ *   rightWeights  [min, max]  — nb de poids distincts à droite (défaut [1, 2])
+ *   weightStep    number      — multiple pour les poids constants (défaut 5)
+ */
+async function quickRandomizeBalance(cardElement, activeVariant, markdownPrefs) {
+  const prefs = {
+    boxRange:     [1, 4],
+    boxMassRange: [5, 20],
+    leftWeights:  [0, 50],
+    rightWeights: [1, 2],
+    weightStep:   5,
+    ...(markdownPrefs || {}),
+  };
+
+  const ri  = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+  const rnd = (min, max, step) => Math.round(ri(min / step, max / step)) * step;
+
+  const n         = ri(prefs.boxRange[0], prefs.boxRange[1]);
+  const boxMass   = rnd(prefs.boxMassRange[0], prefs.boxMassRange[1], prefs.weightStep);
+  const leftExtra = rnd(prefs.leftWeights[0], prefs.leftWeights[1], prefs.weightStep);
+  const rightTotal = n * boxMass + leftExtra;
+
+  // Côté droit : 1 ou 2 poids qui somment à rightTotal
+  const nRight = ri(prefs.rightWeights[0], prefs.rightWeights[1]);
+  let rightStr;
+  if (nRight === 1 || rightTotal < prefs.weightStep * 2) {
+    rightStr = `${rightTotal}`;
+  } else {
+    const part1 = rnd(prefs.weightStep, rightTotal - prefs.weightStep, prefs.weightStep);
+    rightStr = `${part1} + ${rightTotal - part1}`;
+  }
+
+  const leftStr = leftExtra > 0 ? `${n}x + ${leftExtra}` : `${n}x`;
+  const equation = `${leftStr} = ${rightStr}`;
+
+  const currentConfig = activeVariant?.visualData?.config || {};
+  activeVariant.visualData.config = { ...currentConfig, equation };
+  await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+
+  const editorPanel = document.getElementById('visual-editor-panel');
+  if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
+    const input = editorPanel.querySelector('[name="equation"]');
+    if (input) input.value = equation;
+  }
+}
+
+/**
+ * Randomisation dédiée programme-scratch
+ * Génère un programme DSL valide selon les editor_prefs :
+ *   inputRange  [min,max]  — nombre de départ
+ *   opsRange    [min,max]  — nb d'opérations (séquence sans boucle)
+ *   ops         array      — opérations autorisées : +  -  ×  ÷
+ *   loop        true|false|null — boucle forcée / interdite / aléatoire
+ *   iterRange   [min,max]  — nb d'itérations si boucle
+ *   valRange    [min,max]  — valeurs opérandes
+ */
+async function quickRandomizeProgramme(cardElement, activeVariant, markdownPrefs) {
+  const p = {
+    inputRange: [2, 20],
+    opsRange:   [1, 3],
+    ops:        ['+', '-', '×', '÷'],
+    loop:       null,
+    iterRange:  [2, 5],
+    valRange:   [1, 10],
+    ...(markdownPrefs || {}),
+  };
+
+  const ri   = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = arr    => arr[Math.floor(Math.random() * arr.length)];
+  const VAR  = 'résultat';
+
+  // Tentatives pour garantir résultat entier positif
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const hasLoop = p.loop === null ? Math.random() < 0.5 : Boolean(p.loop);
+    const iters   = hasLoop ? ri(p.iterRange[0], p.iterRange[1]) : 1;
+    const nOps    = hasLoop ? 1 : ri(p.opsRange[0], p.opsRange[1]);
+    const input   = ri(p.inputRange[0], p.inputRange[1]);
+
+    const steps = []; let cur = input; let ok = true;
+
+    for (let i = 0; i < nOps && ok; i++) {
+      const op = pick(p.ops);
+      let val;
+
+      if (op === '÷') {
+        // cur doit être divisible par val^iters
+        const divs = [];
+        for (let d = Math.max(2, p.valRange[0]); d <= p.valRange[1]; d++) {
+          let v = cur, valid = true;
+          for (let k = 0; k < iters; k++) { if (v % d !== 0) { valid = false; break; } v /= d; }
+          if (valid) divs.push(d);
+        }
+        if (!divs.length) { ok = false; break; }
+        val = pick(divs);
+        for (let k = 0; k < iters; k++) cur /= val;
+
+      } else if (op === '-') {
+        // cur - val*iters >= 1
+        const maxVal = Math.min(Math.floor((cur - 1) / iters), p.valRange[1]);
+        if (maxVal < p.valRange[0]) { ok = false; break; }
+        val = ri(p.valRange[0], maxVal);
+        cur -= val * iters;
+
+      } else if (op === '×') {
+        val = ri(Math.max(2, p.valRange[0]), Math.min(p.valRange[1], 5));
+        const after = cur * Math.pow(val, iters);
+        if (after > 9999) { ok = false; break; }
+        cur = after;
+
+      } else { // +
+        val = ri(p.valRange[0], p.valRange[1]);
+        cur += val * iters;
+      }
+      steps.push({ op, val });
+    }
+
+    if (!ok || !steps.length) continue;
+
+    // Construire le DSL
+    const opLine = ({ op, val }) => `${VAR} = ${VAR} ${op} ${val}`;
+    const lines  = [`${VAR} = réponse`];
+    if (hasLoop) {
+      lines.push(`répéter ${iters}:`);
+      steps.forEach(s => lines.push('  ' + opLine(s)));
+    } else {
+      steps.forEach(s => lines.push(opLine(s)));
+    }
+    lines.push(`dire ${VAR}`);
+
+    activeVariant.visualData.config = {
+      ...activeVariant.visualData.config,
+      input,
+      programme: lines.join('\n'),
+    };
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+    return;
+  }
+  // Fallback : juste changer l'input
+  activeVariant.visualData.config = {
+    ...activeVariant.visualData.config,
+    input: ri(p.inputRange[0], p.inputRange[1]),
+  };
+  await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
 }
 
 /**

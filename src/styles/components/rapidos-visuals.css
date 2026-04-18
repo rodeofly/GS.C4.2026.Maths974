@@ -58,6 +58,12 @@
   width: auto;
 }
 
+/* Zone north/south : hauteur auto pour laisser le visuel définir la sienne */
+.q-card-north .visual-wrapper,
+.q-card-south .visual-wrapper {
+  height: auto;
+}
+
 /* schema-additif dans la zone content : pas de contrainte de hauteur */
 .sa-content-wrapper .visual-wrapper {
   height: auto;

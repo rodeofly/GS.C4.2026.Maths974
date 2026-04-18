@@ -18,7 +18,9 @@ registerVisual('cubes-numeration', () => import('../visuals/cubes-numeration/cub
 registerVisual('figure-geo', () => import('../visuals/figure-geo/figure-geo.js'));
 registerVisual('polygone-perimetre', () => import('../visuals/polygone-perimetre/polygone-perimetre.js'));
 registerVisual('schema-additif',    () => import('../visuals/schema-additif/schema-additif.js'));
-registerVisual('angle-triangle',   () => import('../visuals/angle-triangle/angle-triangle.js'));
+registerVisual('angle-triangle',    () => import('../visuals/angle-triangle/angle-triangle.js'));
+registerVisual('balance-equilibre',    () => import('../visuals/balance-equilibre/balance-equilibre.js'));
+registerVisual('programme-scratch',    () => import('../visuals/programme-scratch/programme-scratch.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -175,6 +177,64 @@ export const visualMetadata = {
     ],
   },
 
+  'balance-equilibre': {
+    label: 'Balance équilibrée',
+    description: 'Balance Roberval avec équation algébrique — GS 28.3 / 29.2',
+    icon: '⚖️',
+    category: 'Algèbre',
+    configFields: [
+      { name: 'equation', type: 'text',   label: 'Équation (ex: 3x + 10 = 40)', default: '3x + 10 = 40' },
+      { name: 'object',   type: 'select', label: 'Objet variable',
+        options: [
+          { value: '📦', label: '📦 Boîte' },
+          { value: '🥫', label: '🥫 Conserve' },
+          { value: '🍅', label: '🍅 Tomate' },
+          { value: '🎁', label: '🎁 Cadeau' },
+          { value: '⭐', label: '⭐ Étoile' },
+          { value: '🔮', label: '🔮 Boule' },
+          { value: '🧱', label: '🧱 Brique' },
+          { value: 'letter', label: 'Lettre (abstrait)' },
+        ],
+        default: '📦' },
+      { name: 'level',  type: 'select', label: "Niveau d'abstraction",
+        options: [
+          { value: '1', label: 'Niveau 1 — Emoji' },
+          { value: '2', label: 'Niveau 2 — Boîte + lettre' },
+          { value: '3', label: 'Niveau 3 — Texte équation' },
+        ],
+        default: '1' },
+      { name: 'width',  type: 'number', label: 'Largeur (px)',  default: 260 },
+      { name: 'height', type: 'number', label: 'Hauteur (px)', default: 160 },
+    ],
+  },
+
+  'programme-scratch': {
+    label: 'Programme Scratch',
+    description: 'Programme de calcul style Scratch — GS 25.2 / 25.3',
+    icon: '🧩',
+    category: 'Algorithmique',
+    configFields: [
+      { name: 'programme', type: 'textarea', label: 'Programme (DSL)',
+        default: 'résultat = réponse\nrépéter 3:\n  résultat = résultat + 2\ndire résultat' },
+      { name: 'input',  type: 'number', label: 'Nombre de départ', default: 5 },
+      { name: 'height', type: 'number', label: 'Hauteur max (px)', default: 220 },
+    ],
+    prefsFields: [
+      { name: 'inputRange',  type: 'range',      label: 'Nombre de départ',  default: [2, 20] },
+      { name: 'opsRange',    type: 'range',      label: "Nb d'opérations (sans boucle)", default: [1, 3] },
+      { name: 'ops',         type: 'multicheck', label: 'Opérations autorisées',
+        options: ['+', '-', '×', '÷'],           default: ['+', '-', '×', '÷'] },
+      { name: 'loop',        type: 'select',     label: 'Boucle',            default: 'null',
+        options: [
+          { value: 'null',  label: 'Aléatoire (oui ou non)' },
+          { value: 'true',  label: 'Toujours' },
+          { value: 'false', label: 'Jamais' },
+        ]},
+      { name: 'iterRange',   type: 'range',      label: "Nb d'itérations (si boucle)", default: [2, 5] },
+      { name: 'valRange',    type: 'range',      label: 'Valeurs opérandes', default: [1, 10] },
+    ],
+  },
+
   'figure-geo': {
     label: 'Figure Géométrique',
     description: 'Figure rectilinéaire sur quadrillage (périmètre & aire)',
@@ -210,6 +270,13 @@ export const visualMetadata = {
  */
 export function getConfigFields(type) {
   return visualMetadata[type]?.configFields || [];
+}
+
+/**
+ * Obtenir les champs de préférences randomiseur pour un type
+ */
+export function getPrefsFields(type) {
+  return visualMetadata[type]?.prefsFields || [];
 }
 
 /**
