@@ -153,6 +153,13 @@ function addVisualToggleButton(cardElement) {
       <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16"></path>
     </svg>`;
 
+  reloadBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    quickRandomize(cardElement);
+  });
+
+  nav.appendChild(reloadBtn);
+
   const thunderBtn = document.createElement('button');
   thunderBtn.className = 'visual-toggle-btn mini-eye';
   thunderBtn.title = "Variante aléatoire (mystère)";
@@ -851,6 +858,68 @@ function generateRandomConfigValues(prefs, currentConfig = {}) {
 }
 
 /**
+ * Randomisation trajet Scratch — génère un nouveau programme de déplacement
+ */
+async function quickRandomizeTrajet(cardElement, activeVariant, markdownPrefs) {
+  const prefs = {
+    stepsRange:  [2, 6],
+    anglePool:   ['90'],
+    turnDir:     'both',
+    useRepeat:   false,
+    repeatRange: [3, 6],
+    segsRange:   [3, 5],
+    ...(markdownPrefs || {}),
+  };
+
+  const ri  = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const rItem = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  const stepsRange  = (prefs.stepsRange  || [2, 6]).map(Number);
+  const repeatRange = (prefs.repeatRange || [3, 6]).map(Number);
+  const segsRange   = (prefs.segsRange   || [3, 5]).map(Number);
+  const anglePool   = (prefs.anglePool   || ['90']).map(Number);
+  const turnDir     = prefs.turnDir || 'both';
+
+  const startAngles = [0, 90, 180, 270];
+  const startAngle  = rItem(startAngles);
+  const scale       = activeVariant?.visualData?.config?.scale || 20;
+
+  // Génère un segment : avancer + tourner
+  const makeSegment = () => {
+    const steps = ri(stepsRange[0], stepsRange[1]) * scale;
+    const angle = rItem(anglePool);
+    const dir   = turnDir === 'both'
+      ? (Math.random() > 0.5 ? 'droite' : 'gauche')
+      : turnDir;
+    return `avancer ${steps}\n${dir} ${angle}`;
+  };
+
+  let programme = `orienter ${startAngle}\n`;
+
+  if (prefs.useRepeat && Math.random() > 0.4) {
+    const count = ri(repeatRange[0], repeatRange[1]);
+    const bodySteps = ri(stepsRange[0], stepsRange[1]) * scale;
+    const angle = rItem(anglePool);
+    programme += `répéter ${count}:\n  avancer ${bodySteps}\n  droite ${angle}`;
+  } else {
+    const nSegs = ri(segsRange[0], segsRange[1]);
+    const segs = [];
+    for (let i = 0; i < nSegs; i++) segs.push(makeSegment());
+    programme += segs.join('\n');
+  }
+
+  if (activeVariant) {
+    activeVariant.visualData.config = { ...activeVariant.visualData.config, programme };
+    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+    const editorPanel = document.getElementById('visual-editor-panel');
+    if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
+      const ta = editorPanel.querySelector('[name="programme"]');
+      if (ta) ta.value = programme;
+    }
+  }
+}
+
+/**
  * Régénération rapide (Bouton Reload)
  */
 async function quickRandomize(cardElement) {
@@ -901,6 +970,37 @@ async function quickRandomize(cardElement) {
   // ── Branche programme-scratch ─────────────────────────────────────────
   if (visualType === 'programme-scratch') {
     await quickRandomizeProgramme(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
+  // ── Branche trajet-scratch ────────────────────────────────────────────
+  if (visualType === 'trajet-scratch') {
+    await quickRandomizeTrajet(cardElement, activeVariant, visualData?.editor_prefs);
+    return;
+  }
+
+  // ── Branche suite-figures ─────────────────────────────────────────────
+  // Choisit un pattern aléatoire parmi ceux autorisés dans editor_prefs.patternPool
+  if (visualType === 'suite-figures') {
+    const prefs = visualData?.editor_prefs || {};
+    const pool = prefs.patternPool && prefs.patternPool.length > 0
+      ? prefs.patternPool
+      : ['baton','L','T','peigne','croix','cadre','triangle','colonnes','carre','losange'];
+    const newPattern = pool[Math.floor(Math.random() * pool.length)];
+    const colors = {
+      losange: '#60a5fa', triangle: '#34d399', carre: '#a78bfa',
+      colonnes: '#fb923c', croix: '#f43f5e', L:  '#facc15',
+      baton: '#2dd4bf',   T: '#e879f9',      peigne: '#4ade80',
+      cadre: '#f97316',
+    };
+    if (activeVariant) {
+      activeVariant.visualData.config = {
+        ...activeVariant.visualData.config,
+        pattern: newPattern,
+        color: colors[newPattern] || '#60a5fa',
+      };
+      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
+    }
     return;
   }
 
@@ -1027,34 +1127,65 @@ async function quickRandomizePolygone(cardElement, activeVariant, markdownPrefs)
  */
 async function quickRandomizeBalance(cardElement, activeVariant, markdownPrefs) {
   const prefs = {
-    boxRange:     [1, 4],
-    boxMassRange: [5, 20],
-    leftWeights:  [0, 50],
-    rightWeights: [1, 2],
-    weightStep:   5,
+    eqTypes:   ['ax=b', 'ax+c=d'],
+    solRange:  [5, 20],
+    valueStep: 1,
+    coefRange: [1, 4],
+    constStep: 5,
     ...(markdownPrefs || {}),
   };
 
-  const ri  = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
-  const rnd = (min, max, step) => Math.round(ri(min / step, max / step)) * step;
+  const step      = parseFloat(prefs.valueStep) || 1;
+  const [solMin, solMax]   = (prefs.solRange  || [5, 20]).map(Number);
+  const [coefMin, coefMax] = (prefs.coefRange || [1, 4]).map(Number);
+  const cStep     = Number(prefs.constStep) || 5;
 
-  const n         = ri(prefs.boxRange[0], prefs.boxRange[1]);
-  const boxMass   = rnd(prefs.boxMassRange[0], prefs.boxMassRange[1], prefs.weightStep);
-  const leftExtra = rnd(prefs.leftWeights[0], prefs.leftWeights[1], prefs.weightStep);
-  const rightTotal = n * boxMass + leftExtra;
+  const ri   = (lo, hi) => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const rndC = (min, max) => {
+    const lo = Math.ceil(min / cStep), hi = Math.floor(max / cStep);
+    return lo > hi ? 0 : ri(lo, hi) * cStep;
+  };
+  const fmt = v => `${Math.round(v * 1000) / 1000}`;
 
-  // Côté droit : 1 ou 2 poids qui somment à rightTotal
-  const nRight = ri(prefs.rightWeights[0], prefs.rightWeights[1]);
-  let rightStr;
-  if (nRight === 1 || rightTotal < prefs.weightStep * 2) {
-    rightStr = `${rightTotal}`;
-  } else {
-    const part1 = rnd(prefs.weightStep, rightTotal - prefs.weightStep, prefs.weightStep);
-    rightStr = `${part1} + ${rightTotal - part1}`;
+  const eqTypes = Array.isArray(prefs.eqTypes) && prefs.eqTypes.length
+    ? prefs.eqTypes : ['ax=b', 'ax+c=d'];
+  const eqType = pick(eqTypes);
+
+  // Solution (valeur de x)
+  const nSteps = Math.max(1, Math.round((solMax - solMin) / step));
+  const sol    = Math.round((solMin + ri(0, nSteps) * step) * 1000) / 1000;
+
+  // Coefficient de x (≥2 si ax+b=cx+d pour garantir c < a)
+  const aMin = eqType === 'ax+b=cx+d' ? Math.max(2, coefMin) : coefMin;
+  const aMax = eqType === 'ax+b=cx+d' ? Math.max(2, coefMax) : coefMax;
+  const a    = ri(aMin, aMax);
+  const aStr = a === 1 ? 'x' : `${a}x`;
+
+  let left, right;
+
+  if (eqType === 'ax=b') {
+    left  = aStr;
+    right = fmt(a * sol);
+
+  } else if (eqType === 'ax+c=d') {
+    const cMax = Math.max(cStep, Math.round(a * sol * 0.5));
+    const c    = rndC(0, cMax);
+    left  = c > 0 ? `${aStr} + ${fmt(c)}` : aStr;
+    right = fmt(a * sol + c);
+
+  } else { // ax+b=cx+d
+    const c    = ri(1, a - 1);
+    const cStr = c === 1 ? 'x' : `${c}x`;
+    const bMax = Math.max(cStep, Math.min(cStep * 6, Math.round(sol * 4)));
+    const b    = rndC(0, bMax);
+    const d    = Math.round(((a - c) * sol + b) * 1000) / 1000;
+    left  = b > 0 ? `${aStr} + ${fmt(b)}` : aStr;
+    right = `${cStr} + ${fmt(d)}`;
   }
 
-  const leftStr = leftExtra > 0 ? `${n}x + ${leftExtra}` : `${n}x`;
-  const equation = `${leftStr} = ${rightStr}`;
+  // Échange aléatoire des plateaux
+  const equation = Math.random() < 0.5 ? `${left} = ${right}` : `${right} = ${left}`;
 
   const currentConfig = activeVariant?.visualData?.config || {};
   activeVariant.visualData.config = { ...currentConfig, equation };
@@ -1096,48 +1227,56 @@ async function quickRandomizeProgramme(cardElement, activeVariant, markdownPrefs
   for (let attempt = 0; attempt < 40; attempt++) {
     const hasLoop = p.loop === null ? Math.random() < 0.5 : Boolean(p.loop);
     const iters   = hasLoop ? ri(p.iterRange[0], p.iterRange[1]) : 1;
-    const nOps    = hasLoop ? 1 : ri(p.opsRange[0], p.opsRange[1]);
+    const nOps    = ri(p.opsRange[0], p.opsRange[1]);
     const input   = ri(p.inputRange[0], p.inputRange[1]);
 
     const steps = []; let cur = input; let ok = true;
 
+    // Phase 1 : choisir les vals avec contraintes légères (1er passage seulement)
     for (let i = 0; i < nOps && ok; i++) {
       const op = pick(p.ops);
       let val;
 
       if (op === '÷') {
-        // cur doit être divisible par val^iters
         const divs = [];
-        for (let d = Math.max(2, p.valRange[0]); d <= p.valRange[1]; d++) {
-          let v = cur, valid = true;
-          for (let k = 0; k < iters; k++) { if (v % d !== 0) { valid = false; break; } v /= d; }
-          if (valid) divs.push(d);
-        }
+        for (let d = Math.max(2, p.valRange[0]); d <= p.valRange[1]; d++)
+          if (cur % d === 0) divs.push(d);
         if (!divs.length) { ok = false; break; }
         val = pick(divs);
-        for (let k = 0; k < iters; k++) cur /= val;
-
+        cur /= val;
       } else if (op === '-') {
-        // cur - val*iters >= 1
-        const maxVal = Math.min(Math.floor((cur - 1) / iters), p.valRange[1]);
+        const maxVal = Math.min(cur - 1, p.valRange[1]);
         if (maxVal < p.valRange[0]) { ok = false; break; }
         val = ri(p.valRange[0], maxVal);
-        cur -= val * iters;
-
+        cur -= val;
       } else if (op === '×') {
-        val = ri(Math.max(2, p.valRange[0]), Math.min(p.valRange[1], 5));
-        const after = cur * Math.pow(val, iters);
-        if (after > 9999) { ok = false; break; }
-        cur = after;
-
-      } else { // +
+        val = ri(Math.max(2, p.valRange[0]), Math.min(p.valRange[1], 4));
+        cur *= val;
+        if (cur > 9999) { ok = false; break; }
+      } else {
         val = ri(p.valRange[0], p.valRange[1]);
-        cur += val * iters;
+        cur += val;
       }
       steps.push({ op, val });
     }
 
     if (!ok || !steps.length) continue;
+
+    // Phase 2 : simuler l'exécution complète (iters tours si boucle)
+    cur = input;
+    const applyStep = (v, { op, val }) => {
+      if (op === '+') return v + val;
+      if (op === '-') return v - val;
+      if (op === '×') return v * val;
+      return v / val; // ÷
+    };
+    for (let k = 0; k < iters && ok; k++) {
+      for (const s of steps) {
+        cur = applyStep(cur, s);
+        if (cur < 1 || cur > 9999 || !Number.isInteger(cur)) { ok = false; break; }
+      }
+    }
+    if (!ok) continue;
 
     // Construire le DSL
     const opLine = ({ op, val }) => `${VAR} = ${VAR} ${op} ${val}`;

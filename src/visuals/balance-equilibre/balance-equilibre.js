@@ -35,10 +35,16 @@ class BalanceEquilibreComponent extends HTMLElement {
       .map(token => {
         const m = token.match(/^(\d*)([a-zA-Z])$/);
         if (m) return { type: 'var', letter: m[2], count: parseInt(m[1] || '1') };
-        const n = parseInt(token);
+        const n = parseFloat(token);
         return isNaN(n) ? null : { type: 'weight', value: n };
       })
       .filter(Boolean);
+  }
+
+  _fmtNum(v) {
+    const r = Math.round(v * 100) / 100;
+    if (Number.isInteger(r)) return `${r}`;
+    return `${r}`.replace('.', ',');
   }
 
   // ── Résolution linéaire (1 variable) ─────────────────────────────────────
@@ -131,7 +137,7 @@ class BalanceEquilibreComponent extends HTMLElement {
     const div = document.createElement('div');
     div.style.cssText = `display:flex;align-items:center;justify-content:center;
       width:100%;height:${H}px;font:bold 18px serif;color:#1e293b;`;
-    div.textContent = eq;
+    div.textContent = eq.replace(/(\d+)\.(\d+)/g, '$1,$2');
     this.appendChild(div);
   }
 
@@ -185,7 +191,7 @@ class BalanceEquilibreComponent extends HTMLElement {
     if (this._hovered && this._solution) {
       const s   = this._solution;
       const sym = this._obj !== 'letter' ? this._obj : s.letter;
-      this._drawTooltip(ctx, pivotX, plateY - 20, `1 ${sym} = ${s.value}`);
+      this._drawTooltip(ctx, pivotX, plateY - 20, `1 ${sym} = ${this._fmtNum(s.value)}`);
     }
   }
 
@@ -258,7 +264,7 @@ class BalanceEquilibreComponent extends HTMLElement {
     ctx.font         = `bold ${r >= 20 ? 11 : r >= 16 ? 10 : 9}px sans-serif`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(value + 'g', cx, cy);
+    ctx.fillText(this._fmtNum(value) + ' g', cx, cy);
     ctx.restore();
   }
 

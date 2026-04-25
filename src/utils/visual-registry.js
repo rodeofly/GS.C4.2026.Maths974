@@ -21,6 +21,8 @@ registerVisual('schema-additif',    () => import('../visuals/schema-additif/sche
 registerVisual('angle-triangle',    () => import('../visuals/angle-triangle/angle-triangle.js'));
 registerVisual('balance-equilibre',    () => import('../visuals/balance-equilibre/balance-equilibre.js'));
 registerVisual('programme-scratch',    () => import('../visuals/programme-scratch/programme-scratch.js'));
+registerVisual('suite-figures',        () => import('../visuals/suite-figures/suite-figures.js'));
+registerVisual('trajet-scratch',       () => import('../visuals/trajet-scratch/trajet-scratch.js'));
 
 /**
  * Fonction helper pour précharger certains visuels
@@ -182,6 +184,21 @@ export const visualMetadata = {
     description: 'Balance Roberval avec équation algébrique — GS 28.3 / 29.2',
     icon: '⚖️',
     category: 'Algèbre',
+    prefsFields: [
+      { name: 'eqTypes',   type: 'multicheck', label: 'Types d\'équation',
+        options: ['ax=b', 'ax+c=d', 'ax+b=cx+d'],
+        default: ['ax=b', 'ax+c=d'] },
+      { name: 'solRange',  type: 'range',  label: 'Solution (valeur de x)', default: [5, 20] },
+      { name: 'valueStep', type: 'select', label: 'Précision des valeurs',
+        options: [
+          { value: '1',   label: 'Entières' },
+          { value: '0.5', label: 'Demies (ex : 2,5)' },
+          { value: '0.1', label: 'Dixièmes (ex : 1,4)' },
+        ],
+        default: '1' },
+      { name: 'coefRange', type: 'range',  label: 'Coefficient de x',       default: [1, 4] },
+      { name: 'constStep', type: 'number', label: 'Pas des constantes',      default: 5 },
+    ],
     configFields: [
       { name: 'equation', type: 'text',   label: 'Équation (ex: 3x + 10 = 40)', default: '3x + 10 = 40' },
       { name: 'object',   type: 'select', label: 'Objet variable',
@@ -232,6 +249,69 @@ export const visualMetadata = {
         ]},
       { name: 'iterRange',   type: 'range',      label: "Nb d'itérations (si boucle)", default: [2, 5] },
       { name: 'valRange',    type: 'range',      label: 'Valeurs opérandes', default: [1, 10] },
+    ],
+  },
+
+  'trajet-scratch': {
+    label: 'Trajet Scratch',
+    description: 'Tracé de déplacement sur quadrillage — GS 25.2',
+    icon: '🐱',
+    category: 'Algorithmique',
+    configFields: [
+      { name: 'programme', type: 'textarea', label: 'Programme (DSL)',
+        default: 'orienter 90\navancer 80\ndroite 90\navancer 60\ndroite 90\navancer 80' },
+      { name: 'scale',     type: 'number',  label: 'Pas par cellule (ex: 20)',    default: 20 },
+      { name: 'maxpx',    type: 'number',  label: 'Taille max (px)',             default: 200 },
+      { name: 'color',    type: 'color',   label: 'Couleur du tracé',           default: '#4C97FF' },
+      { name: 'show_grid',type: 'boolean', label: 'Afficher le quadrillage',    default: true },
+      { name: 'show_path',type: 'boolean', label: 'Afficher le tracé d\'emblée (sinon survol)', default: false },
+    ],
+    prefsFields: [
+      { name: 'stepsRange',  type: 'range',      label: 'Longueur avancer (pas)',  default: [2, 6] },
+      { name: 'anglePool',   type: 'multicheck', label: 'Angles de rotation',
+        options: ['60', '90', '120'],             default: ['90'] },
+      { name: 'turnDir',     type: 'select',     label: 'Sens de rotation',        default: 'both',
+        options: [
+          { value: 'gauche', label: 'Gauche seulement' },
+          { value: 'droite', label: 'Droite seulement' },
+          { value: 'both',   label: 'Les deux' },
+        ]},
+      { name: 'useRepeat',   type: 'boolean',    label: 'Autoriser "répéter"',     default: false },
+      { name: 'repeatRange', type: 'range',      label: 'Nb de répétitions',       default: [3, 6] },
+      { name: 'segsRange',   type: 'range',      label: 'Nb de segments',          default: [3, 5] },
+    ],
+  },
+
+  'suite-figures': {
+    label: 'Suite de Figures',
+    description: 'Suite de figures géométriques croissantes — GS 8.4',
+    icon: '🔷',
+    category: 'Algorithmique',
+    configFields: [
+      { name: 'pattern',    type: 'select',  label: 'Motif',
+        options: [
+          { value: 'baton',    label: 'Bâton — rangée (1, 2, 3, 4…)' },
+          { value: 'L',        label: 'Équerre L (1, 3, 5, 7…)' },
+          { value: 'T',        label: 'Forme T (1, 4, 7, 10…)' },
+          { value: 'peigne',   label: 'Peigne/Fourche (2, 5, 8, 11…)' },
+          { value: 'croix',    label: 'Croix + pure (1, 5, 9, 13…)' },
+          { value: 'cadre',    label: 'Cadre creux (1, 4, 8, 12…)' },
+          { value: 'triangle', label: 'Triangle rectangle (1, 3, 6, 10…)' },
+          { value: 'colonnes', label: 'Colonnes / Histogramme (1, 3, 6, 10…)' },
+          { value: 'carre',    label: 'Carré plein (1, 4, 9, 16…)' },
+          { value: 'losange',  label: 'Losange / Diamant (1, 5, 13, 25…)' },
+        ],
+        default: 'losange' },
+      { name: 'etapes',     type: 'number',  label: 'Nb d\'étapes affichées', default: 3 },
+      { name: 'show_blank', type: 'boolean', label: 'Afficher étape vide à compléter', default: false },
+      { name: 'show_step',  type: 'number',  label: 'Étape lointaine à deviner (0 = aucune, ex: 10)', default: 0 },
+      { name: 'color',      type: 'color',   label: 'Couleur des cases', default: '#60a5fa' },
+      { name: 'cellsize',   type: 'number',  label: 'Taille case (px)',  default: 14 },
+    ],
+    prefsFields: [
+      { name: 'patternPool', type: 'multicheck', label: 'Motifs autorisés',
+        options: ['baton','L','T','peigne','croix','cadre','triangle','colonnes','carre','losange'],
+        default: ['baton','L','T','peigne','croix','cadre','triangle','colonnes','carre','losange'] },
     ],
   },
 
