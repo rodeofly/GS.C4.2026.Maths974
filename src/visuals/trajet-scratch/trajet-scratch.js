@@ -330,3 +330,33 @@ math974-trajet-scratch{display:block}
 if (!customElements.get('math974-trajet-scratch')) {
   customElements.define('math974-trajet-scratch', TrajetScratchComponent);
 }
+
+export const defaultPosition = 'north';
+
+export function randomize(config, rand) {
+  const prefs = { stepsRange: [2, 6], anglePool: ['90'], turnDir: 'both', useRepeat: false, repeatRange: [3, 6], segsRange: [3, 5], ...(rand || {}) };
+  const ri    = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const rItem = arr => arr[Math.floor(Math.random() * arr.length)];
+  const stepsR  = (prefs.stepsRange  || [2, 6]).map(Number);
+  const repeatR = (prefs.repeatRange || [3, 6]).map(Number);
+  const segsR   = (prefs.segsRange   || [3, 5]).map(Number);
+  const angles  = (prefs.anglePool   || ['90']).map(Number);
+  const scale   = config.scale || 20;
+  const startAngle = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
+  const makeSegment = () => {
+    const steps = ri(stepsR[0], stepsR[1]) * scale;
+    const angle = rItem(angles);
+    const dir   = prefs.turnDir === 'both' ? (Math.random() > 0.5 ? 'droite' : 'gauche') : prefs.turnDir;
+    return `avancer ${steps}\n${dir} ${angle}`;
+  };
+  let programme = `orienter ${startAngle}\n`;
+  if (prefs.useRepeat && Math.random() > 0.4) {
+    const count = ri(repeatR[0], repeatR[1]);
+    programme += `répéter ${count}:\n  avancer ${ri(stepsR[0], stepsR[1]) * scale}\n  droite ${rItem(angles)}`;
+  } else {
+    const segs = [];
+    for (let i = 0; i < ri(segsR[0], segsR[1]); i++) segs.push(makeSegment());
+    programme += segs.join('\n');
+  }
+  return { ...config, programme };
+}

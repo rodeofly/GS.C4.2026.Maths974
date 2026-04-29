@@ -305,3 +305,12 @@ class SuiteFiguresComponent extends HTMLElement {
 if (!customElements.get('math974-suite-figures')) {
   customElements.define('math974-suite-figures', SuiteFiguresComponent);
 }
+
+export const defaultPosition = 'north';
+
+export function randomize(config, rand) {
+  const COLORS = { losange: '#60a5fa', triangle: '#34d399', carre: '#a78bfa', colonnes: '#fb923c', croix: '#f43f5e', L: '#facc15', baton: '#2dd4bf', T: '#e879f9', peigne: '#4ade80', cadre: '#f97316' };
+  const pool = (rand?.patternPool?.length > 0) ? rand.patternPool : Object.keys(COLORS);
+  const pattern = pool[Math.floor(Math.random() * pool.length)];
+  return { ...config, pattern, color: COLORS[pattern] || '#60a5fa' };
+}

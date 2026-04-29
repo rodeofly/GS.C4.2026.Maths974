@@ -1,0 +1,563 @@
+---
+// src/layouts/AutomathsLayout.astro
+import '../styles/main.css';
+import '../styles/components/rapidos-visuals.css';
+import { getCollection } from 'astro:content';
+
+const { info, parentUrl = ".." } = Astro.props;
+const data = info.data || {};
+
+const title = data.title || '';
+const niveau = data.niveau || '';
+const gsKey = data.gs || '';
+const variantes = Array.isArray(data.variantes) ? data.variantes : [];
+
+function nl2br(text: string) {
+  if (!text) return '';
+  return text.replace(/\n/g, '<br/>');
+}
+
+// Convertit le markdown minimal (gras) en HTML
+function miniMd(text: string) {
+  if (!text) return '';
+  return nl2br(text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
+}
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+// Charge les données PDF du guide de survie correspondant
+let gsPdfInfo: { title: string; page: number; x: number; y: number; w: number; h: number } | null = null;
+if (gsKey) {
+  const guideFiches = await getCollection('guide');
+  const fiche = guideFiches.find(f => f.data.id && `GS ${f.data.id}` === gsKey);
+  if (fiche?.data.pdf) {
+    gsPdfInfo = { title: fiche.data.title ?? gsKey, ...fiche.data.pdf };
+  }
+}
+
+const hasReponse = variantes.some(v => v.reponse);
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} — Automaths {niveau}</title>
+  <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+  <link rel="stylesheet" type="text/css" href="https://tikzjax.com/v1/fonts.css" />
+  <script is:inline>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
+
+  <style>
+    .automath-body {
+      margin: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: var(--font-sans, system-ui, sans-serif);
+      color: #1e293b;
+      background: linear-gradient(to bottom, #dc2626, #fca5a5);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .bg-curves {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      z-index: 1;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .back-btn {
+      position: absolute;
+      top: 1rem; left: 1rem;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 50%;
+      text-decoration: none;
+      font-weight: bold;
+      z-index: 50;
+      backdrop-filter: blur(4px);
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px; height: 44px;
+      padding: 0;
+      font-size: 1.5rem;
+      border: 2px solid rgba(255,255,255,0.4);
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.4); }
+
+    .automath-breadcrumb {
+      position: absolute;
+      top: 1rem; left: 5rem;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.8);
+      font-weight: 500;
+    }
+    .automath-breadcrumb a {
+      color: white;
+      text-decoration: none;
+      opacity: 0.75;
+      transition: opacity 0.2s;
+      display: flex;
+      align-items: center;
+    }
+    .automath-breadcrumb a:hover { opacity: 1; }
+    .automath-breadcrumb .sep { opacity: 0.45; font-size: 0.7rem; }
+    .automath-breadcrumb .curr { font-weight: 800; color: white; opacity: 1; }
+
+    .automath-container {
+      position: relative;
+      z-index: 10;
+      height: 100%;
+      padding: 0.25rem 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding-top: 3.2rem;
+      padding-bottom: 0.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    h1 {
+      color: white;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: 0.01em;
+      text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 1.1;
+    }
+
+    .niveau-badge {
+      background: rgba(255,255,255,0.25);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 99px;
+      border: 1.5px solid rgba(255,255,255,0.5);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* La carte unique fullscreen */
+    .automath-card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 1.5rem;
+      padding: 1.5rem 1.75rem 1.25rem;
+      position: relative;
+      box-shadow: 0 10px 40px -5px rgba(0,0,0,0.2);
+      border: 2px solid rgba(255,255,255,0.8);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      margin-top: 0.75rem;
+      overflow: hidden;
+    }
+
+    /* Zone de contrôle : GS badge + bullets */
+    .card-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+      margin-bottom: 0.75rem;
+    }
+
+    .gs-ref-badge {
+      display: none;
+      background: #0f766e;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.6rem;
+      border-radius: 12px 12px 12px 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .gs-ref-badge.visible { display: block; }
+    .gs-ref-badge:hover { opacity: 0.85; transform: scale(1.06); }
+
+    .bullets-nav {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .bullet {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .bullet::after {
+      content: '';
+      position: absolute;
+      top: -8px; bottom: -8px; left: -8px; right: -8px;
+    }
+    .bullet:hover { background: #94a3b8; }
+    .bullet.active { background: #f59e0b; transform: scale(1.2); }
+
+    /* Zone question — prend tout l'espace restant */
+    .question-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+    }
+
+    .variant-content {
+      display: none;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.25s ease;
+    }
+    .variant-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .question-text {
+      font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+    .question-text :global(mjx-container) {
+      vertical-align: middle !important;
+      margin: 0 0.2em !important;
+    }
+
+    /* Zone réponse */
+    .answer-zone {
+      flex-shrink: 0;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-reveal {
+      background: #f59e0b;
+      color: white;
+      border: none;
+      border-radius: 99px;
+      padding: 0.55rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-reveal:hover { background: #d97706; transform: translateY(-1px); }
+
+    .answer-box {
+      display: none;
+      background: #ecfdf5;
+      border: 2px solid #10b981;
+      border-radius: 1rem;
+      padding: 0.75rem 2rem;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: #065f46;
+      text-align: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .answer-box.visible { display: block; }
+
+    /* Overlay Guide de Survie */
+    .gs-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .gs-overlay.open { display: flex; }
+    .gs-overlay-inner {
+      background: white;
+      border-radius: 1.5rem;
+      padding: 1.5rem 1.5rem 1rem;
+      width: 88vw;
+      max-width: 88vw;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.45);
+      position: relative;
+    }
+    .gs-overlay-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 1rem;
+    }
+    .gs-overlay-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #0f766e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .gs-overlay-close {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 50%;
+      width: 2rem; height: 2rem;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .gs-overlay-close:hover { background: #e2e8f0; }
+    .gs-overlay-canvas { display: block; max-width: 100%; height: auto; }
+    .gs-overlay-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 0.875rem;
+      padding: 2rem;
+    }
+    .gs-overlay-loading.hidden { display: none; }
+  </style>
+</head>
+
+<body class="automath-body">
+  <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
+
+  <a href={parentUrl} class="back-btn" aria-label="Retour">⬅</a>
+
+  <nav class="automath-breadcrumb">
+    <a href={`${base}/`} aria-label="Accueil">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </a>
+    <span class="sep">/</span>
+    <a href={`${base}/automaths/`}>Automaths</a>
+    {niveau && (
+      <>
+        <span class="sep">/</span>
+        <span class="curr">{niveau}</span>
+      </>
+    )}
+  </nav>
+
+  <div class="automath-container">
+    <header>
+      <div class="header-row">
+        <h1>{title}</h1>
+        {niveau && <span class="niveau-badge">{niveau}</span>}
+      </div>
+    </header>
+
+    <div class="automath-card">
+      <div class="card-controls">
+        {gsKey && gsPdfInfo && (
+          <div class="gs-ref-badge visible" id="gs-badge">{gsKey}</div>
+        )}
+        <div class="bullets-nav">
+          {variantes.map((_, i) => (
+            <button class={`bullet${i === 0 ? ' active' : ''}`} data-variant={i} aria-label={`Variante ${i + 1}`}></button>
+          ))}
+        </div>
+      </div>
+
+      <div class="question-body">
+        {variantes.map((v, i) => (
+          <div class={`variant-content${i === 0 ? ' active' : ''}`} data-variant={i} data-reponse={v.reponse ?? ''}>
+            <div class="question-text" set:html={miniMd(v.texte ?? '')}></div>
+          </div>
+        ))}
+      </div>
+
+      {hasReponse && (
+        <div class="answer-zone">
+          <button class="btn-reveal" id="btn-reveal">
+            <span>👁</span> Voir la réponse
+          </button>
+          <div class="answer-box" id="answer-box"></div>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Overlay Guide de Survie -->
+  {gsKey && gsPdfInfo && (
+    <div id="gs-overlay" class="gs-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="gs-overlay-inner">
+        <div class="gs-overlay-header">
+          <div class="gs-overlay-title">{gsPdfInfo.title}</div>
+          <button class="gs-overlay-close" data-close aria-label="Fermer">✕</button>
+        </div>
+        <div class="gs-overlay-loading" id="gs-loading">Chargement…</div>
+        <canvas class="gs-overlay-canvas" id="gs-canvas"></canvas>
+      </div>
+    </div>
+  )}
+
+  <script is:inline define:vars={{ variantes, gsKey, gsPdfInfo, base }}>
+    window.__AM_VARIANTES__ = variantes;
+    window.__AM_GS_KEY__ = gsKey;
+    window.__AM_GS_PDF__ = gsPdfInfo;
+    window.__AM_BASE__ = base;
+  </script>
+
+  <script>
+    import * as pdfjsLib from 'pdfjs-dist';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
+
+    const pdfCache = new Map<string, Promise<any>>();
+    async function getPdf(url: string) {
+      if (!pdfCache.has(url)) pdfCache.set(url, pdfjsLib.getDocument(url).promise);
+      return pdfCache.get(url)!;
+    }
+    async function renderRegion(
+      canvas: HTMLCanvasElement,
+      info: { page: number; x: number; y: number; w: number; h: number; pdfUrl: string },
+      scale: number
+    ) {
+      const pdf = await getPdf(info.pdfUrl);
+      const page = await pdf.getPage(info.page);
+      const vp = page.getViewport({ scale, offsetX: -info.x * scale, offsetY: -info.y * scale });
+      canvas.width = info.w * scale;
+      canvas.height = info.h * scale;
+      await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const variantes: any[] = (window as any).__AM_VARIANTES__ ?? [];
+      const gsPdfInfo: any = (window as any).__AM_GS_PDF__;
+      const base: string = (window as any).__AM_BASE__ ?? '';
+
+      // --- Bullets : changement de variante ---
+      let currentVariant = 0;
+      const revealBtn = document.getElementById('btn-reveal');
+      const answerBox = document.getElementById('answer-box');
+
+      function showVariant(idx: number) {
+        currentVariant = idx;
+        document.querySelectorAll('.variant-content').forEach((el, i) => {
+          el.classList.toggle('active', i === idx);
+        });
+        document.querySelectorAll<HTMLElement>('.bullet').forEach((b, i) => {
+          b.classList.toggle('active', i === idx);
+        });
+        // Masquer la réponse quand on change de variante
+        answerBox?.classList.remove('visible');
+        if (revealBtn) revealBtn.textContent = '👁 Voir la réponse';
+        // Re-typeset MathJax si disponible
+        const activeEl = document.querySelector('.variant-content.active');
+        if (activeEl && (window as any).MathJax) (window as any).MathJax.typesetPromise([activeEl]);
+      }
+
+      document.querySelectorAll<HTMLElement>('.bullet').forEach(btn => {
+        btn.addEventListener('click', () => showVariant(parseInt(btn.dataset.variant!)));
+      });
+
+      // --- Reveal réponse ---
+      if (revealBtn && answerBox) {
+        revealBtn.addEventListener('click', () => {
+          const isVisible = answerBox.classList.toggle('visible');
+          revealBtn.textContent = isVisible ? '🙈 Masquer' : '👁 Voir la réponse';
+          if (isVisible) {
+            const v = variantes[currentVariant];
+            answerBox.textContent = v?.reponse ?? '';
+          }
+        });
+      }
+
+      // --- GS Overlay ---
+      const overlay = document.getElementById('gs-overlay');
+      const gsBadge = document.getElementById('gs-badge');
+      const gsCanvas = document.getElementById('gs-canvas') as HTMLCanvasElement | null;
+      const gsLoading = document.getElementById('gs-loading');
+
+      if (overlay && gsBadge && gsPdfInfo) {
+        let rendered = false;
+
+        async function openOverlay() {
+          overlay!.classList.add('open');
+          overlay!.setAttribute('aria-hidden', 'false');
+          if (rendered || !gsCanvas) return;
+          rendered = true;
+          const dpr = window.devicePixelRatio || 1;
+          const maxW = window.innerWidth * 0.85;
+          const scale = (maxW / gsPdfInfo.w) * dpr;
+          await renderRegion(gsCanvas, {
+            pdfUrl: `${base}/pdf/guide-survie-c3.pdf`,
+            page: gsPdfInfo.page,
+            x: gsPdfInfo.x,
+            y: gsPdfInfo.y,
+            w: gsPdfInfo.w,
+            h: gsPdfInfo.h,
+          }, scale);
+          gsCanvas.style.width = Math.min(gsPdfInfo.w * scale / dpr, maxW) + 'px';
+          gsCanvas.style.height = 'auto';
+          gsLoading?.classList.add('hidden');
+        }
+
+        function closeOverlay() {
+          overlay!.classList.remove('open');
+          overlay!.setAttribute('aria-hidden', 'true');
+        }
+
+        gsBadge.addEventListener('click', openOverlay);
+        overlay.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeOverlay));
+        overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+      }
+    });
+  </script>
+</body>
+</html>

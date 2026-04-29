@@ -11,15 +11,15 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3);
   background: linear-gradient(135deg, #f5f7fa 0%, #e0f2fe 100%);
 }
 
 @media (min-width: 768px) {
   .layout {
-    padding: var(--space-8);
-    gap: var(--space-6);
+    padding: var(--space-5);
+    gap: var(--space-4);
   }
 }
 
@@ -159,24 +159,22 @@
 .etiquettes-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-4);
+  gap: var(--space-3);
   align-content: start;
 }
 
-/* Tablet et Desktop : 2 colonnes max */
+/* Tablet et Desktop : 2 colonnes */
 @media (min-width: 768px) {
   .etiquettes-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-6);
+    gap: var(--space-3);
   }
 }
 
-/* Optionnel : Large écran, garder 2 colonnes max */
-@media (min-width: 1400px) {
+/* Large écran : 3 colonnes */
+@media (min-width: 1200px) {
   .etiquettes-grid {
-    grid-template-columns: repeat(2, 1fr);
-    max-width: 1400px;
-    margin: 0 auto;
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

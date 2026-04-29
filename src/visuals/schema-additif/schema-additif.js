@@ -16,7 +16,8 @@ class SchemaAdditifComponent extends HTMLElement {
             'content','part1expr','totalexpr','position','labelt','label1','label2'];
   }
 
-  connectedCallback()  { this.render(); }
+  connectedCallback()    { this.render(); }
+  disconnectedCallback() { this._clearProjectedText(); }
   attributeChangedCallback() { if (this.isConnected) this.render(); }
 
   // Rectangle SVG avec coins arrondis sélectifs (r_tl, r_tr, r_br, r_bl)
@@ -35,6 +36,25 @@ class SchemaAdditifComponent extends HTMLElement {
     return p.join(' ');
   }
 
+  _clearProjectedText() {
+    if (this._textSlot) { this._textSlot.remove(); this._textSlot = null; }
+    const card = this.closest?.('.q-card');
+    if (card) card.querySelectorAll('.sa-projected-text').forEach(el => el.remove());
+  }
+
+  _projectText(html) {
+    const card = this.closest?.('.q-card');
+    const contentEl = card?.querySelector('.q-card-content');
+    if (!contentEl) return;
+    const slot = document.createElement('div');
+    slot.className = 'sa-projected-text';
+    slot.innerHTML = html;
+    contentEl.prepend(slot);
+    this._textSlot = slot;
+    if (window.MathJax && this.isConnected)
+      window.MathJax.typesetPromise([slot]).catch(e => console.warn('MathJax:', e));
+  }
+
   render() {
     const content   = this.getAttribute('content')   || '';
     const part1expr = this.getAttribute('part1expr') || '';
@@ -47,13 +67,25 @@ class SchemaAdditifComponent extends HTMLElement {
     const c2        = this.getAttribute('color2') || '#fcd496'; // ambre   (part1)
     const c3        = this.getAttribute('color3') || '#86efb5'; // menthe  (part2)
 
+    // En zone satellite, le composant projette son texte dans .q-card-content
+    const ZONES = new Set(['north', 'south', 'east', 'west']);
+    const inSatellite = ZONES.has(this.getAttribute('position'));
+
+    this._clearProjectedText();
+
     let total, part1, textHTML = '';
 
     if (content) {
       // ── Mode dynamique ──────────────────────────────────────────────────
       const engine = new TemplateEngine();
       engine.reset();
-      textHTML = engine.parse(content, 'web').replace(/\n/g, '<br>');
+      const parsed = engine.parse(content, 'web').replace(/\n/g, '<br>');
+
+      if (inSatellite) {
+        this._projectText(parsed);
+      } else {
+        textHTML = parsed;
+      }
 
       // Calculer total et part1 à partir des expressions sur les variables
       part1 = part1expr ? engine.evaluate(part1expr) : parseFloat(this.getAttribute('part1') || '0');
@@ -196,3 +228,10 @@ class SchemaAdditifComponent extends HTMLElement {
 
 customElements.define('math974-schema-additif', SchemaAdditifComponent);
 export default SchemaAdditifComponent;
+export const defaultPosition = 'east';
+
+export async function randomize(config, rand) {
+  if (config.content) return { ...config }; // template mode: re-init re-evaluates ranges
+  const { randomize: rnd } = await import('./editor.js');
+  return rnd(config, { totalMin: 20, totalMax: 99, totalStep: 10, ...(rand || {}) });
+}

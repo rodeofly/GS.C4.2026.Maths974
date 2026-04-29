@@ -1,38 +1,26 @@
 ---
-// src/layouts/RapidoLayout.astro
 import '../styles/main.css';
 import '../styles/components/rapidos-visuals.css';
 import { getCollection } from 'astro:content';
 
-// src/layouts/RapidoLayout.astro
 const { info, parentUrl = ".." } = Astro.props;
 const data = info.data || {};
 
 const numero = data.numero || "1";
 const niveau = data.niveau || "";
-// Forcez un tableau vide si questions est undefined
 const questions = Array.isArray(data.questions) ? data.questions : [];
-
-console.log("Nombre de questions chargées :", questions.length);
-
-// 🆕 FONCTION pour convertir les retours à la ligne en <br>
-function nl2br(text) {
-  if (!text) return '';
-  return text.replace(/\n/g, '<br/>');
-}
 
 const pageTitle = `Rapido ${numero} - ${niveau}`;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-// Collecte des IDs GS uniques référencés dans les questions
 const gsIdsUsed = new Set<string>();
 for (const q of questions) {
+  if (q.gs) gsIdsUsed.add(q.gs);
   for (const v of q.variantes ?? []) {
     if (v.gs) gsIdsUsed.add(v.gs);
   }
 }
 
-// Charge les données PDF de chaque fiche guide correspondante
 const guideFiches = await getCollection('guide');
 const gsPdfData: Record<string, { title: string; page: number; x: number; y: number; w: number; h: number }> = {};
 for (const fiche of guideFiches) {
@@ -56,51 +44,47 @@ for (const fiche of guideFiches) {
         window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
-    
+
     <style>
-       /* 🛠️ CORRECTION : On cible une classe spécifique au lieu de 'body' tout court */
-       .rapido-body { 
-          margin: 0; 
-          height: 100vh; 
-          width: 100vw; 
-          overflow: hidden; 
-          font-family: var(--font-sans) !important; 
-          color: #1e293b; 
-          /* Le dégradé ne s'appliquera que si la classe est présente */
-          background: linear-gradient(to bottom, #dc2626, #fca5a5); 
-          position: relative; 
+       .rapido-body {
+          margin: 0;
+          height: 100vh; width: 100vw;
+          overflow: hidden;
+          font-family: var(--font-sans) !important;
+          color: #1e293b;
+          background: linear-gradient(to bottom, #dc2626, #fca5a5);
+          position: relative;
        }
-       
-       /* ... Le reste du CSS reste identique ... */
-       h1, h2, button, .q-card, .q-num { font-family: var(--font-sans) !important; }
+       h1, h2, button { font-family: var(--font-sans) !important; }
        .bg-curves { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; pointer-events: none; }
-       .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255, 255, 255, 0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
-       .back-btn:hover { background: rgba(255, 255, 255, 0.4); }
-       .rapido-container { position: relative; z-index: 10; height: 100%; padding: 0.5rem 4rem 1rem 4rem; display: flex; flex-direction: column; }
-       header { text-align: center; margin-bottom: 1rem; display: flex; flex-direction: column; align-items: center; position: relative; }
-       .deco-area { width: 100%; position: relative; margin-top: 1rem; display: flex; align-items: flex-end; padding-bottom: 0; }
-       .deco-volcan-wrapper { position: absolute; left: -20px; bottom: 3rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
-       .deco-volcan { width: 300px; max-width: 35vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
-       .copyright { color: white; font-size: 1.5rem; font-weight: 800; margin-top: -40px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
-       .frise-lambrequin { height: 3rem; width: 100%; background-repeat: repeat-x; background-size: contain; background-position: top center; opacity: 1; position: relative; z-index: 10; }
-       .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; }
-       h1 { color: white; font-size: 3rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
-       .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 2.2rem; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 4px solid white; z-index: 10; }
-       h2 { color: rgba(255, 255, 255, 0.95); font-size: 1.2rem; margin: 0; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-       .deco-margouillat { position: absolute; top: 20px; right: 20%; width: 8vw; max-width: 300px; z-index: 2; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(15deg); }
-       .questions-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1rem; flex: 1; }
-       .q-card { background: rgba(255, 255, 255, 0.95); border-radius: 1.5rem; padding: 1.5rem 1.25rem 1rem 1.25rem; position: relative; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); backdrop-filter: blur(8px); border: 2px solid rgba(255, 255, 255, 0.8); }
-       /* Note: display: grid est défini dans rapidos-visuals.css pour supporter les visuels */
-       .questions-grid:has(> :last-child:nth-child(5)) > :last-child { grid-column: 1 / -1; width: 70%; margin: 0 auto; }
-       .q-num { position: absolute; top: -15px; right: -15px; width: 2.5rem; height: 2.5rem; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: 3px solid white; z-index: 20; }
-       .card-header-controls { position: absolute; top: 10px; left: 0; width: 100%; padding: 0 15px; display: flex; align-items: center; gap: 10px; z-index: 30; }
-       .gs-ref-badge { display: none; background: #0f766e; color: white; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.6rem; border-radius: 12px 12px 12px 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transition: opacity 0.15s, transform 0.15s; }
-       .gs-ref-badge.active { display: block; }
-       .gs-ref-badge:hover { opacity: 0.85; transform: scale(1.08); }
+       .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255,255,255,0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
+       .back-btn:hover { background: rgba(255,255,255,0.4); }
+       .rapido-container { position: relative; z-index: 10; height: 100%; padding: 0.25rem 4rem 0.5rem 4rem; display: flex; flex-direction: column; }
+       header { text-align: center; margin-bottom: 0.25rem; display: flex; flex-direction: column; align-items: center; position: relative; }
+       .deco-area { width: 100%; position: relative; margin-top: 0.25rem; display: flex; align-items: flex-end; }
+       .deco-volcan-wrapper { position: absolute; right: 0; bottom: 2.5rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
+       .deco-volcan { width: 150px; max-width: 18vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+       .copyright { color: white; font-size: 0.85rem; font-weight: 800; margin-top: -16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); font-family: var(--font-sans); letter-spacing: 0.05em; position: relative; z-index: 6; }
+       .frise-lambrequin { height: 2.5rem; width: 100%; background-repeat: repeat-x; background-size: contain; background-position: top center; position: relative; z-index: 10; }
+       .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 0.25rem; }
+       h1 { color: white; font-size: 2.2rem; margin: 0; text-transform: uppercase; font-weight: 900; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
+       .rapido-badge { background-color: #fbbf24; color: #0f172a; font-family: var(--font-sans); font-weight: 900; font-size: 1.1rem; width: 2.4rem; height: 2.4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; transform: rotate(-10deg); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border: 2px solid white; z-index: 10; }
+       .deco-margouillat { position: absolute; top: 0; right: 22%; width: 6vw; max-width: 120px; z-index: 2; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(15deg); }
+       .questions-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1rem; flex: 1; min-height: 0; }
+       .rapido-pagination { display: none; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.4rem 0; flex-shrink: 0; }
+       .pag-btn { background: rgba(255,255,255,0.25); color: white; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; width: 2.2rem; height: 2.2rem; font-size: 1.3rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; }
+       .pag-btn:hover:not(:disabled) { background: rgba(255,255,255,0.45); }
+       .pag-btn:disabled { opacity: 0.3; cursor: default; }
+       .pag-info { color: white; font-weight: 800; font-size: 1rem; letter-spacing: 0.05em; text-shadow: 0 2px 4px rgba(0,0,0,0.2); min-width: 3rem; text-align: center; }
+       .rapido-breadcrumb { position: absolute; top: 1rem; left: 5rem; z-index: 50; display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: rgba(255,255,255,0.8); font-weight: 500; }
+       .rapido-breadcrumb a { color: white; text-decoration: none; opacity: 0.75; transition: opacity 0.2s; display: flex; align-items: center; }
+       .rapido-breadcrumb a:hover { opacity: 1; }
+       .rapido-breadcrumb .sep { opacity: 0.45; font-size: 0.7rem; }
+       .rapido-breadcrumb .curr { font-weight: 800; color: white; opacity: 1; }
        /* Overlay Guide de Survie */
        .gs-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
        .gs-overlay.open { display: flex; }
-       .gs-overlay-inner { background: white; border-radius: 1.5rem; padding: 1.5rem 1.5rem 1rem; max-width: 92vw; max-height: 90vh; overflow: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.45); position: relative; min-width: 260px; }
+       .gs-overlay-inner { background: white; border-radius: 1.5rem; padding: 1.5rem 1.5rem 1rem; width: 88vw; max-width: 88vw; max-height: 90vh; overflow: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.45); position: relative; min-width: 260px; }
        .gs-overlay-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; }
        .gs-overlay-title { font-size: 0.95rem; font-weight: 800; color: #0f766e; text-transform: uppercase; letter-spacing: 0.05em; }
        .gs-overlay-close { background: #f1f5f9; border: none; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #475569; transition: background 0.15s; flex-shrink: 0; }
@@ -109,42 +93,9 @@ for (const fiche of guideFiches) {
        .gs-overlay-canvas { display: block; max-width: 100%; height: auto; }
        .gs-overlay-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.875rem; }
        .gs-overlay-loading.hidden { display: none; }
-       @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-       .bullet { min-width: auto !important; min-height: auto !important; width: 10px; height: 10px; border-radius: 50%; background-color: #cbd5e1; border: none; padding: 0; cursor: pointer; position: relative; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-       .bullet::after { content: ''; position: absolute; top: -10px; bottom: -10px; left: -10px; right: -10px; }
-       .bullet:hover { background-color: #94a3b8; }
-       .bullet.active { background-color: #f59e0b; transform: scale(1.1); }
-       .variant-content { display: none; width: 100%; animation: fadeIn 0.3s ease; }
-       .variant-content.active { display: block; }
-       .content { display: inline-block; line-height: 1.5; font-size: 1.5rem; font-weight: 600; color: #334155; }
-       .content :global(mjx-container) { vertical-align: middle !important; margin: 0 0.2em !important; }
-       /* === STYLE BREADCRUMB RAPIDO === */
-  .rapido-breadcrumb {
-    position: absolute;
-    top: 1.5rem;
-    left: 5rem; /* Décalé pour laisser la place au bouton retour */
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 500;
-  }
-  .rapido-breadcrumb a {
-    color: white;
-    text-decoration: none;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-  .rapido-breadcrumb a:hover { opacity: 1; text-decoration: underline; }
-  .rapido-breadcrumb .sep { opacity: 0.5; }
-  .rapido-breadcrumb .curr { font-weight: 800; color: white; }
-       @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 
-{/* 🛠️ CORRECTION : Ajout de la classe rapido-body sur la balise body */}
 <body class="rapido-body">
 
   <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
@@ -152,7 +103,12 @@ for (const fiche of guideFiches) {
 
   <a href={parentUrl} class="back-btn" aria-label="Retour au menu">⬅</a>
   <nav class="rapido-breadcrumb">
-    <a href={`${base}/`}>Accueil</a>
+    <a href={`${base}/`} aria-label="Accueil">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </a>
     <span class="sep">/</span>
     <a href={`${base}/rapidos/`}>Rapidos</a>
     {niveau && (
@@ -162,50 +118,28 @@ for (const fiche of guideFiches) {
       </>
     )}
   </nav>
+
   <div class="rapido-container">
-     <header>
-      <h2>Maths974</h2>
+    <header>
       <div class="title-wrapper">
         <h1>Rapido {niveau}</h1>
         <div class="rapido-badge">{numero}</div>
       </div>
       <div class="deco-area">
-         <div class="deco-volcan-wrapper">
-           <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
+        <div class="deco-volcan-wrapper">
+          <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
           <div class="copyright">© maths974</div>
         </div>
-        
         <div class="frise-lambrequin" style={`background-image: url('${base}/images/lambrequin.svg');`}></div>
       </div>
     </header>
-    
-    <div class="questions-grid">
-      {questions.map((q, qIndex) => (
-        <article class="q-card" id={`${niveau}-${numero}-card-${qIndex}`}>
-          <div class="q-num">{qIndex + 1}</div>
-           <div class="card-header-controls">
-            {q.variantes.map((v, vIndex) => (
-               v.gs && <div class={`gs-ref-badge ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>{v.gs}</div>
-            ))}
-            <div class="bullets-nav">
-              {q.variantes.map((_, vIndex) => (
-                <button 
-                  class={`bullet ${vIndex === 0 ? 'active' : ''}`} 
-                  aria-label={`Variante ${vIndex + 1}`}
-                  data-card={qIndex}
-                  data-variant={vIndex}
-                ></button>
-              ))}
-            </div>
-          </div>
-   
-           {q.variantes.map((v, vIndex) => (
-                <div class={`variant-content ${vIndex === 0 ? 'active' : ''}`} data-index={vIndex}>
-                <div class="content" set:html={nl2br(v.texte)}></div>
-                </div>
-            ))}
-        </article>
-      ))}
+
+    <div class="questions-grid" id="questions-grid"></div>
+
+    <div class="rapido-pagination" id="rapido-pagination">
+      <button class="pag-btn" id="rapido-prev" disabled aria-label="Page précédente">‹</button>
+      <span class="pag-info" id="rapido-page-info"></span>
+      <button class="pag-btn" id="rapido-next" aria-label="Page suivante">›</button>
     </div>
   </div>
 
@@ -225,13 +159,16 @@ for (const fiche of guideFiches) {
 
   <script is:inline define:vars={{ questions, niveau, numero, gsPdfData, base }}>
     window.__RAPIDO_QUESTIONS__ = questions;
-    window.__RAPIDO_CARD_PREFIX__ = `${niveau}-${numero}`;
-    window.__GS_PDF_DATA__ = gsPdfData;
-    window.__BASE_URL__ = base;
+    window.__GS_PDF_DATA__      = gsPdfData;
+    window.__BASE_URL__         = base;
+    window.__RAPIDO_NIVEAU__    = niveau;
+    window.__RAPIDO_NUMERO__    = numero;
   </script>
 
   <script>
     import * as pdfjsLib from 'pdfjs-dist';
+    import { initEngine } from '../utils/rapido-engine.js';
+
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).href;
 
     const pdfCache = new Map<string, Promise<any>>();
@@ -254,9 +191,9 @@ for (const fiche of guideFiches) {
       await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
     }
 
-    const overlay     = document.getElementById('gs-overlay')!;
-    const overlayTitle= document.getElementById('gs-overlay-title')!;
-    const overlayCanvas = document.getElementById('gs-overlay-canvas') as HTMLCanvasElement;
+    const overlay        = document.getElementById('gs-overlay')!;
+    const overlayTitle   = document.getElementById('gs-overlay-title')!;
+    const overlayCanvas  = document.getElementById('gs-overlay-canvas') as HTMLCanvasElement;
     const overlayLoading = document.getElementById('gs-overlay-loading')!;
 
     let lastRenderedKey: string | null = null;
@@ -271,24 +208,21 @@ for (const fiche of guideFiches) {
       overlay.setAttribute('aria-hidden', 'false');
       overlayTitle.textContent = info.title ?? gsKey;
 
-      if (lastRenderedKey === gsKey) return; // déjà rendu
+      if (lastRenderedKey === gsKey) return;
       lastRenderedKey = gsKey;
 
       overlayLoading.classList.remove('hidden');
       overlayCanvas.width = 0;
       overlayCanvas.height = 0;
 
-      const dpr = window.devicePixelRatio || 1;
-      const maxW = Math.min(window.innerWidth * 0.85, 600);
+      const dpr   = window.devicePixelRatio || 1;
+      const maxW  = window.innerWidth * 0.85;
       const scale = (maxW / info.w) * dpr;
 
       await renderRegion(overlayCanvas, {
         pdfUrl: `${base}/pdf/guide-survie-c3.pdf`,
         page: info.page,
-        x: info.x,
-        y: info.y,
-        w: info.w,
-        h: info.h,
+        x: info.x, y: info.y, w: info.w, h: info.h,
       }, scale);
 
       overlayCanvas.style.width  = Math.min(info.w * scale / dpr, maxW) + 'px';
@@ -306,63 +240,19 @@ for (const fiche of guideFiches) {
     overlay.addEventListener('click', e => { if (e.target === overlay) closeGsOverlay(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGsOverlay(); });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      document.querySelectorAll<HTMLElement>('.gs-ref-badge').forEach(badge => {
-        badge.addEventListener('click', e => {
-          e.stopPropagation();
-          const gsKey = badge.textContent?.trim();
-          if (gsKey) openGsOverlay(gsKey);
-        });
-      });
+    const questions  = (window as any).__RAPIDO_QUESTIONS__ ?? [];
+    const niveau     = (window as any).__RAPIDO_NIVEAU__ ?? '';
+    const numero     = (window as any).__RAPIDO_NUMERO__ ?? '1';
+    const grid       = document.getElementById('questions-grid')!;
+    const pagination = document.getElementById('rapido-pagination');
+
+    await initEngine(grid, questions, {
+      prefix:         `${niveau}-${numero}-card`,
+      pageSize:       6,
+      paginationEl:   pagination,
+      showEditor:     true,
+      onGsBadgeClick: openGsOverlay,
     });
   </script>
-
-  <script>
-        import RapidosVisuals from '../utils/rapidos-visuals-integration.js';
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Lire APRÈS le parsing complet du DOM — garantit que le script inline
-            // define:vars a déjà positionné window.__RAPIDO_QUESTIONS__
-            const questionData = window.__RAPIDO_QUESTIONS__;
-
-            // Initialiser le système de visuels
-            await RapidosVisuals.initRapidosVisuals(questionData);
-
-            // Gérer le système de bullets pour changer de variante
-            const bullets = document.querySelectorAll('.bullet');
-            bullets.forEach(bullet => {
-                bullet.addEventListener('click', async (e) => {
-                    const cardIndex = e.target.dataset.card;
-                    const variantIndex = parseInt(e.target.dataset.variant);
-                    const prefix = window.__RAPIDO_CARD_PREFIX__ || '';
-                    const card = document.getElementById(`${prefix}-card-${cardIndex}`);
-
-                    // Re-clic sur la bullet déjà active → randomiser la variante courante
-                    if (e.target.classList.contains('active')) {
-                        await RapidosVisuals.quickRandomizeCard(card);
-                        if (window.MathJax) MathJax.typesetPromise([card]);
-                        return;
-                    }
-
-                    // Nouveau clic → charger la variante avec le config MD par défaut
-                    card.querySelectorAll('.bullet').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-
-                    card.querySelectorAll('.variant-content').forEach((v, idx) => {
-                        v.classList.toggle('active', idx === variantIndex);
-                    });
-
-                    card.querySelectorAll('.gs-ref-badge').forEach((badge, idx) => {
-                        badge.classList.toggle('active', idx === variantIndex);
-                    });
-
-                    // handleVariantChange avec resetToOriginal=true (par défaut)
-                    await RapidosVisuals.handleVariantChange(card, variantIndex);
-
-                    if (window.MathJax) MathJax.typesetPromise([card]);
-                });
-            });
-        });
-    </script>
 </body>
 </html>

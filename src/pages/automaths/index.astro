@@ -1,0 +1,692 @@
+---
+// src/pages/automaths/index.astro
+import { getCollection } from 'astro:content';
+import BasePrintLayout from '../../layouts/BasePrintLayout.astro';
+import '../../styles/components/rapidos-visuals.css';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const entries = await getCollection('automaths');
+entries.sort((a, b) => a.id.localeCompare(b.id));
+
+// Données compactes pour le JS client (overlay + caddy)
+const allData = entries.map(e => ({
+  slug: e.slug,
+  title: e.data.title,
+  niveau: e.data.niveau ?? '',
+  theme: e.data.theme ?? '',
+  sous_theme: e.data.sous_theme ?? '',
+  gs: e.data.gs ?? '',
+  variantes: (e.data.variantes ?? []).map((v, i) => ({
+    i,
+    texte: v.texte ?? '',
+    type: v.type ?? '',
+    config: v.config ?? null,
+    rand: v.rand ?? null,
+    reponse: v.reponse ?? '',
+  })),
+}));
+
+// Grouper par niveau → thème pour l'affichage
+type QuestionData = typeof allData[0];
+const groups: Record<string, Record<string, QuestionData[]>> = {};
+for (const e of allData) {
+  const niv = e.niveau || 'Autre';
+  const th = e.theme || 'Autre';
+  if (!groups[niv]) groups[niv] = {};
+  if (!groups[niv][th]) groups[niv][th] = [];
+  groups[niv][th].push(e);
+}
+---
+
+<BasePrintLayout title="Automaths — Catalogue" layoutClass="layout-screen" info={null}>
+
+  {Object.entries(groups).map(([niveau, themes]) => (
+    <section class="am-niveau-section" style="grid-column: 1 / -1">
+      <h2 class="am-niveau-heading">{niveau}</h2>
+      {Object.entries(themes).map(([theme, items]) => (
+        <div class="am-theme-group">
+          <h3 class="am-theme-heading">{theme}</h3>
+          <div class="am-cards-row">
+            {items.map(item => (
+              <div class="am-card" data-slug={item.slug} role="group" aria-label={item.title}>
+                {item.gs && <span class="am-card-gs">{item.gs}</span>}
+                <span class="am-card-title">{item.title}</span>
+                <span class="am-card-meta">
+                  {item.sous_theme && <span class="am-card-sub">{item.sous_theme}</span>}
+                  <span class="am-card-count">{item.variantes.length}v</span>
+                </span>
+                <div class="am-card-actions">
+                  <button class="am-card-btn am-cart-btn" data-slug={item.slug} type="button" title="Ajouter au caddy Mon Rapido">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    Caddy
+                  </button>
+                  <button class="am-card-btn am-train-btn" data-slug={item.slug} type="button" title="S'entraîner">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Train
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  ))}
+
+  <!-- Dialog overlay (natif HTML) -->
+  <dialog id="am-dialog" class="am-dialog">
+    <div class="am-dialog-header">
+      <div class="am-dlg-meta">
+        <span class="am-dlg-gs" id="dlg-gs"></span>
+        <strong class="am-dlg-title" id="dlg-title"></strong>
+      </div>
+      <button class="am-dlg-close" id="dlg-close" aria-label="Fermer">✕</button>
+    </div>
+
+    <div class="am-dialog-body" id="dlg-body">
+      <!-- Variantes, remplies par JS -->
+    </div>
+
+    <div class="am-dialog-footer" id="dlg-footer">
+      <div class="am-footer-sel">
+        <button class="btn-sel" id="btn-all">Tout</button>
+        <button class="btn-sel" id="btn-none">Aucun</button>
+      </div>
+      <button class="btn-add-cart" id="btn-add-cart" disabled>🛒 Sélectionne une variante</button>
+    </div>
+  </dialog>
+
+  <!-- FAB caddy flottant -->
+  <div class="cart-fab" id="cart-fab" style="display:none" role="button" tabindex="0" aria-label="Voir le caddy">
+    <span class="cart-fab-icon">🛒</span>
+    <span class="cart-fab-label" id="cart-fab-label"></span>
+    <span class="cart-fab-arrow">›</span>
+  </div>
+
+</BasePrintLayout>
+
+<script is:inline define:vars={{ allData, base }}>
+  window.__AM_DATA__ = allData;
+  window.__AM_BASE__ = base;
+</script>
+
+<script>
+  import * as VisualsSystem from '../../utils/visuals-system.js';
+  import '../../utils/visual-registry.js';
+  import { quickRandomizeCard } from '../../utils/rapidos-visuals-integration.js';
+  import { injectVisualInput, wireCardInputs } from '../../utils/rapido-engine.js';
+
+  const CART_KEY = 'maths974-automaths-cart';
+
+  function getCart(): any[] {
+    try { return JSON.parse(localStorage.getItem(CART_KEY) ?? '[]'); }
+    catch { return []; }
+  }
+  function saveCart(cart: any[]) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+
+  function miniMd(text: string): string {
+    if (!text) return '';
+    return text.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  }
+
+  // --- Éléments UI ---
+  const fab       = document.getElementById('cart-fab')!;
+  const fabLabel  = document.getElementById('cart-fab-label')!;
+  const dialog    = document.getElementById('am-dialog') as HTMLDialogElement;
+  const dlgTitle  = document.getElementById('dlg-title')!;
+  const dlgGs     = document.getElementById('dlg-gs')!;
+  const dlgBody   = document.getElementById('dlg-body')!;
+  const dlgFooter = document.getElementById('dlg-footer')!;
+  const btnClose  = document.getElementById('dlg-close')!;
+  const btnAll    = document.getElementById('btn-all')!;
+  const btnNone   = document.getElementById('btn-none')!;
+  const btnAdd    = document.getElementById('btn-add-cart') as HTMLButtonElement;
+
+  let currentSlug: string | null = null;
+
+  // --- FAB + état caddy ---
+  function updateFab() {
+    const cart = getCart();
+    if (cart.length === 0) { fab.style.display = 'none'; return; }
+    const total = cart.reduce((n: number, q: any) => n + q.variantes.length, 0);
+    fabLabel.textContent = `${cart.length} question${cart.length > 1 ? 's' : ''} · ${total} variante${total > 1 ? 's' : ''}`;
+    fab.style.display = 'flex';
+  }
+
+  function updateCartButtons() {
+    const cartSlugs = new Set(getCart().map((c: any) => c.slug));
+    document.querySelectorAll<HTMLElement>('.am-cart-btn[data-slug]').forEach(btn => {
+      btn.classList.toggle('in-cart', cartSlugs.has(btn.dataset.slug!));
+    });
+  }
+
+  // --- Dialog ---
+  async function openDialog(slug: string, mode: 'cart' | 'train' = 'cart') {
+    const allData: any[] = (window as any).__AM_DATA__;
+    const question = allData.find((q: any) => q.slug === slug);
+    if (!question) return;
+
+    currentSlug = slug;
+    dlgTitle.textContent = question.title;
+    dlgGs.textContent = question.gs;
+    dlgGs.style.display = question.gs ? 'inline' : 'none';
+
+    // Mode cart vs train
+    dialog.dataset.mode = mode;
+    dlgFooter.style.display = mode === 'cart' ? '' : 'none';
+
+    const cart = getCart();
+    const inCart = cart.find((c: any) => c.slug === slug);
+    const selected = new Set<number>(
+      inCart ? inCart.variantes.map((v: any) => v.i)
+             : question.variantes.map((_: any, i: number) => i)
+    );
+
+    // ── Carte identique aux rapidos ─────────────────────────────────────
+    const variantsHTML = question.variantes.map((v: any, i: number) => `
+      <div class="variant-content ${i === 0 ? 'active' : ''}" data-index="${i}" data-reponse="${v.reponse ?? ''}">
+        <div class="content">${miniMd(v.texte ?? '')}</div>
+      </div>`).join('');
+
+    const barHTML = question.variantes.map((v: any, i: number) => `
+      <div class="dlg-var-item">
+        <button class="dlg-var-num ${i === 0 ? 'active' : ''}" data-index="${i}">${i + 1}</button>
+        ${mode === 'cart' ? `<input type="checkbox" class="am-variant-cb" data-index="${i}" ${selected.has(i) ? 'checked' : ''}>` : ''}
+      </div>`).join('');
+
+    dlgBody.innerHTML = `
+      <article class="q-card" id="dlg-card">
+        <div class="q-card-content">${variantsHTML}</div>
+      </article>
+      <div class="dlg-answer-reveal" id="dlg-answer-reveal" style="display:none">
+        <span class="dlg-answer-label">Réponse&nbsp;:</span>
+        <span class="dlg-answer-text" id="dlg-answer-text"></span>
+      </div>
+      <div class="dlg-var-bar">
+        <div class="dlg-var-nums">${barHTML}</div>
+        <button class="dlg-randomize-btn" title="Regénérer">⟳</button>
+        <button class="dlg-reveal-btn" id="dlg-reveal-btn" title="Voir / cacher la réponse">👁</button>
+      </div>`;
+
+    const card = document.getElementById('dlg-card') as HTMLElement;
+
+    // Attacher visualData sur chaque variant-content
+    card.querySelectorAll<HTMLElement>('.variant-content').forEach((el, i) => {
+      const v = question.variantes[i];
+      if (v?.type) {
+        const data = { type: v.type, config: v.config || {}, rand: v.rand || {} };
+        (el as any).originalVisualData = JSON.parse(JSON.stringify(data));
+        (el as any).visualData = JSON.parse(JSON.stringify(data));
+      }
+    });
+
+    // Init visuel variante 0
+    const firstVariant = card.querySelector<HTMLElement>('.variant-content.active');
+    if ((firstVariant as any)?.visualData) {
+      await VisualsSystem.initCardVisuals(card, (firstVariant as any).visualData);
+    }
+    if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
+
+    // ── Train : inputs DSL + révélation ────────────────────────────────
+    function resetInputs() {
+      card.querySelectorAll<HTMLInputElement>('.rapido-input').forEach(inp => {
+        inp.value = '';
+        inp.classList.remove('correct', 'incorrect');
+      });
+    }
+
+    function doInjectVisualInput() { injectVisualInput(card); }
+    function doWireInputs()        { wireCardInputs(card); }
+
+    function updateRevealState() {
+      const revealBtn  = document.getElementById('dlg-reveal-btn') as HTMLButtonElement | null;
+      const revealArea = document.getElementById('dlg-answer-reveal') as HTMLElement | null;
+      const revealText = document.getElementById('dlg-answer-text') as HTMLElement | null;
+      const hasInputs  = card.querySelectorAll('.rapido-input').length > 0;
+      const reponse    = card.querySelector<HTMLElement>('.variant-content.active')?.dataset.reponse ?? '';
+      const hasAnswer  = hasInputs || !!reponse;
+      if (revealBtn)  { revealBtn.disabled = !hasAnswer; revealBtn.style.opacity = hasAnswer ? '1' : '0.3'; }
+      if (revealArea)   revealArea.style.display = 'none';
+      if (revealText)   revealText.textContent = '';
+      resetInputs();
+    }
+
+    const revealBtn  = document.getElementById('dlg-reveal-btn')!;
+    const revealArea = document.getElementById('dlg-answer-reveal') as HTMLElement;
+    const revealText = document.getElementById('dlg-answer-text')!;
+
+    revealBtn.addEventListener('click', () => {
+      const inputs  = card.querySelectorAll<HTMLInputElement>('.rapido-input');
+      const reponse = card.querySelector<HTMLElement>('.variant-content.active')?.dataset.reponse ?? '';
+
+      if (inputs.length > 0) {
+        const filled = Array.from(inputs).some(i => i.classList.contains('correct'));
+        inputs.forEach(inp => {
+          if (filled) { inp.value = ''; inp.classList.remove('correct', 'incorrect'); }
+          else        { inp.value = inp.dataset.solution ?? ''; inp.classList.add('correct'); inp.classList.remove('incorrect'); }
+        });
+      } else if (reponse) {
+        const visible = revealArea.style.display !== 'none';
+        revealArea.style.display = visible ? 'none' : 'flex';
+        revealText.textContent   = visible ? '' : reponse;
+      }
+    });
+
+    doInjectVisualInput();
+    doWireInputs();
+    updateRevealState();
+
+    // ── Changement de variante ──────────────────────────────────────────
+    async function switchTo(idx: number) {
+      card.querySelectorAll('.variant-content').forEach((el, i) =>
+        el.classList.toggle('active', i === idx));
+      dlgBody.querySelectorAll('.dlg-var-num').forEach((b, i) =>
+        b.classList.toggle('active', i === idx));
+
+      card.querySelectorAll(
+        '.q-card-north,.q-card-south,.q-card-east,.q-card-west,.q-card-front,.q-card-back,.q-content-visual,.sa-projected-text'
+      ).forEach(z => z.remove());
+      card.classList.remove('has-visual-west', 'has-visual-east');
+
+      const target = card.querySelector<HTMLElement>(`.variant-content[data-index="${idx}"]`);
+      if ((target as any)?.visualData) {
+        await VisualsSystem.initCardVisuals(card, (target as any).visualData);
+      }
+      if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
+      doInjectVisualInput();
+      doWireInputs();
+      updateRevealState();
+    }
+
+    dlgBody.querySelectorAll<HTMLElement>('.dlg-var-num').forEach(btn => {
+      btn.addEventListener('click', () => switchTo(parseInt(btn.dataset.index!)));
+    });
+
+    // ── Randomize ───────────────────────────────────────────────────────
+    dlgBody.querySelector('.dlg-randomize-btn')!.addEventListener('click', async () => {
+      await quickRandomizeCard(card);
+      if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
+      doInjectVisualInput();
+      doWireInputs();
+      updateRevealState();
+    });
+
+    if (mode === 'cart') updateAddBtn();
+    dialog.showModal();
+  }
+
+  function updateAddBtn() {
+    const n = dlgBody.querySelectorAll<HTMLInputElement>('.am-variant-cb:checked').length;
+    btnAdd.disabled = n === 0;
+    btnAdd.textContent = n === 0
+      ? '🛒 Sélectionne une variante'
+      : `🛒 Ajouter (${n} variante${n > 1 ? 's' : ''})`;
+  }
+
+  dlgBody.addEventListener('change', updateAddBtn);
+  btnAll.addEventListener('click', () => {
+    dlgBody.querySelectorAll<HTMLInputElement>('.am-variant-cb').forEach(cb => cb.checked = true);
+    updateAddBtn();
+  });
+  btnNone.addEventListener('click', () => {
+    dlgBody.querySelectorAll<HTMLInputElement>('.am-variant-cb').forEach(cb => cb.checked = false);
+    updateAddBtn();
+  });
+
+  btnAdd.addEventListener('click', () => {
+    const allData: any[] = (window as any).__AM_DATA__;
+    const question = allData.find((q: any) => q.slug === currentSlug);
+    if (!question) return;
+    const checked = Array.from(
+      dlgBody.querySelectorAll<HTMLInputElement>('.am-variant-cb:checked')
+    ).map(cb => parseInt(cb.dataset.index!));
+    if (checked.length === 0) return;
+    const item = {
+      slug: currentSlug,
+      title: question.title,
+      gs: question.gs,
+      variantes: question.variantes.filter((v: any) => checked.includes(v.i)),
+    };
+    const cart = getCart();
+    const idx = cart.findIndex((c: any) => c.slug === currentSlug);
+    if (idx >= 0) cart[idx] = item; else cart.push(item);
+    saveCart(cart);
+    updateFab();
+    updateCartButtons();
+    dialog.close();
+  });
+
+  btnClose.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+
+  // ── Boutons carte ────────────────────────────────────────────────────
+  document.querySelectorAll<HTMLElement>('.am-cart-btn[data-slug]').forEach(btn => {
+    btn.addEventListener('click', () => openDialog(btn.dataset.slug!, 'cart'));
+  });
+
+  document.querySelectorAll<HTMLElement>('.am-train-btn[data-slug]').forEach(btn => {
+    btn.addEventListener('click', () => openDialog(btn.dataset.slug!, 'train'));
+  });
+
+  const goRapido = () => { window.location.href = `${(window as any).__AM_BASE__}/automaths/rapido/`; };
+  fab.addEventListener('click', goRapido);
+  fab.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') goRapido(); });
+
+  updateFab();
+  updateCartButtons();
+</script>
+
+<style is:global>
+/* ---- Grille catalogue ---- */
+.am-niveau-section { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.am-niveau-heading {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: var(--font-black);
+  color: #dc2626;
+  padding-bottom: var(--space-2);
+  border-bottom: 3px solid #fca5a5;
+}
+
+.am-theme-group { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.am-theme-heading {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.am-cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ---- Carte ---- */
+.am-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3) var(--space-2);
+  background: white;
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-lg);
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 200px;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+.am-card:hover {
+  border-color: var(--color-gray-300);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+.am-card-gs {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #dc2626;
+  background: #fef2f2;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+}
+.am-card-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--color-gray-900);
+  line-height: 1.3;
+}
+.am-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--space-2);
+}
+.am-card-sub {
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  flex: 1;
+}
+.am-card-count {
+  font-size: var(--text-xs);
+  color: var(--color-gray-400);
+  white-space: nowrap;
+}
+
+/* ---- Boutons d'action carte ---- */
+.am-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.am-card-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.4rem;
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: white;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-gray-500);
+  transition: all 0.15s;
+}
+
+.am-cart-btn:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+.am-cart-btn.in-cart { background: #fef2f2; border-color: #dc2626; color: #dc2626; }
+
+.am-train-btn:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+
+/* ---- Dialog overlay ---- */
+.am-dialog {
+  border: none;
+  border-radius: 1.25rem;
+  padding: 0;
+  width: min(600px, 95vw);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+  max-height: 90vh;
+  overflow: hidden;
+  /* centrage explicite (comportement natif non garanti sur tous les navigateurs) */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+.am-dialog[open] { display: flex; flex-direction: column; }
+.am-dialog::backdrop { background: rgba(0,0,0,0.45); backdrop-filter: blur(3px); }
+
+.am-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 1.1rem 1.25rem 0.9rem;
+  border-bottom: 1px solid var(--color-gray-100);
+  flex-shrink: 0;
+}
+.am-dlg-meta { display: flex; flex-direction: column; gap: 4px; }
+.am-dlg-gs {
+  font-size: 0.7rem; font-weight: 800;
+  color: #dc2626; background: #fef2f2;
+  padding: 2px 8px; border-radius: 5px; width: fit-content;
+}
+.am-dlg-title { font-size: 1rem; color: var(--color-gray-900); }
+.am-dlg-close {
+  background: var(--color-gray-100); border: none; border-radius: 50%;
+  width: 2rem; height: 2rem; font-size: 1rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-gray-500); transition: background 0.15s; flex-shrink: 0;
+}
+.am-dlg-close:hover { background: var(--color-gray-200); }
+
+/* ── Corps : carte + barre variantes ── */
+.am-dialog-body {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 0.5rem;
+  overflow-y: auto;
+}
+
+/* Affichage des variantes */
+.am-dialog-body .variant-content { display: none; width: 100%; }
+.am-dialog-body .variant-content.active { display: block; }
+
+/* Vraie carte rapido dans la dialog */
+.am-dialog-body .q-card {
+  background: white;
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.25rem 1rem;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border: 2px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* ── Zone révélation réponse (mode train) ── */
+.dlg-answer-reveal {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 1rem;
+  flex-shrink: 0;
+}
+.dlg-answer-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.dlg-answer-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #15803d;
+}
+
+/* Barre de sélection des variantes */
+.dlg-var-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  flex-shrink: 0;
+}
+.dlg-var-nums { display: flex; gap: 0.5rem; }
+.dlg-var-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+
+.dlg-var-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: white;
+  font-size: 0.8rem; font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.dlg-var-num:hover { border-color: #f59e0b; color: #f59e0b; }
+.dlg-var-num.active { background: #f59e0b; border-color: #f59e0b; color: white; }
+
+.am-variant-cb {
+  accent-color: #dc2626;
+  width: 14px; height: 14px;
+  cursor: pointer;
+}
+
+.dlg-randomize-btn {
+  margin-left: 0.75rem;
+  background: #f1f5f9; border: none;
+  border-radius: 50%; width: 30px; height: 30px;
+  font-size: 1rem; cursor: pointer; color: #475569;
+  transition: background 0.15s, transform 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.dlg-randomize-btn:hover { background: #e2e8f0; transform: rotate(180deg); }
+
+.dlg-reveal-btn {
+  background: #f1f5f9; border: none;
+  border-radius: 50%; width: 30px; height: 30px;
+  font-size: 1rem; cursor: pointer; color: #475569;
+  transition: background 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.dlg-reveal-btn:hover:not(:disabled) { background: #d1fae5; }
+.dlg-reveal-btn:disabled { cursor: default; }
+
+/* ── Footer ── */
+.am-dialog-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--color-gray-100);
+  flex-shrink: 0;
+}
+.am-footer-sel { display: flex; gap: var(--space-2); }
+.btn-sel {
+  background: var(--color-gray-100); border: none;
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; color: var(--color-gray-600);
+  transition: background 0.15s;
+}
+.btn-sel:hover { background: var(--color-gray-200); }
+
+.btn-add-cart {
+  background: #dc2626; color: white; border: none;
+  border-radius: var(--radius-lg);
+  padding: 0.5rem 1.1rem;
+  font-size: 0.88rem; font-weight: 800;
+  cursor: pointer; transition: background 0.15s, transform 0.1s;
+}
+.btn-add-cart:hover:not(:disabled) { background: #b91c1c; transform: translateY(-1px); }
+.btn-add-cart:disabled { opacity: 0.4; cursor: default; }
+
+/* ---- FAB caddy ---- */
+.cart-fab {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #dc2626;
+  color: white;
+  padding: 0.7rem 1.25rem;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(220,38,38,0.4);
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 0.9rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+.cart-fab:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(220,38,38,0.5); }
+.cart-fab-icon { font-size: 1.1rem; }
+.cart-fab-arrow { font-size: 1.2rem; opacity: 0.8; }
+</style>

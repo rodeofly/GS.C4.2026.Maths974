@@ -314,3 +314,38 @@ class BalanceEquilibreComponent extends HTMLElement {
 }
 
 customElements.define('math974-balance-equilibre', BalanceEquilibreComponent);
+
+export const defaultPosition = 'north';
+
+export function randomize(config, rand) {
+  const prefs = { eqTypes: ['ax=b', 'ax+c=d'], solRange: [5, 20], valueStep: 1, coefRange: [1, 4], constStep: 5, ...(rand || {}) };
+  const step = parseFloat(prefs.valueStep) || 1;
+  const [solMin, solMax]   = (prefs.solRange  || [5, 20]).map(Number);
+  const [coefMin, coefMax] = (prefs.coefRange || [1, 4]).map(Number);
+  const cStep = Number(prefs.constStep) || 5;
+  const ri   = (lo, hi) => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const rndC = (min, max) => { const lo = Math.ceil(min / cStep), hi = Math.floor(max / cStep); return lo > hi ? 0 : ri(lo, hi) * cStep; };
+  const fmt  = v => `${Math.round(v * 1000) / 1000}`;
+  const eqTypes = Array.isArray(prefs.eqTypes) && prefs.eqTypes.length ? prefs.eqTypes : ['ax=b', 'ax+c=d'];
+  const eqType = pick(eqTypes);
+  const nSteps = Math.max(1, Math.round((solMax - solMin) / step));
+  const sol = Math.round((solMin + ri(0, nSteps) * step) * 1000) / 1000;
+  const aMin = eqType === 'ax+b=cx+d' ? Math.max(2, coefMin) : coefMin;
+  const a = ri(aMin, Math.max(aMin, coefMax));
+  const aStr = a === 1 ? 'x' : `${a}x`;
+  let left, right;
+  if (eqType === 'ax=b') {
+    left = aStr; right = fmt(a * sol);
+  } else if (eqType === 'ax+c=d') {
+    const c = rndC(0, Math.max(cStep, Math.round(a * sol * 0.5)));
+    left = c > 0 ? `${aStr} + ${fmt(c)}` : aStr; right = fmt(a * sol + c);
+  } else {
+    const c = ri(1, a - 1); const cStr = c === 1 ? 'x' : `${c}x`;
+    const b = rndC(0, Math.max(cStep, Math.min(cStep * 6, Math.round(sol * 4))));
+    const d = Math.round(((a - c) * sol + b) * 1000) / 1000;
+    left = b > 0 ? `${aStr} + ${fmt(b)}` : aStr; right = `${cStr} + ${fmt(d)}`;
+  }
+  const equation = Math.random() < 0.5 ? `${left} = ${right}` : `${right} = ${left}`;
+  return { ...config, equation };
+}

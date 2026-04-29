@@ -58,6 +58,7 @@ body {
 
 .guide-color { color: var(--color-guide-primary); }
 .rapido-color { color: var(--color-rapido-primary); }
+.automaths-color { color: #dc2626; }
 
 /* Grille de cartes */
 .grid {
@@ -88,6 +89,7 @@ body {
 
 .guide-card:hover { border-color: var(--color-guide-primary); }
 .rapido-card:hover { border-color: var(--color-rapido-primary); }
+.automaths-card:hover { border-color: #dc2626; }
 
 .card h3 {
   margin: 0 0 var(--space-2) 0;

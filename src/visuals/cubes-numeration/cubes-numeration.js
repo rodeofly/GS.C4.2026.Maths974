@@ -28,6 +28,7 @@ class CubesNumerationComponent extends HTMLElement {
     this.style.display      = 'block';
     this.style.width        = '100%';
     this.style.marginBottom = '6px';
+    this.dataset.solution   = String(1000 * m + 100 * c + 10 * d + u);
     this.innerHTML = this.buildSVG(m, c, d, u, showLabels);
   }
 
@@ -271,3 +272,9 @@ class CubesNumerationComponent extends HTMLElement {
 
 customElements.define('math974-cubes-numeration', CubesNumerationComponent);
 export default CubesNumerationComponent;
+export const defaultPosition = 'north';
+
+// Reset to original config so resolveConfigRanges picks new random values
+export function randomize(config, rand, originalConfig) {
+  return { ...(originalConfig || config) };
+}

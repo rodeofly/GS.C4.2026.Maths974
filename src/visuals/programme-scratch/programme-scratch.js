@@ -234,3 +234,43 @@ math974-programme-scratch{display:block}
 }
 
 customElements.define('math974-programme-scratch', ProgrammeScratchComponent);
+
+export const defaultPosition = 'north';
+
+export function randomize(config, rand) {
+  const p = { inputRange: [2, 20], opsRange: [1, 3], ops: ['+', '-', '×', '÷'], loop: null, iterRange: [2, 5], valRange: [1, 10], ...(rand || {}) };
+  const ri   = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const VAR  = 'résultat';
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const hasLoop = p.loop === null ? Math.random() < 0.5 : Boolean(p.loop);
+    const iters   = hasLoop ? ri(p.iterRange[0], p.iterRange[1]) : 1;
+    const nOps    = ri(p.opsRange[0], p.opsRange[1]);
+    const input   = ri(p.inputRange[0], p.inputRange[1]);
+    const steps = []; let cur = input; let ok = true;
+    for (let i = 0; i < nOps && ok; i++) {
+      const op = pick(p.ops); let val;
+      if (op === '÷') {
+        const divs = []; for (let d = Math.max(2, p.valRange[0]); d <= p.valRange[1]; d++) if (cur % d === 0) divs.push(d);
+        if (!divs.length) { ok = false; break; } val = pick(divs); cur /= val;
+      } else if (op === '-') {
+        const mx = Math.min(cur - 1, p.valRange[1]); if (mx < p.valRange[0]) { ok = false; break; } val = ri(p.valRange[0], mx); cur -= val;
+      } else if (op === '×') {
+        val = ri(Math.max(2, p.valRange[0]), Math.min(p.valRange[1], 4)); cur *= val; if (cur > 9999) { ok = false; break; }
+      } else { val = ri(p.valRange[0], p.valRange[1]); cur += val; }
+      steps.push({ op, val });
+    }
+    if (!ok || !steps.length) continue;
+    cur = input;
+    for (let k = 0; k < iters && ok; k++)
+      for (const s of steps) { cur = s.op === '+' ? cur + s.val : s.op === '-' ? cur - s.val : s.op === '×' ? cur * s.val : cur / s.val; if (cur < 1 || cur > 9999 || !Number.isInteger(cur)) { ok = false; break; } }
+    if (!ok) continue;
+    const opLine = ({ op, val }) => `${VAR} = ${VAR} ${op} ${val}`;
+    const lines = [`${VAR} = réponse`];
+    if (hasLoop) { lines.push(`répéter ${iters}:`); steps.forEach(s => lines.push('  ' + opLine(s))); }
+    else steps.forEach(s => lines.push(opLine(s)));
+    lines.push(`dire ${VAR}`);
+    return { ...config, input, programme: lines.join('\n') };
+  }
+  return { ...config, input: ri(p.inputRange[0], p.inputRange[1]) };
+}

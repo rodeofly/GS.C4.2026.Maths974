@@ -48,14 +48,12 @@ const rapidosCollection = defineCollection({
       z.object({
         variantes: z.array(
           z.object({
-            texte: z.string(),
+            texte: z.string().optional(),
             gs: z.string().optional(),
-            visual: z.object({
-              type: z.string(),
-              position: z.enum(['north', 'south', 'east', 'west', 'front', 'back']).optional(),
-              config: z.record(z.any()).optional(),
-              editor_prefs: z.record(z.any()).optional(),
-            }).optional(),
+            type: z.string().optional(),
+            config: z.record(z.any()).optional(),
+            rand: z.record(z.any()).optional(),
+            reponse: z.string().optional(),
           })
         )
       })
@@ -63,4 +61,25 @@ const rapidosCollection = defineCollection({
   }),
 });
 
-export const collections = { 'guide': guideCollection, 'rapidos': rapidosCollection };
+const automathsCollection = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    niveau: z.string().optional(),
+    theme: z.string().optional(),
+    sous_theme: z.string().optional(),
+    gs: z.string().optional(),
+    variantes: z.array(
+      z.object({
+        texte: z.string().optional(),
+        gs: z.string().optional(),
+        type: z.string().optional(),
+        config: z.record(z.any()).optional(),
+        rand: z.record(z.any()).optional(),
+        reponse: z.string().optional(),
+      })
+    ).optional(),
+  }),
+});
+
+export const collections = { 'guide': guideCollection, 'rapidos': rapidosCollection, 'automaths': automathsCollection };

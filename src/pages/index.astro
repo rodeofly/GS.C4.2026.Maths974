@@ -12,6 +12,7 @@ const guides = await getCollection('guide', ({ id }) => {
 const rapidos = await getCollection('rapidos', ({ id }) => {
   return id.split('/').length === 2 && id.endsWith('index.md');
 });
+const automaths = await getCollection('automaths');
 
 // Tri alphabétique
 const sortContent = (a, b) => a.data.title.localeCompare(b.data.title);
@@ -77,6 +78,20 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
             </a>
           )
         })}
+      </div>
+    </div>
+
+    <div class="menu-section">
+      <div class="section-title automaths-color">
+        <span>🧮</span> Automaths
+      </div>
+      <div class="grid">
+        <a href={`${base}/automaths/`} class="card automaths-card">
+          <div class="card-header-home">
+            <h3>Questions interactives</h3>
+          </div>
+          <p>{automaths.length} question{automaths.length > 1 ? 's' : ''} disponible{automaths.length > 1 ? 's' : ''} — liées au Guide de Survie</p>
+        </a>
       </div>
     </div>
 

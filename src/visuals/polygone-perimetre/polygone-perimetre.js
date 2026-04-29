@@ -490,3 +490,10 @@ class PolygonePerimetreComponent extends HTMLElement {
 
 customElements.define('math974-polygone-perimetre', PolygonePerimetreComponent);
 export default PolygonePerimetreComponent;
+export const defaultPosition = 'east';
+
+export async function randomize(config, rand) {
+  const { buildRandomConfig } = await import('./editor.js');
+  const prefs = { valueMin: rand?.valueRange?.[0] ?? 2, valueMax: rand?.valueRange?.[1] ?? 9, shapes: rand?.shapes ?? [], level: rand?.level ?? config.level ?? 1 };
+  return buildRandomConfig(config, prefs);
+}

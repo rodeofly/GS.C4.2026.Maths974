@@ -217,3 +217,8 @@ class FigureGeoComponent extends HTMLElement {
 
 customElements.define('math974-figure-geo', FigureGeoComponent);
 export default FigureGeoComponent;
+export const defaultPosition = 'east';
+
+export function randomize(config) {
+  return { ...config, seed: `rnd${Math.random().toString(36).slice(2, 7)}` };
+}

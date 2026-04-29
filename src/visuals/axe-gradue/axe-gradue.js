@@ -5,10 +5,10 @@ import { toFraction } from '../../utils/number-utils.js';
 class AxeGradueComponent extends HTMLElement {
   constructor() {
     super();
-    this.config = { 
-      min: 0, max: 10, step: 1, 
-      orientation: 'horizontal', 
-      width: 800, height: 100, 
+    this.config = {
+      min: 0, max: 10, step: 1,
+      orientation: 'horizontal',
+      width: 800, height: 100,
       points: [], showNumbers: true,
       labelFrequency: 1,
       visibleLabels: null,
@@ -17,6 +17,8 @@ class AxeGradueComponent extends HTMLElement {
     };
     this.hitRegions = [];
     this.hoveredPoint = null;
+    this._studentAnswer = null;
+    this._showSolution  = false;
   }
 
   connectedCallback() {
@@ -174,6 +176,25 @@ class AxeGradueComponent extends HTMLElement {
     canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
     canvas.addEventListener('mouseleave', this.handleMouseLeave.bind(this));
 
+    // Mode placement : clic sur l'axe pour poser le point
+    this._studentAnswer = null;
+    this._showSolution  = false;
+    if (this.config.placeTarget !== undefined) {
+      this.dataset.solution  = String(this.config.placeTarget);
+      this.dataset.placeMode = '1';
+      canvas.style.cursor = 'crosshair';
+      canvas.addEventListener('click', this.handleClick.bind(this));
+    } else {
+      delete this.dataset.placeMode;
+      // Mode lecture : le point '?' expose sa valeur pour l'input texte
+      const questionPoint = this.config.points?.find(p => p.label === '?');
+      if (questionPoint !== undefined) {
+        this.dataset.solution = String(questionPoint.value);
+      } else {
+        delete this.dataset.solution;
+      }
+    }
+
     this.draw();
   }
 
@@ -195,7 +216,9 @@ class AxeGradueComponent extends HTMLElement {
 
     if (hit !== this.hoveredPoint) {
       this.hoveredPoint = hit;
-      this.canvas.style.cursor = hit ? 'pointer' : 'default';
+      if (this.config.placeTarget === undefined) {
+        this.canvas.style.cursor = hit ? 'pointer' : 'default';
+      }
       this.draw();
     }
   }
@@ -205,6 +228,26 @@ class AxeGradueComponent extends HTMLElement {
       this.hoveredPoint = null;
       this.draw();
     }
+  }
+
+  toggleSolution() {
+    this._showSolution  = !this._showSolution;
+    if (this._showSolution) this._studentAnswer = null;
+    this.draw();
+    return this._showSolution;
+  }
+
+  handleClick(e) {
+    const { min, max, step, width } = this.config;
+    const padding = this.getPadding();
+    const range   = max - min;
+    const axisLen = width - padding * 2;
+    const rect    = this.canvas.getBoundingClientRect();
+    const scaleX  = width / rect.width;
+    const rawVal  = min + ((e.clientX - rect.left) * scaleX - padding) / axisLen * range;
+    const k       = Math.round((rawVal - min) / step);
+    this._studentAnswer = parseFloat(Math.max(min, Math.min(max, min + k * step)).toFixed(10));
+    this.draw();
   }
 
   draw() {
@@ -251,7 +294,7 @@ class AxeGradueComponent extends HTMLElement {
     for (let v = min, i = 0; v <= max + (step/2); v += step, i++) {
       const val = this.round(v, step);
       const x = padding + ((val - min) / range) * axisLen;
-      
+
       let isMajor = false;
       if (visibleLabels && Array.isArray(visibleLabels) && visibleLabels.length > 0) {
         isMajor = visibleLabels.includes(val);
@@ -268,20 +311,19 @@ class AxeGradueComponent extends HTMLElement {
         ctx.fillStyle = '#1e293b';
         ctx.textAlign = 'center';
         ctx.font = 'bold 20px Lexend Deca, sans-serif';
-        
+
         if (this.config.mode === 'decimal') {
           ctx.fillText(val.toString().replace('.', ','), x, y + 30);
         } else {
           const frac = toFraction(val, { allowedDenominators: this.config.denominators });
           if (frac) {
-            // Si mode fraction (impropre) et pas entier, on force integer=0
             if (this.config.mode === 'fraction' && frac.d !== 1) {
               frac.integer = 0;
               frac.remainder = Math.abs(frac.n);
             }
-            this.drawFractionLabel(ctx, x, y + 5, frac, { 
-              fontSize: 20, 
-              color: '#1e293b' 
+            this.drawFractionLabel(ctx, x, y + 5, frac, {
+              fontSize: 20,
+              color: '#1e293b'
             });
           } else {
             ctx.fillText(val.toString().replace('.', ','), x, y + 30);
@@ -388,6 +430,34 @@ class AxeGradueComponent extends HTMLElement {
       // Enregistrer la zone de collision
       this.hitRegions.push({ x: px, y: py, value: p.value, label: p.label });
     });
+
+    // Mode placement : dessiner le point (solution ou réponse élève)
+    if (this.config.placeTarget !== undefined) {
+      let drawVal = null, isCorrect = false;
+      if (this._showSolution) {
+        drawVal   = this.config.placeTarget;
+        isCorrect = true;
+      } else if (this._studentAnswer !== null) {
+        drawVal   = this._studentAnswer;
+        isCorrect = Math.abs(drawVal - this.config.placeTarget) < this.config.step * 0.01;
+      }
+      if (drawVal !== null) {
+        const ratio = (drawVal - min) / range;
+        const px = orientation === 'horizontal' ? padding + ratio * axisLen : width / 2;
+        const py = orientation === 'horizontal' ? height * 0.45 : (height - padding) - ratio * axisLen;
+        const label = this.config.placeLabel || 'A';
+
+        ctx.fillStyle = isCorrect ? '#16a34a' : '#dc2626';
+        ctx.beginPath();
+        ctx.arc(px, py, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = 'bold 20px Lexend Deca, sans-serif';
+        ctx.textAlign = orientation === 'horizontal' ? 'center' : 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(label + (isCorrect ? ' ✓' : ' ✗'), px + (orientation === 'horizontal' ? 0 : 15), py - (orientation === 'horizontal' ? 20 : 0));
+      }
+    }
   }
 
   drawTooltip() {
@@ -440,6 +510,8 @@ class AxeGradueComponent extends HTMLElement {
         catch(e) { this.config.visibleLabels = null; }
     }
     if(this.hasAttribute('mode')) this.config.mode = this.getAttribute('mode');
+    if(this.hasAttribute('placeTarget')) this.config.placeTarget = parseFloat(this.getAttribute('placeTarget'));
+    if(this.hasAttribute('placeLabel'))  this.config.placeLabel  = this.getAttribute('placeLabel');
     if(this.hasAttribute('denominators')) {
         try { 
           const d = JSON.parse(this.getAttribute('denominators'));
@@ -456,3 +528,64 @@ class AxeGradueComponent extends HTMLElement {
 }
 
 customElements.define('math974-axe-gradue', AxeGradueComponent);
+
+export const defaultPosition = 'north';
+
+export function randomize(config, rand) {
+  // Mode placement : tirage d'une graduation aléatoire dans l'axe courant
+  if (config.placeTarget !== undefined) {
+    const { min, max, step } = config;
+    const prec = step < 1 ? 2 : 0;
+    const ticks = [];
+    for (let v = min; v <= max + step / 10; v += step)
+      ticks.push(parseFloat(v.toFixed(prec)));
+    const newTarget = ticks[Math.floor(Math.random() * ticks.length)];
+    return { ...config, placeTarget: newTarget };
+  }
+
+  const ri = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const rItem = arr => arr[Math.floor(Math.random() * arr.length)];
+  const prefs = { minRange: [-10, 0], countRange: [5, 10], steps: [1, 0.5, 2], visibleRange: [2, 4], pointsRange: [2, 3], snap: true, ...(rand || {}) };
+  let steps = (prefs.steps || [1]).map(Number).filter(s => s > 0);
+  if (!steps.length) steps = [1];
+  const mode = config.mode || 'decimal';
+  if ((mode === 'fraction' || mode === 'mixed') && config.denominators) {
+    let d = config.denominators;
+    if (typeof d === 'string') d = d.split(',').map(Number);
+    if (Array.isArray(d) && d.length) steps = d.map(v => 1 / v);
+  }
+  const minR     = (prefs.minRange || [-10, 0]).map(Number);
+  const cntR     = (prefs.countRange || [5, 10]).map(Number);
+  const visR     = (prefs.visibleRange || [2, 4]).map(Number);
+  const ptR      = (prefs.pointsRange || [2, 3]).map(Number);
+  const minStepV = prefs.minStep ? Number(prefs.minStep) : null;
+  const newMin   = minStepV
+    ? ri(Math.ceil(minR[0] / minStepV), Math.floor(minR[1] / minStepV)) * minStepV
+    : ri(minR[0], minR[1]);
+  const newStep = rItem(steps);
+  const newMax  = newMin + ri(cntR[0], cntR[1]) * newStep;
+  const prec = newStep < 1 ? 2 : (newStep % 1 === 0 ? 0 : 1);
+  const allTicks = [];
+  for (let v = newMin; v <= newMax + newStep / 10; v += newStep)
+    allTicks.push(parseFloat(v.toFixed(prec)));
+  const nbVis = Math.min(allTicks.length, ri(visR[0], visR[1]));
+  const visibleLabels = [...allTicks].sort(() => 0.5 - Math.random()).slice(0, nbVis).sort((a, b) => a - b);
+  const snap = v => {
+    if (!prefs.snap) return parseFloat(v.toFixed(2));
+    const k = Math.round((v - newMin) / newStep);
+    return parseFloat(Math.max(newMin, Math.min(newMax, newMin + k * newStep)).toFixed(10));
+  };
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const ptLabels = Array.isArray(prefs.pointLabels) ? prefs.pointLabels : null;
+  const newPoints = [];
+  for (let i = 0; i < ri(ptR[0], ptR[1]); i++) {
+    let val = snap(newMin + Math.random() * (newMax - newMin));
+    for (let t = 0; t < 5; t++) { if (!visibleLabels.includes(val)) break; val = snap(newMin + Math.random() * (newMax - newMin)); }
+    if (!newPoints.some(p => Math.abs(p.value - val) < 0.001)) {
+      const label = ptLabels ? ptLabels[i % ptLabels.length] : alpha[Math.floor(Math.random() * alpha.length)];
+      const color = label === '?' ? '#dc2626' : '#f59e0b';
+      newPoints.push({ label, value: parseFloat(val.toFixed(2)), color });
+    }
+  }
+  return { ...config, min: newMin, max: newMax, step: newStep, points: newPoints, visibleLabels };
+}

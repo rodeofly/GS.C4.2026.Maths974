@@ -21,7 +21,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <span class="nav-icon">⭐</span>
         <span class="nav-text">Favoris</span>
       </a>
-      
+      <a href={`${base}/automaths/`} class="nav-link mobile-icon-only" title="Automaths">
+        <span class="nav-icon">🧮</span>
+        <span class="nav-text">Automaths</span>
+      </a>
+
       {/* --- MENU PARAMÈTRES --- */}
       <div class="settings-dropdown-wrapper">
         <button id="settingsBtn" class="btn-icon" aria-label="Paramètres d'affichage" aria-expanded="false" title="Affichage">

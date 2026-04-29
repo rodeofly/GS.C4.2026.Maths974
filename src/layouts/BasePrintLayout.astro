@@ -93,7 +93,7 @@ const niveauSlug = slug.split('/')[0];
         lb.classList.add('open');
         if (lbRendered) return;
         lbRendered = true;
-        const sc = Math.min((window.innerWidth * 0.9) / region.w, 3) * dpr;
+        const sc = ((window.innerWidth * 0.9) / region.w) * dpr;
         lbCanvas.style.width  = Math.min(region.w * sc / dpr, window.innerWidth * 0.9) + 'px';
         lbCanvas.style.height = 'auto';
         await renderRegion(lbCanvas, region, sc);
@@ -152,7 +152,7 @@ const niveauSlug = slug.split('/')[0];
 
 <style>
 /* ... Styles inchangés ... */
-.layout-header-simple { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-6); }
+.layout-header-simple { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
 .breadcrumb ol { display: flex; flex-wrap: wrap; align-items: center; list-style: none; padding: 0; margin: 0; font-size: var(--text-sm); color: var(--color-gray-500); }
 .breadcrumb a { color: var(--color-gray-600); text-decoration: none; transition: color 0.2s; }
 .breadcrumb a:hover { color: var(--color-guide-primary); text-decoration: underline; }

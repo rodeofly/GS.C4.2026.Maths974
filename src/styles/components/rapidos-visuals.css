@@ -472,7 +472,12 @@
   align-content: center;
   position: relative;
   min-height: auto;
-  padding: 0.5rem !important;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 /* Quand il y a un visuel west ou east : passer à 3 colonnes */
@@ -546,3 +551,164 @@
   width: 100%;
   text-align: left;
 }
+
+/* Texte projeté par schema-additif depuis une zone satellite */
+.sa-projected-text {
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
+}
+
+/* Visual rendu dans la zone content (position: 'content') */
+.q-content-visual {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+.q-content-visual .visual-wrapper {
+  width: 100%;
+  height: auto;
+}
+
+/* === ZONE RÉPONSE (saisie + validation) === */
+.q-reponse-zone { display: none; flex-direction: column; gap: 4px; padding-top: 0.5rem; margin-top: auto; width: 100%; }
+.q-reponse-zone.visible { display: flex; }
+.reponse-row { display: flex; gap: 6px; align-items: center; }
+.reponse-input { flex: 1; border: 2px solid #e2e8f0; border-radius: 0.5rem; padding: 0.3rem 0.6rem; font-size: 1rem; font-weight: 600; outline: none; transition: border-color 0.15s; color: #1e293b; background: #f8fafc; }
+.reponse-input:focus { border-color: #94a3b8; background: white; }
+.reponse-input.correct { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+.reponse-input.incorrect { border-color: #dc2626; background: #fef2f2; color: #dc2626; }
+.reponse-btn { width: 36px; height: 36px; border-radius: 0.5rem; border: none; background: #0f766e; color: white; font-size: 1.1rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
+.reponse-btn:hover { background: #0d9488; }
+.reponse-feedback { font-size: 0.78rem; font-weight: 700; min-height: 1rem; }
+.reponse-feedback.correct { color: #16a34a; }
+.reponse-feedback.incorrect { color: #dc2626; }
+
+/* === ZONE SOLUTION (révélation par l'œil) === */
+.q-solution-display { display: none; margin-top: 0.5rem; padding: 0.35rem 0.9rem; background: #f0fdf4; border: 2px solid #16a34a; border-radius: 0.5rem; color: #15803d; font-size: 1rem; font-weight: 700; text-align: center; width: 100%; }
+.q-solution-display.visible { display: block; }
+
+/* ========================================
+   SHARED RAPIDO CARD COMPONENTS
+   (applied to dynamically created elements via JS engine)
+   ======================================== */
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.q-card.page-hidden { display: none; }
+
+.q-num {
+  position: absolute;
+  top: -15px; right: -15px;
+  width: 2.5rem; height: 2.5rem;
+  background: #f59e0b; color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 1.2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  border: 3px solid white;
+  z-index: 20;
+}
+
+.card-header-controls {
+  position: absolute; top: 10px; left: 0;
+  width: 100%; padding: 0 15px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 30;
+}
+
+.gs-ref-badge {
+  display: none;
+  background: #0f766e; color: white;
+  font-size: 0.75rem; font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px 12px 12px 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.gs-ref-badge.active  { display: block; }
+.gs-ref-badge:hover   { opacity: 0.85; transform: scale(1.08); }
+
+.bullet {
+  min-width: auto !important; min-height: auto !important;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background-color: #cbd5e1;
+  border: none; padding: 0;
+  cursor: pointer; position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.bullet::after {
+  content: '';
+  position: absolute;
+  top: -10px; bottom: -10px; left: -10px; right: -10px;
+}
+.bullet:hover  { background-color: #94a3b8; }
+.bullet.active { background-color: #f59e0b; transform: scale(1.1); }
+
+.variant-content        { display: none; width: 100%; animation: fadeIn 0.3s ease; }
+.variant-content.active { display: block; }
+
+.content {
+  display: inline-block;
+  line-height: 1.5;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #334155;
+}
+.content mjx-container { vertical-align: middle !important; margin: 0 0.2em !important; }
+
+/* === INPUT TROU — généré par [?expr] dans le DSL === */
+.rapido-input-wrap {
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+}
+.rapido-input {
+  display: inline;
+  border: none;
+  border-bottom: 2.5px solid #94a3b8;
+  background: transparent;
+  font-size: 1em;
+  font-weight: inherit;
+  font-family: inherit;
+  color: inherit;
+  text-align: center;
+  padding: 0 0.25em 0.1em;
+  vertical-align: baseline;
+  outline: none;
+  border-radius: 0;
+  min-width: 2ch;
+  transition: border-color 0.15s, background 0.15s;
+}
+.rapido-input:focus     { border-color: #f59e0b; }
+.rapido-input.correct   { border-color: #16a34a; color: #16a34a; background: #f0fdf4; border-radius: 0.25em; }
+.rapido-input.incorrect { border-color: #dc2626; color: #dc2626; background: #fef2f2; border-radius: 0.25em; }
+
+/* Indicateur ✓ / ✗ en bas à gauche du champ (accessible daltoniens) */
+.rapido-fb {
+  position: absolute;
+  bottom: -1.1em;
+  left: 0.1em;
+  font-size: 0.55em;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+.rapido-input.correct   + .rapido-fb::before { content: '✓'; color: #16a34a; }
+.rapido-input.incorrect + .rapido-fb::before { content: '✗'; color: #dc2626; }

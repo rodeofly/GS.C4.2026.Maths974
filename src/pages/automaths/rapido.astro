@@ -1,0 +1,132 @@
+---
+// src/pages/automaths/rapido.astro
+// Page checkout : lit le caddy depuis localStorage et rend un Rapido fullscreen
+import '../../styles/components/rapidos-visuals.css';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mon Rapido — Automaths</title>
+  <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+  <script is:inline>
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js" defer></script>
+
+  <style>
+    .rapido-body {
+      margin: 0;
+      height: 100vh; width: 100vw;
+      overflow: hidden;
+      font-family: var(--font-sans, system-ui, sans-serif);
+      color: #1e293b;
+      background: linear-gradient(to bottom, #dc2626, #fca5a5);
+      position: relative;
+    }
+    h1, h2, button { font-family: var(--font-sans, system-ui, sans-serif); }
+    .bg-curves { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; pointer-events: none; }
+    .back-btn { position: absolute; top: 1rem; left: 1rem; background: rgba(255,255,255,0.2); color: white; border-radius: 50%; text-decoration: none; font-weight: bold; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; font-size: 1.5rem; border: 2px solid rgba(255,255,255,0.4); }
+    .back-btn:hover { background: rgba(255,255,255,0.4); }
+    .clear-btn { position: absolute; top: 1rem; left: 4rem; background: rgba(255,255,255,0.15); color: white; border: 1.5px solid rgba(255,255,255,0.4); border-radius: 0.75rem; padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; z-index: 50; backdrop-filter: blur(4px); transition: background 0.2s; }
+    .clear-btn:hover { background: rgba(255,255,255,0.3); }
+    .rapido-container { position: relative; z-index: 10; height: 100%; padding: 0.25rem 4rem 0.5rem; display: flex; flex-direction: column; }
+    header { text-align: center; margin-bottom: 0.25rem; padding-top: 0.25rem; flex-shrink: 0; }
+    h1 { color: white; font-size: 2.2rem; margin: 0; font-weight: 900; text-transform: uppercase; letter-spacing: 0.02em; text-shadow: 0 4px 10px rgba(0,0,0,0.2); line-height: 1; }
+    .title-wrapper { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 0.25rem; }
+    .deco-area { width: 100%; position: relative; margin-top: 0.25rem; display: flex; align-items: flex-end; }
+    .deco-volcan-wrapper { position: absolute; right: 0; bottom: 2.5rem; display: flex; flex-direction: column; align-items: center; z-index: 5; pointer-events: none; }
+    .deco-volcan { width: 150px; max-width: 18vw; height: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); }
+    .copyright { color: white; font-size: 0.85rem; font-weight: 800; margin-top: -16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); letter-spacing: 0.05em; position: relative; z-index: 6; }
+    .frise-lambrequin { height: 2.5rem; width: 100%; background-repeat: repeat-x; background-size: contain; background-position: top center; position: relative; z-index: 10; }
+    .deco-margouillat { position: absolute; top: 0; right: 22%; width: 6vw; max-width: 120px; z-index: 2; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); transform: rotate(15deg); }
+    .questions-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(3, 1fr); gap: 1rem; flex: 1; min-height: 0; }
+    .rapido-pagination { display: none; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.4rem 0; flex-shrink: 0; }
+    .pag-btn { background: rgba(255,255,255,0.25); color: white; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; width: 2.2rem; height: 2.2rem; font-size: 1.3rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; }
+    .pag-btn:hover:not(:disabled) { background: rgba(255,255,255,0.45); }
+    .pag-btn:disabled { opacity: 0.3; cursor: default; }
+    .pag-info { color: white; font-weight: 800; font-size: 1rem; min-width: 3rem; text-align: center; }
+    .empty-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; z-index: 20; }
+    .empty-state p { color: white; font-size: 1.4rem; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .empty-state a { background: rgba(255,255,255,0.9); color: #dc2626; font-weight: 800; padding: 0.7rem 1.5rem; border-radius: 99px; text-decoration: none; font-size: 1rem; }
+  </style>
+</head>
+
+<body class="rapido-body">
+  <img src={`${base}/images/curves.svg`} alt="" class="bg-curves" />
+  <img src={`${base}/images/margouillat.png`} alt="Margouillat" class="deco-margouillat" />
+
+  <a href={`${base}/automaths/`} class="back-btn" aria-label="Retour au catalogue">⬅</a>
+  <button class="clear-btn" id="clear-btn">🗑 Vider le caddy</button>
+
+  <div class="rapido-container">
+    <header>
+      <div class="title-wrapper">
+        <h1>Mon Rapido</h1>
+      </div>
+      <div class="deco-area">
+        <div class="deco-volcan-wrapper">
+          <img src={`${base}/images/volcan.svg`} alt="Volcan" class="deco-volcan" />
+          <div class="copyright">© maths974</div>
+        </div>
+        <div class="frise-lambrequin" style={`background-image: url('${base}/images/lambrequin.svg');`}></div>
+      </div>
+    </header>
+
+    <div class="questions-grid" id="questions-grid"></div>
+
+    <div class="rapido-pagination" id="rapido-pagination">
+      <button class="pag-btn" id="rapido-prev" disabled aria-label="Page précédente">‹</button>
+      <span class="pag-info" id="rapido-page-info"></span>
+      <button class="pag-btn" id="rapido-next" aria-label="Page suivante">›</button>
+    </div>
+  </div>
+
+  <div class="empty-state" id="empty-state" style="display:none">
+    <p>Ton caddy est vide 🛒</p>
+    <a href={`${base}/automaths/`}>← Retour au catalogue</a>
+  </div>
+
+  <script is:inline define:vars={{ base }}>
+    window.__AM_BASE__ = base;
+  </script>
+
+  <script>
+    import { initEngine } from '../../utils/rapido-engine.js';
+
+    const CART_KEY = 'maths974-automaths-cart';
+
+    function getCart(): any[] {
+      try { return JSON.parse(localStorage.getItem(CART_KEY) ?? '[]'); }
+      catch { return []; }
+    }
+
+    const cart       = getCart();
+    const grid       = document.getElementById('questions-grid')!;
+    const emptyState = document.getElementById('empty-state')!;
+    const pagination = document.getElementById('rapido-pagination');
+
+    if (cart.length === 0) {
+      emptyState.style.display = '';
+      grid.style.display = 'none';
+    } else {
+      await initEngine(grid, cart, {
+        prefix:       'am-card',
+        pageSize:     6,
+        paginationEl: pagination,
+        showEditor:   false,
+        trainMode:    true,
+      });
+
+      document.getElementById('clear-btn')!.addEventListener('click', () => {
+        if (!confirm('Vider le caddy ?')) return;
+        localStorage.removeItem(CART_KEY);
+        window.location.href = `${(window as any).__AM_BASE__}/automaths/`;
+      });
+    }
+  </script>
+</body>
+</html>

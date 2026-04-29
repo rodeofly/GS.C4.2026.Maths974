@@ -21,6 +21,8 @@ export class TexteTrousVisual extends HTMLElement {
   }
 
   render() {
+    this.style.display = 'block';
+    this.style.width = '100%';
     const content = this.getAttribute('content') || '';
     const mode = this.getAttribute('mode') || 'web';
 
@@ -32,10 +34,10 @@ export class TexteTrousVisual extends HTMLElement {
       return;
     }
 
-    // 1. Reset & Parsing
+    // 1. Reset & Parsing — normalise les \n du DSL en <br> avant parsing (évite de casser l'HTML généré)
     this.engine.reset();
-    // Remplacement des sauts de ligne pour l'affichage HTML
-    const htmlContent = this.engine.parse(content, mode).replace(/\n/g, '<br>');
+    const normalizedContent = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+    const htmlContent = this.engine.parse(normalizedContent, mode);
     
     // Style pour aligner correctement le LaTeX (MathJax) avec le texte
     const style = document.createElement('style');
@@ -71,3 +73,7 @@ if (!customElements.get('math974-texte-trous')) {
 }
 
 export default TexteTrousVisual;
+export const defaultPosition = 'content';
+
+// Re-init triggers TemplateEngine with new random values from the content template
+export function randomize(config) { return { ...config }; }

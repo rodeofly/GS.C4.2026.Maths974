@@ -9,110 +9,24 @@ import './visual-registry.js'; // Charge le registre
 import { visualMetadata, getConfigFields, getPrefsFields } from './visual-registry.js';
 import { renderEditor as renderAxeGradueEditor } from '../visuals/axe-gradue/editor.js';
 import { renderEditor as renderCubesNumerationEditor } from '../visuals/cubes-numeration/editor.js';
-import { renderEditor as renderPolygonePerimetreEditor, randomizeSeed as polygoneRandomizeSeed } from '../visuals/polygone-perimetre/editor.js';
-import { renderEditor as renderSchemaAdditifEditor, randomize as randomizeSchemaAdditif } from '../visuals/schema-additif/editor.js';
+import { renderEditor as renderPolygonePerimetreEditor } from '../visuals/polygone-perimetre/editor.js';
+import { renderEditor as renderSchemaAdditifEditor } from '../visuals/schema-additif/editor.js';
 
 /**
- * Initialiser le système de visuels pour tous les Rapidos
- * À appeler dans RapidoLayout.astro après le DOM ready
+ * Ajouter les boutons d'action dans .bullets-nav (👁 solution, ⚙ éditeur, ⟳ reload, ⚡ thunder)
+ * @param {HTMLElement} cardElement
+ * @param {object}  [options]
+ * @param {boolean} [options.showEditor] - afficher le bouton éditeur ⚙ (défaut : true)
  */
-export async function initRapidosVisuals(questionData) {
-  // AJOUTER CETTE SÉCURITÉ :
-  if (!questionData || !Array.isArray(questionData)) {
-    console.warn('⚠️ No question data provided to Visuals System');
-    return;
-  }
-
-  console.log('🎨 Initializing Rapidos Visuals System...');
-
-  // Pour chaque question — on sélectionne par ordre DOM, indépendamment de l'ID
-  const cardElements = Array.from(document.querySelectorAll('.q-card'));
-
-  questionData.forEach((question, qIndex) => {
-    const cardElement = cardElements[qIndex];
-    if (!cardElement) return;
-
-    // Restructurer la carte en Grid
-    restructureCardGrid(cardElement);
-
-    // Initialiser les visuels pour chaque variante
-    question.variantes.forEach((variante, vIndex) => {
-      if (!variante.visual) return;
-
-      // Stocker la config dans le DOM pour accès rapide
-      const variantContent = cardElement.querySelector(
-        `.variant-content[data-index="${vIndex}"]`
-      );
-      if (variantContent) {
-        // On stocke la config MD originale et la config courante (session)
-        const originalData = JSON.parse(JSON.stringify(variante.visual));
-        variantContent.originalVisualData = originalData;
-        variantContent.visualData = JSON.parse(JSON.stringify(originalData)); // copie de travail
-      }
-    });
-
-    // Charger le visuel de la variante active (index 0 par défaut)
-    const activeVariant = cardElement.querySelector('.variant-content.active');
-    if (activeVariant?.visualData) {
-      VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    }
-
-    // Ajouter le bouton toggle
-    addVisualToggleButton(cardElement);
-  });
-
-  console.log('✅ Rapidos Visuals System initialized');
-}
-
-/**
- * Restructurer une carte en CSS Grid
- */
-function restructureCardGrid(cardElement) {
-  // Vérifier si déjà restructuré
-  if (cardElement.querySelector('.q-card-content')) {
-    return; // Déjà fait
-  }
-
-  // Extraire les éléments qui NE doivent PAS être dans .q-card-content
-  const qNum = cardElement.querySelector('.q-num');
-  const cardHeaderControls = cardElement.querySelector('.card-header-controls');
-
-  // Extraire les variantes qui DOIVENT être dans .q-card-content
-  const variantContents = Array.from(cardElement.querySelectorAll('.variant-content'));
-
-  // Vider la carte
-  cardElement.innerHTML = '';
-
-  // Remettre les éléments dans le bon ordre
-  if (qNum) cardElement.appendChild(qNum);
-  if (cardHeaderControls) cardElement.appendChild(cardHeaderControls);
-
-  // Créer .q-card-content avec les variantes
-  const contentWrapper = document.createElement('div');
-  contentWrapper.className = 'q-card-content';
-  variantContents.forEach(variant => contentWrapper.appendChild(variant));
-  cardElement.appendChild(contentWrapper);
-
-  // Les zones north/south/east/west/front/back seront ajoutées dynamiquement
-}
-
-/**
- * Ajouter le bouton toggle visuel
- */
-/**
- * Ajouter le bouton toggle visuel à l'intérieur de la navigation des variantes
- */
-// src/utils/rapidos-visuals-integration.js
-
-// src/utils/rapidos-visuals-integration.js
-
-function addVisualToggleButton(cardElement) {
+export function addVisualToggleButton(cardElement, options = {}) {
+  const { showEditor = true } = options;
   const nav = cardElement.querySelector('.bullets-nav');
   if (!nav) return;
 
   const toggleBtn = document.createElement('button');
-  toggleBtn.className = 'visual-toggle-btn mini-eye active';
-  toggleBtn.title = "Masquer/Afficher le visuel";
+  toggleBtn.className = 'visual-toggle-btn mini-eye btn-eye-solution';
+  toggleBtn.title = "Afficher / masquer la réponse";
+  toggleBtn.style.display = 'none';
   toggleBtn.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -121,28 +35,30 @@ function addVisualToggleButton(cardElement) {
 
   toggleBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isVisible = toggleBtn.classList.toggle('active');
-    VisualsSystem.toggleVisual(cardElement, isVisible);
+    const display = cardElement.querySelector('.q-solution-display');
+    if (!display) return;
+    const visible = display.classList.toggle('visible');
+    toggleBtn.classList.toggle('active', visible);
   });
 
   nav.appendChild(toggleBtn);
 
-  // Bouton Paramètres (Engrenage)
-  const settingsBtn = document.createElement('button');
-  settingsBtn.className = 'visual-toggle-btn mini-eye';
-  settingsBtn.title = "Éditer les paramètres";
-  settingsBtn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"></circle>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-    </svg>`;
-
-  settingsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openVisualEditor(cardElement);
-  });
-
-  nav.appendChild(settingsBtn);
+  // Bouton Paramètres (Engrenage) — uniquement en mode éditeur (prof)
+  if (showEditor) {
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'visual-toggle-btn mini-eye';
+    settingsBtn.title = "Éditer les paramètres";
+    settingsBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>`;
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openVisualEditor(cardElement);
+    });
+    nav.appendChild(settingsBtn);
+  }
 
   // Bouton Reload (Régénérer)
   const reloadBtn = document.createElement('button');
@@ -188,6 +104,8 @@ export async function handleVariantChange(cardElement, newVariantIndex, resetToO
 
   if (!variantContent?.visualData) {
     clearCardVisuals(cardElement);
+    updateReponseZone(cardElement);
+    updateSolutionZone(cardElement);
     return;
   }
 
@@ -197,6 +115,8 @@ export async function handleVariantChange(cardElement, newVariantIndex, resetToO
   }
 
   await VisualsSystem.initCardVisuals(cardElement, variantContent.visualData);
+  updateReponseZone(cardElement);
+  updateSolutionZone(cardElement);
 
   // Mettre à jour l'éditeur si ouvert sur cette carte
   const editorPanel = document.getElementById('visual-editor-panel');
@@ -210,7 +130,7 @@ export async function handleVariantChange(cardElement, newVariantIndex, resetToO
  */
 function clearCardVisuals(cardElement) {
   const visualZones = cardElement.querySelectorAll(
-    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .sa-content-wrapper'
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .q-content-visual, .sa-content-wrapper'
   );
 
   visualZones.forEach((zone) => {
@@ -311,30 +231,28 @@ function toYAMLValue(val) {
 }
 
 /**
- * Génère le YAML d'un visualData (type + position + config + editor_prefs)
- * avec l'indentation attendue dans les fichiers .md (10 espaces)
+ * Génère le YAML d'un visualData (nouvelle structure plate)
+ * avec l'indentation attendue dans les fichiers .md (8 espaces)
  */
 function generateVisualYAML(visualData) {
-  const I = '          '; // 10 espaces (niveau visual: dans le frontmatter)
+  const I = '        '; // 8 espaces (niveau variante dans le frontmatter)
   const lines = [];
-  lines.push(`${I}visual:`);
-  lines.push(`${I}  type: "${visualData.type}"`);
-  lines.push(`${I}  position: "${visualData.position || 'north'}"`);
+  lines.push(`${I}type: ${visualData.type}`);
 
   const config = visualData.config || {};
   if (Object.keys(config).length > 0) {
-    lines.push(`${I}  config:`);
+    lines.push(`${I}config:`);
     for (const [k, v] of Object.entries(config)) {
       if (v === '' || v === null || v === undefined) continue;
-      lines.push(`${I}    ${k}: ${toYAMLValue(v)}`);
+      lines.push(`${I}  ${k}: ${toYAMLValue(v)}`);
     }
   }
 
-  const prefs = visualData.editor_prefs;
-  if (prefs && Object.keys(prefs).length > 0) {
-    lines.push(`${I}  editor_prefs:`);
-    for (const [k, v] of Object.entries(prefs)) {
-      lines.push(`${I}    ${k}: ${toYAMLValue(v)}`);
+  const rand = visualData.rand;
+  if (rand && Object.keys(rand).length > 0) {
+    lines.push(`${I}rand:`);
+    for (const [k, v] of Object.entries(rand)) {
+      lines.push(`${I}  ${k}: ${toYAMLValue(v)}`);
     }
   }
 
@@ -454,13 +372,13 @@ function populateEditor(panel, visualType, visualData, _originalVisualData) {
     renderAxeGradueEditor(panel, visualData);
 
   } else if (visualType === 'cubes-numeration') {
-    const markdownPrefs = visualData.editor_prefs;
+    const markdownPrefs = visualData.rand;
     const prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9',
                     ...(markdownPrefs || {}) };
     editorBody.insertAdjacentHTML('beforeend', renderCubesNumerationEditor(panel, visualData, prefs));
 
   } else if (visualType === 'polygone-perimetre') {
-    const markdownPrefs = visualData.editor_prefs;
+    const markdownPrefs = visualData.rand;
     let prefs = { valueMin: 2, valueMax: 9 };
     if (markdownPrefs) {
       if (markdownPrefs.valueRange) {
@@ -473,7 +391,7 @@ function populateEditor(panel, visualType, visualData, _originalVisualData) {
     editorBody.insertAdjacentHTML('beforeend', renderPolygonePerimetreEditor(panel, visualData, prefs));
 
   } else if (visualType === 'schema-additif') {
-    const markdownPrefs = visualData.editor_prefs;
+    const markdownPrefs = visualData.rand;
     const prefs = { totalMin: 20, totalMax: 99, totalStep: 10, ...(markdownPrefs || {}) };
     editorBody.insertAdjacentHTML('beforeend', renderSchemaAdditifEditor(panel, visualData, prefs));
 
@@ -519,7 +437,7 @@ function renderStandardEditor(_panel, visualType, visualData) {
   // Section Randomiseur (prefsFields)
   const prefsFields = getPrefsFields(visualType);
   if (prefsFields.length) {
-    const currentPrefs = visualData.editor_prefs || {};
+    const currentPrefs = visualData.rand || {};
     html += `<div class="editor-section-title" style="grid-column:1/-1;margin:10px 0 4px;
       font-size:11px;font-weight:700;text-transform:uppercase;color:#64748b;
       border-top:1px solid #e2e8f0;padding-top:10px;letter-spacing:.05em;">
@@ -716,10 +634,10 @@ async function applyEditorChanges(panel) {
     newConfig.orientation = isVertical ? 'vertical' : 'horizontal';
   }
 
-  // ── Lire les prefsFields → editor_prefs ──────────────────────────────────
+  // ── Lire les prefsFields → rand ──────────────────────────────────
   const prefsFields = getPrefsFields(visualType);
   if (prefsFields.length) {
-    const newPrefs = { ...(activeVariant?.visualData?.editor_prefs || {}) };
+    const newPrefs = { ...(activeVariant?.visualData?.rand || {}) };
     prefsFields.forEach((field) => {
       if (field.type === 'range') {
         const i0 = editorBody.querySelector(`[name="${field.name}_0"]`);
@@ -736,7 +654,7 @@ async function applyEditorChanges(panel) {
         if (inp) newPrefs[field.name] = field.type === 'number' ? parseFloat(inp.value) : inp.value;
       }
     });
-    if (activeVariant) activeVariant.visualData.editor_prefs = newPrefs;
+    if (activeVariant) activeVariant.visualData.rand = newPrefs;
   }
 
   // Mettre à jour le visuel
@@ -748,648 +666,28 @@ async function applyEditorChanges(panel) {
 }
 
 /**
- * Logique de génération aléatoire (partagée)
- */
-function generateRandomConfigValues(prefs, currentConfig = {}) {
-  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-  const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-  // Conversion explicite en nombres pour éviter les erreurs de type (ex: "0" + 1 = "01")
-  const minRange = (prefs.minRange || [-10, 0]).map(Number);
-  const countRange = (prefs.countRange || [5, 10]).map(Number); // Nombre de graduations
-  let steps = (prefs.steps || [1]).map(Number).filter(s => s > 0);
-  if (steps.length === 0) steps = [1];
-
-  const visibleRange = (prefs.visibleRange || [2, 4]).map(Number);
-  const pointsRange = (prefs.pointsRange || [2, 3]).map(Number);
-  const snapToGrid = prefs.snap !== undefined ? prefs.snap : true;
-
-  // INTELLIGENCE DU PAS (STEP) SELON LE MODE
-  const mode = currentConfig.mode || 'decimal';
-
-  if (mode === 'fraction' || mode === 'mixed') {
-    // En mode fraction/mixte : le pas est STRICTEMENT déterminé par les dénominateurs (1/d)
-    // On ignore les "PAS POSSIBLES" configurés pour le mode décimal
-    if (currentConfig.denominators) {
-      let denoms = currentConfig.denominators;
-      if (typeof denoms === 'string') denoms = denoms.split(',').map(Number);
-      
-      if (Array.isArray(denoms) && denoms.length > 0) {
-        steps = denoms.map(d => 1/d);
-      }
-    }
-  }
-
-  const newMin = randInt(minRange[0], minRange[1]);
-  
-  // Choisir un pas
-  const newStep = randItem(steps) || 1;
-  
-  // Calculer le Max basé sur le nombre de graduations (count)
-  // Max = Min + (NbGraduations * Step)
-  const nbSteps = randInt(countRange[0], countRange[1]);
-  const newMax = newMin + (nbSteps * newStep);
-
-  // Générer toutes les graduations possibles
-  const allTicks = [];
-  for (let v = newMin; v <= newMax + (newStep/10); v += newStep) {
-    // Arrondi pour éviter 0.30000000004
-    const precision = newStep < 1 ? 2 : (newStep % 1 === 0 ? 0 : 1);
-    allTicks.push(parseFloat(v.toFixed(precision)));
-  }
-
-  // Choisir combien d'abscisses afficher (ex: entre 2 et 4)
-  const nbVisible = Math.min(allTicks.length, randInt(visibleRange[0], visibleRange[1]));
-  
-  // Sélectionner aléatoirement les labels visibles
-  // On mélange les ticks et on prend les N premiers
-  const shuffledTicks = [...allTicks].sort(() => 0.5 - Math.random());
-  const visibleLabels = shuffledTicks.slice(0, nbVisible).sort((a, b) => a - b);
-
-  // Générer des points
-  const nbPoints = randInt(pointsRange[0], pointsRange[1]);
-  const newPoints = [];
-  // Lettres aléatoires A-Z
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  
-  // Essayer de placer les points sur des abscisses INCONNUES (cachées)
-  for (let i = 0; i < nbPoints; i++) {
-    const range = newMax - newMin;
-    let val = newMin + (Math.random() * range);
-    
-    // Snap à la graduation la plus proche (offset depuis newMin, pas depuis 0)
-    const snapToGrad = (v) => {
-      if (snapToGrid) {
-        const k = Math.round((v - newMin) / newStep);
-        const snapped = newMin + k * newStep;
-        // Clamp dans [newMin, newMax]
-        return Math.max(newMin, Math.min(newMax, parseFloat(snapped.toFixed(10))));
-      }
-      return parseFloat(v.toFixed(2));
-    };
-
-    val = snapToGrad(val);
-
-    // Si possible, forcer une valeur qui n'est PAS dans visibleLabels
-    // On a 5 essais pour trouver une valeur cachée
-    for (let attempt = 0; attempt < 5; attempt++) {
-        if (!visibleLabels.includes(val)) break; // C'est bon, c'est caché
-        // Sinon on réessaie
-        val = snapToGrad(newMin + Math.random() * range);
-    }
-    
-    // Éviter les doublons exacts
-    if (!newPoints.some(p => Math.abs(p.value - val) < 0.001)) {
-      newPoints.push({
-        label: alphabet[Math.floor(Math.random() * alphabet.length)],
-        value: parseFloat(val.toFixed(2)),
-        color: '#f59e0b'
-      });
-    }
-  }
-
-  return {
-    min: newMin,
-    max: newMax,
-    step: newStep,
-    points: newPoints,
-    visibleLabels: visibleLabels
-  };
-}
-
-/**
- * Randomisation trajet Scratch — génère un nouveau programme de déplacement
- */
-async function quickRandomizeTrajet(cardElement, activeVariant, markdownPrefs) {
-  const prefs = {
-    stepsRange:  [2, 6],
-    anglePool:   ['90'],
-    turnDir:     'both',
-    useRepeat:   false,
-    repeatRange: [3, 6],
-    segsRange:   [3, 5],
-    ...(markdownPrefs || {}),
-  };
-
-  const ri  = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-  const rItem = arr => arr[Math.floor(Math.random() * arr.length)];
-
-  const stepsRange  = (prefs.stepsRange  || [2, 6]).map(Number);
-  const repeatRange = (prefs.repeatRange || [3, 6]).map(Number);
-  const segsRange   = (prefs.segsRange   || [3, 5]).map(Number);
-  const anglePool   = (prefs.anglePool   || ['90']).map(Number);
-  const turnDir     = prefs.turnDir || 'both';
-
-  const startAngles = [0, 90, 180, 270];
-  const startAngle  = rItem(startAngles);
-  const scale       = activeVariant?.visualData?.config?.scale || 20;
-
-  // Génère un segment : avancer + tourner
-  const makeSegment = () => {
-    const steps = ri(stepsRange[0], stepsRange[1]) * scale;
-    const angle = rItem(anglePool);
-    const dir   = turnDir === 'both'
-      ? (Math.random() > 0.5 ? 'droite' : 'gauche')
-      : turnDir;
-    return `avancer ${steps}\n${dir} ${angle}`;
-  };
-
-  let programme = `orienter ${startAngle}\n`;
-
-  if (prefs.useRepeat && Math.random() > 0.4) {
-    const count = ri(repeatRange[0], repeatRange[1]);
-    const bodySteps = ri(stepsRange[0], stepsRange[1]) * scale;
-    const angle = rItem(anglePool);
-    programme += `répéter ${count}:\n  avancer ${bodySteps}\n  droite ${angle}`;
-  } else {
-    const nSegs = ri(segsRange[0], segsRange[1]);
-    const segs = [];
-    for (let i = 0; i < nSegs; i++) segs.push(makeSegment());
-    programme += segs.join('\n');
-  }
-
-  if (activeVariant) {
-    activeVariant.visualData.config = { ...activeVariant.visualData.config, programme };
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    const editorPanel = document.getElementById('visual-editor-panel');
-    if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
-      const ta = editorPanel.querySelector('[name="programme"]');
-      if (ta) ta.value = programme;
-    }
-  }
-}
-
-/**
- * Régénération rapide (Bouton Reload)
+ * Dispatch uniform : chaque visuel exporte randomize(config, rand, originalConfig) → newConfig
  */
 async function quickRandomize(cardElement) {
   const activeVariant = cardElement.querySelector('.variant-content.active');
-  const visualData = activeVariant?.visualData;
-  const visualType = visualData?.type;
-
-  // ── Branche cubes-numération ──────────────────────────────────────────
-  if (visualType === 'cubes-numeration') {
-    await quickRandomizeCubes(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche polygone-périmètre ────────────────────────────────────────
-  if (visualType === 'polygone-perimetre') {
-    await quickRandomizePolygone(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche schéma additif ───────────────────────────────────────────
-  if (visualType === 'schema-additif') {
-    await quickRandomizeSchemaAdditif(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche figure-geo ────────────────────────────────────────────────
-  // On ne change que le seed : level, gridsize, cellsize, etc. viennent du config MD
-  if (visualType === 'figure-geo') {
-    const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
-    if (activeVariant) {
-      activeVariant.visualData.config = { ...activeVariant.visualData.config, seed: newSeed };
-      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-      const editorPanel = document.getElementById('visual-editor-panel');
-      if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
-        const seedInput = editorPanel.querySelector('[name="seed"]');
-        if (seedInput) seedInput.value = newSeed;
-      }
-    }
-    return;
-  }
-
-  // ── Branche balance-equilibre ─────────────────────────────────────────
-  if (visualType === 'balance-equilibre') {
-    await quickRandomizeBalance(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche programme-scratch ─────────────────────────────────────────
-  if (visualType === 'programme-scratch') {
-    await quickRandomizeProgramme(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche trajet-scratch ────────────────────────────────────────────
-  if (visualType === 'trajet-scratch') {
-    await quickRandomizeTrajet(cardElement, activeVariant, visualData?.editor_prefs);
-    return;
-  }
-
-  // ── Branche suite-figures ─────────────────────────────────────────────
-  // Choisit un pattern aléatoire parmi ceux autorisés dans editor_prefs.patternPool
-  if (visualType === 'suite-figures') {
-    const prefs = visualData?.editor_prefs || {};
-    const pool = prefs.patternPool && prefs.patternPool.length > 0
-      ? prefs.patternPool
-      : ['baton','L','T','peigne','croix','cadre','triangle','colonnes','carre','losange'];
-    const newPattern = pool[Math.floor(Math.random() * pool.length)];
-    const colors = {
-      losange: '#60a5fa', triangle: '#34d399', carre: '#a78bfa',
-      colonnes: '#fb923c', croix: '#f43f5e', L:  '#facc15',
-      baton: '#2dd4bf',   T: '#e879f9',      peigne: '#4ade80',
-      cadre: '#f97316',
-    };
-    if (activeVariant) {
-      activeVariant.visualData.config = {
-        ...activeVariant.visualData.config,
-        pattern: newPattern,
-        color: colors[newPattern] || '#60a5fa',
-      };
-      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    }
-    return;
-  }
-
-  // ── Branche angle-triangle ────────────────────────────────────────────
-  // Nouveau seed aléatoire → triangle, lettres et angle inconnu régénérés
-  if (visualType === 'angle-triangle') {
-    const newSeed = `rnd${Math.random().toString(36).slice(2, 7)}`;
-    if (activeVariant) {
-      // Nouveau seed + mode conservé ; angles/letters/unknown supprimés
-      const currentConfig = activeVariant.visualData.config || {};
-      activeVariant.visualData.config = { seed: newSeed, mode: currentConfig.mode || 'scalene' };
-      await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-      const editorPanel = document.getElementById('visual-editor-panel');
-      if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
-        const seedInput = editorPanel.querySelector('[name="seed"]');
-        if (seedInput) seedInput.value = newSeed;
-      }
-    }
-    return;
-  }
-
-  // ── Branche axe-gradué (logique existante) ────────────────────────────
-  // 1. Lire les préférences depuis le Markdown (editor_prefs)
-  const markdownPrefs = visualData?.editor_prefs;
-
-  let prefs = {
-    minRange: [-10, 0],
-    countRange: [5, 10],
-    steps: [1, 0.5, 2],
-    visibleRange: [2, 4],
-    pointsRange: [2, 3],
-    snap: true
-  };
-
-  if (markdownPrefs) {
-    prefs = { ...prefs, ...markdownPrefs };
-  }
-
-  const currentConfig = visualData?.config || {};
-  const newConfig = generateRandomConfigValues(prefs, currentConfig);
-
-  if (activeVariant) {
-    activeVariant.visualData.config = { ...activeVariant.visualData.config, ...newConfig };
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    const editorPanel = document.getElementById('visual-editor-panel');
-    if (editorPanel && editorPanel.classList.contains('open') && editorPanel.currentCard === cardElement) {
-      // Mettre à jour les champs de l'éditeur
-      Object.entries(newConfig).forEach(([key, value]) => {
-        const input = editorPanel.querySelector(`[name="${key}"]`);
-        if (input) input.value = value;
-      });
-    }
-  }
-}
-
-/**
- * Randomisation dédiée polygone-périmètre
- * - Conserve la forme et le niveau tels que définis dans l'éditeur
- * - Génère un nouveau seed
- * - Choisit une unité aléatoire
- */
-async function quickRandomizePolygone(cardElement, activeVariant, markdownPrefs) {
-  const editorPanel   = document.getElementById('visual-editor-panel');
-  const editorOpen    = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
-  const visualData    = activeVariant?.visualData;
-  const currentConfig = visualData?.config || {};
-
-  // Lire la forme et le niveau depuis l'éditeur (si ouvert) ou la config courante
-  let shape = currentConfig.shape ?? 'rect';
-  let level = currentConfig.level ?? 1;
-  if (editorOpen) {
-    const editorBody = editorPanel.querySelector('.editor-body');
-    const shapeInput = editorBody.querySelector('[name="shape"]');
-    const levelInput = editorBody.querySelector('[name="level"]');
-    if (shapeInput) shape = shapeInput.value;
-    if (levelInput) level = parseInt(levelInput.value) || 1;
-  }
-
-  // Unité aléatoire
-  const units = ['cm', 'm', 'dm', 'mm'];
-  const unit  = units[Math.floor(Math.random() * units.length)];
-
-  // Plage de valeurs depuis les prefs (markdown > défaut)
-  let valueMin = 2, valueMax = 9;
-  if (markdownPrefs?.valueRange) {
-    valueMin = markdownPrefs.valueRange[0] ?? 2;
-    valueMax = markdownPrefs.valueRange[1] ?? 9;
-  }
-
-  const newConfig = {
-    ...currentConfig,
-    seed:       polygoneRandomizeSeed(),
-    shape,
-    level,
-    unit,
-    valuerange: [valueMin, valueMax],
-  };
-
-  if (activeVariant) {
-    activeVariant.visualData.config = newConfig;
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-
-    if (editorOpen) {
-      const editorBody = editorPanel.querySelector('.editor-body');
-      const seedInput = editorBody.querySelector('[name="seed"]');
-      const unitInput = editorBody.querySelector('[name="unit"]');
-      if (seedInput) seedInput.value = newConfig.seed;
-      if (unitInput) unitInput.value = newConfig.unit;
-    }
-  }
-}
-
-/**
- * Randomisation dédiée balance-equilibre
- * Génère une équation valide du type "Nx + C_left = C_right"
- * avec solution entière positive dans la plage configurée.
- *
- * editor_prefs :
- *   boxRange      [min, max]  — nb de variables côté gauche  (défaut [1, 4])
- *   boxMassRange  [min, max]  — masse d'une boîte en g        (défaut [5, 20])
- *   leftWeights   [min, max]  — poids extra côté gauche       (défaut [0, 50])
- *   rightWeights  [min, max]  — nb de poids distincts à droite (défaut [1, 2])
- *   weightStep    number      — multiple pour les poids constants (défaut 5)
- */
-async function quickRandomizeBalance(cardElement, activeVariant, markdownPrefs) {
-  const prefs = {
-    eqTypes:   ['ax=b', 'ax+c=d'],
-    solRange:  [5, 20],
-    valueStep: 1,
-    coefRange: [1, 4],
-    constStep: 5,
-    ...(markdownPrefs || {}),
-  };
-
-  const step      = parseFloat(prefs.valueStep) || 1;
-  const [solMin, solMax]   = (prefs.solRange  || [5, 20]).map(Number);
-  const [coefMin, coefMax] = (prefs.coefRange || [1, 4]).map(Number);
-  const cStep     = Number(prefs.constStep) || 5;
-
-  const ri   = (lo, hi) => lo + Math.floor(Math.random() * (Math.max(lo, hi) - lo + 1));
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-  const rndC = (min, max) => {
-    const lo = Math.ceil(min / cStep), hi = Math.floor(max / cStep);
-    return lo > hi ? 0 : ri(lo, hi) * cStep;
-  };
-  const fmt = v => `${Math.round(v * 1000) / 1000}`;
-
-  const eqTypes = Array.isArray(prefs.eqTypes) && prefs.eqTypes.length
-    ? prefs.eqTypes : ['ax=b', 'ax+c=d'];
-  const eqType = pick(eqTypes);
-
-  // Solution (valeur de x)
-  const nSteps = Math.max(1, Math.round((solMax - solMin) / step));
-  const sol    = Math.round((solMin + ri(0, nSteps) * step) * 1000) / 1000;
-
-  // Coefficient de x (≥2 si ax+b=cx+d pour garantir c < a)
-  const aMin = eqType === 'ax+b=cx+d' ? Math.max(2, coefMin) : coefMin;
-  const aMax = eqType === 'ax+b=cx+d' ? Math.max(2, coefMax) : coefMax;
-  const a    = ri(aMin, aMax);
-  const aStr = a === 1 ? 'x' : `${a}x`;
-
-  let left, right;
-
-  if (eqType === 'ax=b') {
-    left  = aStr;
-    right = fmt(a * sol);
-
-  } else if (eqType === 'ax+c=d') {
-    const cMax = Math.max(cStep, Math.round(a * sol * 0.5));
-    const c    = rndC(0, cMax);
-    left  = c > 0 ? `${aStr} + ${fmt(c)}` : aStr;
-    right = fmt(a * sol + c);
-
-  } else { // ax+b=cx+d
-    const c    = ri(1, a - 1);
-    const cStr = c === 1 ? 'x' : `${c}x`;
-    const bMax = Math.max(cStep, Math.min(cStep * 6, Math.round(sol * 4)));
-    const b    = rndC(0, bMax);
-    const d    = Math.round(((a - c) * sol + b) * 1000) / 1000;
-    left  = b > 0 ? `${aStr} + ${fmt(b)}` : aStr;
-    right = `${cStr} + ${fmt(d)}`;
-  }
-
-  // Échange aléatoire des plateaux
-  const equation = Math.random() < 0.5 ? `${left} = ${right}` : `${right} = ${left}`;
-
-  const currentConfig = activeVariant?.visualData?.config || {};
-  activeVariant.visualData.config = { ...currentConfig, equation };
+  if (!activeVariant?.visualData) return;
+  const { type, config, rand } = activeVariant.visualData;
+  const originalConfig = activeVariant.originalVisualData?.config ?? config;
+  const module = await import(`../visuals/${type}/${type}.js`);
+  if (!module.randomize) return;
+  const newConfig = await module.randomize(config || {}, rand || {}, originalConfig || {});
+  activeVariant.visualData.config = newConfig;
   await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-
-  const editorPanel = document.getElementById('visual-editor-panel');
-  if (editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement) {
-    const input = editorPanel.querySelector('[name="equation"]');
-    if (input) input.value = equation;
-  }
+  syncEditorFields(cardElement, newConfig);
 }
 
-/**
- * Randomisation dédiée programme-scratch
- * Génère un programme DSL valide selon les editor_prefs :
- *   inputRange  [min,max]  — nombre de départ
- *   opsRange    [min,max]  — nb d'opérations (séquence sans boucle)
- *   ops         array      — opérations autorisées : +  -  ×  ÷
- *   loop        true|false|null — boucle forcée / interdite / aléatoire
- *   iterRange   [min,max]  — nb d'itérations si boucle
- *   valRange    [min,max]  — valeurs opérandes
- */
-async function quickRandomizeProgramme(cardElement, activeVariant, markdownPrefs) {
-  const p = {
-    inputRange: [2, 20],
-    opsRange:   [1, 3],
-    ops:        ['+', '-', '×', '÷'],
-    loop:       null,
-    iterRange:  [2, 5],
-    valRange:   [1, 10],
-    ...(markdownPrefs || {}),
-  };
-
-  const ri   = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const pick = arr    => arr[Math.floor(Math.random() * arr.length)];
-  const VAR  = 'résultat';
-
-  // Tentatives pour garantir résultat entier positif
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const hasLoop = p.loop === null ? Math.random() < 0.5 : Boolean(p.loop);
-    const iters   = hasLoop ? ri(p.iterRange[0], p.iterRange[1]) : 1;
-    const nOps    = ri(p.opsRange[0], p.opsRange[1]);
-    const input   = ri(p.inputRange[0], p.inputRange[1]);
-
-    const steps = []; let cur = input; let ok = true;
-
-    // Phase 1 : choisir les vals avec contraintes légères (1er passage seulement)
-    for (let i = 0; i < nOps && ok; i++) {
-      const op = pick(p.ops);
-      let val;
-
-      if (op === '÷') {
-        const divs = [];
-        for (let d = Math.max(2, p.valRange[0]); d <= p.valRange[1]; d++)
-          if (cur % d === 0) divs.push(d);
-        if (!divs.length) { ok = false; break; }
-        val = pick(divs);
-        cur /= val;
-      } else if (op === '-') {
-        const maxVal = Math.min(cur - 1, p.valRange[1]);
-        if (maxVal < p.valRange[0]) { ok = false; break; }
-        val = ri(p.valRange[0], maxVal);
-        cur -= val;
-      } else if (op === '×') {
-        val = ri(Math.max(2, p.valRange[0]), Math.min(p.valRange[1], 4));
-        cur *= val;
-        if (cur > 9999) { ok = false; break; }
-      } else {
-        val = ri(p.valRange[0], p.valRange[1]);
-        cur += val;
-      }
-      steps.push({ op, val });
-    }
-
-    if (!ok || !steps.length) continue;
-
-    // Phase 2 : simuler l'exécution complète (iters tours si boucle)
-    cur = input;
-    const applyStep = (v, { op, val }) => {
-      if (op === '+') return v + val;
-      if (op === '-') return v - val;
-      if (op === '×') return v * val;
-      return v / val; // ÷
-    };
-    for (let k = 0; k < iters && ok; k++) {
-      for (const s of steps) {
-        cur = applyStep(cur, s);
-        if (cur < 1 || cur > 9999 || !Number.isInteger(cur)) { ok = false; break; }
-      }
-    }
-    if (!ok) continue;
-
-    // Construire le DSL
-    const opLine = ({ op, val }) => `${VAR} = ${VAR} ${op} ${val}`;
-    const lines  = [`${VAR} = réponse`];
-    if (hasLoop) {
-      lines.push(`répéter ${iters}:`);
-      steps.forEach(s => lines.push('  ' + opLine(s)));
-    } else {
-      steps.forEach(s => lines.push(opLine(s)));
-    }
-    lines.push(`dire ${VAR}`);
-
-    activeVariant.visualData.config = {
-      ...activeVariant.visualData.config,
-      input,
-      programme: lines.join('\n'),
-    };
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    return;
-  }
-  // Fallback : juste changer l'input
-  activeVariant.visualData.config = {
-    ...activeVariant.visualData.config,
-    input: ri(p.inputRange[0], p.inputRange[1]),
-  };
-  await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-}
-
-/**
- * Randomisation dédiée schéma additif
- */
-async function quickRandomizeSchemaAdditif(cardElement, activeVariant, markdownPrefs) {
-  const editorPanel   = document.getElementById('visual-editor-panel');
-  const editorOpen    = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
-  const visualData    = activeVariant?.visualData;
-  const currentConfig = visualData?.config || {};
-
-  // ── Mode dynamique : le composant se régénère seul via TemplateEngine ──
-  if (currentConfig.content) {
-    // Re-créer l'élément suffit — Math.random() produit de nouvelles valeurs
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-    return;
-  }
-
-  // ── Mode statique : générer de nouvelles valeurs ────────────────────────
-  let prefs = { totalMin: 20, totalMax: 99, totalStep: 10, ...(markdownPrefs || {}) };
-
-  if (editorOpen) {
-    const editorBody = editorPanel.querySelector('.editor-body');
-    const get = (part) => parseInt(editorBody.querySelector(`.sa-range[data-part="${part}"]`)?.value);
-    if (!isNaN(get('totalMin')))  prefs.totalMin  = get('totalMin');
-    if (!isNaN(get('totalMax')))  prefs.totalMax  = get('totalMax');
-    if (!isNaN(get('totalStep'))) prefs.totalStep = get('totalStep');
-  }
-
-  let level = currentConfig.level ?? 1;
-  if (editorOpen) {
-    const lvl = parseInt(editorPanel.querySelector('.editor-body [name="level"]')?.value);
-    if (!isNaN(lvl)) level = lvl;
-  }
-
-  const newConfig = randomizeSchemaAdditif({ ...currentConfig, level }, prefs);
-
-  if (activeVariant) {
-    activeVariant.visualData.config = newConfig;
-    await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-
-    if (editorOpen) {
-      const editorBody = editorPanel.querySelector('.editor-body');
-      ['total', 'part1', 'unknown'].forEach(name => {
-        const input = editorBody.querySelector(`[name="${name}"]`);
-        if (input) input.value = newConfig[name] ?? '';
-      });
-      const p2 = editorBody.querySelector('[name="part2-display"]');
-      if (p2) p2.value = newConfig.total - newConfig.part1;
-    }
-  }
-}
-
-/**
- * Randomisation dédiée cubes-numération
- */
-async function quickRandomizeCubes(cardElement, activeVariant, markdownPrefs) {
-  const editorPanel = document.getElementById('visual-editor-panel');
-  const editorOpen  = editorPanel?.classList.contains('open') && editorPanel.currentCard === cardElement;
-  const visualData  = activeVariant?.visualData;
-
-  const prefs = { milliers: '0:1', centaines: '1:3', dizaines: '0:9', unites: '0:9',
-                  ...(markdownPrefs || {}) };
-
-  const randInt = (range) => {
-    const [min, max] = String(range).split(':').map(Number);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  };
-
-  const newConfig = {
-    ...visualData.config,
-    milliers:  randInt(prefs.milliers),
-    centaines: randInt(prefs.centaines),
-    dizaines:  randInt(prefs.dizaines),
-    unites:    randInt(prefs.unites),
-  };
-
-  visualData.config = newConfig;
-  await VisualsSystem.initCardVisuals(cardElement, activeVariant.visualData);
-
-  if (editorOpen) {
-    const editorBody = editorPanel.querySelector('.editor-body');
-    ['milliers', 'centaines', 'dizaines', 'unites'].forEach(name => {
-      const input = editorBody.querySelector(`[name="${name}"]`);
-      if (input) input.value = newConfig[name] ?? 0;
-    });
-  }
+function syncEditorFields(cardElement, config) {
+  const panel = document.getElementById('visual-editor-panel');
+  if (!panel?.classList.contains('open') || panel.currentCard !== cardElement) return;
+  Object.entries(config).forEach(([key, val]) => {
+    const input = panel.querySelector(`[name="${key}"]`);
+    if (input) input.value = val;
+  });
 }
 
 /**
@@ -1431,9 +729,122 @@ export async function thunderRandomize(cardElement) {
   if (window.MathJax) window.MathJax.typesetPromise([cardElement]).catch(() => {});
 }
 
-// Export pour utilisation dans RapidoLayout
+// ========================================
+// ZONE RÉPONSE (saisie + validation)
+// ========================================
+
+function normalizeAnswer(s) {
+  return s.trim().replace(',', '.').toLowerCase().replace(/\s+/g, '');
+}
+
+function checkAnswer(user, expected) {
+  const u = normalizeAnswer(user);
+  const e = normalizeAnswer(expected);
+  const uNum = parseFloat(u);
+  const eNum = parseFloat(e);
+  if (!isNaN(uNum) && !isNaN(eNum) && u !== '' && e !== '') {
+    return Math.abs(uNum - eNum) < 0.001;
+  }
+  return u === e;
+}
+
+export function updateReponseZone(cardElement) {
+  const zone = cardElement.querySelector('.q-reponse-zone');
+  if (!zone) return;
+  const activeVariant = cardElement.querySelector('.variant-content.active');
+  const reponse = activeVariant?.dataset.reponse ?? '';
+  zone.classList.toggle('visible', reponse !== '');
+  const input = zone.querySelector('.reponse-input');
+  const feedback = zone.querySelector('.reponse-feedback');
+  if (input) { input.value = ''; input.classList.remove('correct', 'incorrect'); }
+  if (feedback) { feedback.className = 'reponse-feedback'; feedback.textContent = ''; }
+}
+
+export function addReponseZone(cardElement, question) {
+  const hasReponse = question.variantes.some(v => v.reponse);
+  if (!hasReponse) return;
+
+  const contentEl = cardElement.querySelector('.q-card-content');
+  if (!contentEl) return;
+
+  const zone = document.createElement('div');
+  zone.className = 'q-reponse-zone';
+  zone.innerHTML = `
+    <div class="reponse-row">
+      <input type="text" class="reponse-input" placeholder="Réponse…" autocomplete="off" />
+      <button class="reponse-btn" title="Valider">✓</button>
+    </div>
+    <div class="reponse-feedback"></div>
+  `;
+  contentEl.appendChild(zone);
+
+  const input = zone.querySelector('.reponse-input');
+  const btn = zone.querySelector('.reponse-btn');
+  const feedback = zone.querySelector('.reponse-feedback');
+
+  const validate = () => {
+    const activeVariant = cardElement.querySelector('.variant-content.active');
+    const expected = activeVariant?.dataset.reponse ?? '';
+    if (!expected) return;
+    const correct = checkAnswer(input.value, expected);
+    if (correct) {
+      input.classList.add('correct'); input.classList.remove('incorrect');
+      feedback.className = 'reponse-feedback correct';
+      feedback.textContent = '✓ Correct !';
+    } else {
+      input.classList.add('incorrect'); input.classList.remove('correct');
+      feedback.className = 'reponse-feedback incorrect';
+      feedback.textContent = `✗  Réponse : ${expected}`;
+    }
+  };
+
+  btn.addEventListener('click', validate);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { validate(); return; }
+    input.classList.remove('correct', 'incorrect');
+    feedback.className = 'reponse-feedback';
+    feedback.textContent = '';
+  });
+
+  updateReponseZone(cardElement);
+}
+
+// ========================================
+// ZONE SOLUTION
+// ========================================
+
+export function updateSolutionZone(cardElement) {
+  const display = cardElement.querySelector('.q-solution-display');
+  const eyeBtn = cardElement.querySelector('.btn-eye-solution');
+  const activeVariant = cardElement.querySelector('.variant-content.active');
+  const reponse = activeVariant?.dataset.reponse ?? '';
+
+  if (display) {
+    display.textContent = reponse ? `Réponse : ${reponse}` : '';
+    display.classList.remove('visible');
+  }
+  if (eyeBtn) {
+    eyeBtn.style.display = reponse ? '' : 'none';
+    eyeBtn.classList.remove('active');
+  }
+}
+
+export function addSolutionZone(cardElement, question) {
+  const hasReponse = question.variantes.some(v => v.reponse);
+  if (!hasReponse) return;
+
+  const contentEl = cardElement.querySelector('.q-card-content');
+  if (!contentEl) return;
+
+  const display = document.createElement('div');
+  display.className = 'q-solution-display';
+  contentEl.appendChild(display);
+
+  updateSolutionZone(cardElement);
+}
+
+// Export par défaut (rétro-compatibilité)
 export default {
-  initRapidosVisuals,
   handleVariantChange,
   openVisualEditor,
   quickRandomizeCard,

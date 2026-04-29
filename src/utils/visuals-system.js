@@ -63,21 +63,38 @@ export function isVisualLoaded(type) {
   return window.Math974Visuals.loaded.has(type);
 }
 
+
+function resolveConfigRanges(config) {
+  const resolved = {};
+  for (const [key, value] of Object.entries(config)) {
+    if (typeof value === 'string') {
+      const m = value.match(/^\[(\d+(?:\.\d+)?)\.\.(\d+(?:\.\d+)?)\]$/);
+      if (m) {
+        const min = parseFloat(m[1]), max = parseFloat(m[2]);
+        resolved[key] = Math.floor(Math.random() * (max - min + 1)) + min;
+        continue;
+      }
+    }
+    resolved[key] = value;
+  }
+  return resolved;
+}
+
 /**
- * Parser la config YAML d'un visuel
- * @param {Object} visualData - Données du frontmatter
+ * Parser la config YAML d'un visuel (nouvelle structure plate)
+ * @param {Object} visualData - { type, config, rand }
  * @returns {Object} Config normalisée
  */
-export function parseVisualConfig(visualData) {
+export function parseVisualConfig(visualData, defaultPos = 'north') {
   if (!visualData) return null;
 
   return {
     type: visualData.type,
-    position: visualData.position || 'north',
-    config: visualData.config || {},
-    editable: visualData.editable !== false, // true par défaut
-    opacity: visualData.opacity || (visualData.position === 'back' ? 0.15 : 1),
-    hidden: visualData.hidden || false,
+    position: defaultPos,
+    config: resolveConfigRanges(visualData.config || {}),
+    editable: true,
+    opacity: 1,
+    hidden: false,
   };
 }
 
@@ -124,89 +141,59 @@ export async function createVisualElement(type, config, container) {
  * @param {HTMLElement} cardElement - Élément .q-card
  * @param {Object} visualData - Données visual du YAML
  */
-// src/utils/visuals-system.js
-
-// src/utils/visuals-system.js
-
-// src/utils/visuals-system.js
-
-// src/utils/visuals-system.js
-
 export async function initCardVisuals(cardElement, visualData) {
-  // 1. Nettoyage : On supprime toutes les zones de visuels existantes
-  const existingZones = cardElement.querySelectorAll(
-    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back'
-  );
-  existingZones.forEach(zone => zone.remove());
-  // Réinitialiser les classes de grille latérale
+  // 1. Nettoyage — zones satellites + contenu visuel inline
+  cardElement.querySelectorAll(
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .q-content-visual, .sa-content-wrapper'
+  ).forEach(z => z.remove());
   cardElement.classList.remove('has-visual-west', 'has-visual-east');
 
-  if (!visualData || !visualData.type) return;
+  if (!visualData?.type) return;
 
-  const config = parseVisualConfig(visualData);
+  // 2. Lire la position par défaut depuis le module du visuel
+  let defaultPos = 'north';
+  try {
+    const mod = await import(`../visuals/${visualData.type}/${visualData.type}.js`);
+    if (mod.defaultPosition) defaultPos = mod.defaultPosition;
+  } catch {}
+
+  const config = parseVisualConfig(visualData, defaultPos);
   if (config.hidden) return;
 
-  // Cas particulier : schema-additif en mode dynamique (content fourni)
-  // → placé dans la zone .q-card-content, position contrôle le layout interne
-  if (config.type === 'schema-additif' && config.config.content) {
-    const contentEl = cardElement.querySelector('.q-card-content');
-    if (contentEl) {
-      contentEl.querySelector('.sa-content-wrapper')?.remove();
-      const saWrapper = document.createElement('div');
-      saWrapper.className = 'sa-content-wrapper';
-      contentEl.appendChild(saWrapper);
-      // On passe position au composant pour son layout interne
-      const saConfig = { ...config.config, position: config.position };
-      try {
-        const element = await createVisualElement(config.type, saConfig, saWrapper);
-        element.visualConfig = config;
-        return element;
-      } catch (error) {
-        console.error('Failed to init schema-additif:', error);
-        return;
-      }
+  // 3. Position 'content' — le visuel s'insère dans .q-card-content
+  if (config.position === 'content') {
+    const contentEl = cardElement.querySelector('.q-card-content') ?? cardElement;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'q-content-visual';
+    contentEl.appendChild(wrapper);
+    try {
+      const element = await createVisualElement(config.type, config.config, wrapper);
+      element.visualConfig = config;
+      return element;
+    } catch (err) {
+      console.error(`Failed to init visual (content) [${config.type}]:`, err);
     }
+    return;
   }
 
-  // 2. Création du nouveau conteneur (zone grille classique)
+  // 4. Positions satellites (north / east / west / south / front / back)
   const container = document.createElement('div');
   container.className = `q-card-${config.position}`;
   container.style.opacity = config.opacity;
 
-  // 3. Insertion selon la position pour respecter l'ordre de la grille CSS
-  // Ordre attendu: north, west, content, east, south (front/back en absolute)
   const contentElement = cardElement.querySelector('.q-card-content');
-
   if (!contentElement) {
-    // Pas de .q-card-content, ajouter à la fin
     cardElement.appendChild(container);
   } else {
-    // Insérer selon la position
     switch (config.position) {
       case 'north':
-        // Avant .q-card-content
-        cardElement.insertBefore(container, contentElement);
-        break;
       case 'west':
-        // Juste avant .q-card-content
         cardElement.insertBefore(container, contentElement);
         break;
       case 'east':
-        // Juste après .q-card-content
-        if (contentElement.nextSibling) {
-          cardElement.insertBefore(container, contentElement.nextSibling);
-        } else {
-          cardElement.appendChild(container);
-        }
-        break;
-      case 'south':
-        // À la fin
-        cardElement.appendChild(container);
-        break;
-      case 'front':
-      case 'back':
-        // Position absolute, ordre n'a pas d'importance
-        cardElement.appendChild(container);
+        contentElement.nextSibling
+          ? cardElement.insertBefore(container, contentElement.nextSibling)
+          : cardElement.appendChild(container);
         break;
       default:
         cardElement.appendChild(container);
@@ -214,14 +201,14 @@ export async function initCardVisuals(cardElement, visualData) {
   }
 
   try {
-    const element = await createVisualElement(config.type, config.config, container);
+    const elemConfig = { ...config.config, position: config.position };
+    const element = await createVisualElement(config.type, elemConfig, container);
     element.visualConfig = config;
-    // Signaler la présence de la zone latérale pour adapter la grille CSS
     if (config.position === 'west') cardElement.classList.add('has-visual-west');
     if (config.position === 'east') cardElement.classList.add('has-visual-east');
     return element;
-  } catch (error) {
-    console.error('Failed to init visual:', error);
+  } catch (err) {
+    console.error(`Failed to init visual [${config.type}]:`, err);
   }
 }
 
@@ -232,7 +219,7 @@ export async function initCardVisuals(cardElement, visualData) {
  */
 export function toggleVisual(cardElement, visible) {
   const visualZones = cardElement.querySelectorAll(
-    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .sa-content-wrapper'
+    '.q-card-north, .q-card-south, .q-card-east, .q-card-west, .q-card-front, .q-card-back, .q-content-visual, .sa-content-wrapper'
   );
 
   visualZones.forEach((zone) => {

@@ -533,3 +533,9 @@ class AngleTriangleComponent extends HTMLElement {
 }
 
 customElements.define('math974-angle-triangle', AngleTriangleComponent);
+
+export const defaultPosition = 'east';
+
+export function randomize(config) {
+  return { seed: `rnd${Math.random().toString(36).slice(2, 7)}`, mode: config.mode || 'scalene' };
+}

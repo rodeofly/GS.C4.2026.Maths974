@@ -25,23 +25,6 @@ registerVisual('suite-figures',        () => import('../visuals/suite-figures/su
 registerVisual('trajet-scratch',       () => import('../visuals/trajet-scratch/trajet-scratch.js'));
 
 /**
- * Fonction helper pour précharger certains visuels
- * Utile pour les types très fréquents
- */
-export async function preloadCommonVisuals() {
-  const common = ['axe-gradue', 'repere-cartesien'];
-
-  const promises = common.map((type) => {
-    return window.Math974Visuals.registry.get(type)?.loader().catch((err) => {
-      console.warn(`Failed to preload ${type}:`, err);
-    });
-  });
-
-  await Promise.allSettled(promises);
-  console.log('✅ Common visuals preloaded');
-}
-
-/**
  * Obtenir la liste des visuels disponibles
  */
 export function getAvailableVisuals() {
@@ -54,55 +37,6 @@ export function getAvailableVisuals() {
  */
 export const visualMetadata = {
   'axe-gradue': axeGradueMetadata,
-
-  'repere-cartesien': {
-    label: 'Repère Cartésien',
-    description: 'Repère avec axes X et Y, grille optionnelle',
-    icon: '📐',
-    category: 'Repérage',
-    configFields: [
-      { name: 'xmin', type: 'number', label: 'X min', default: -10 },
-      { name: 'xmax', type: 'number', label: 'X max', default: 10 },
-      { name: 'ymin', type: 'number', label: 'Y min', default: -10 },
-      { name: 'ymax', type: 'number', label: 'Y max', default: 10 },
-      { name: 'xstep', type: 'number', label: 'Pas X', default: 1 },
-      { name: 'ystep', type: 'number', label: 'Pas Y', default: 1 },
-      { name: 'showGrid', type: 'boolean', label: 'Afficher grille', default: true },
-      { name: 'width', type: 'number', label: 'Largeur (px)', default: 400 },
-      { name: 'height', type: 'number', label: 'Hauteur (px)', default: 400 },
-    ],
-  },
-
-  triangle: {
-    label: 'Triangle',
-    description: 'Triangle avec sommets, angles et mesures',
-    icon: '🔺',
-    category: 'Géométrie',
-    configFields: [
-      { name: 'A', type: 'point', label: 'Sommet A', default: { x: 0, y: 0 } },
-      { name: 'B', type: 'point', label: 'Sommet B', default: { x: 100, y: 0 } },
-      { name: 'C', type: 'point', label: 'Sommet C', default: { x: 50, y: 86 } },
-      { name: 'showAngles', type: 'boolean', label: 'Afficher angles', default: true },
-      { name: 'showLengths', type: 'boolean', label: 'Afficher longueurs', default: true },
-      { name: 'fillColor', type: 'color', label: 'Couleur remplissage', default: '#ccfbf1' },
-      { name: 'strokeColor', type: 'color', label: 'Couleur contour', default: '#0d9488' },
-    ],
-  },
-
-  'fraction-cercle': {
-    label: 'Fraction (Cercle)',
-    description: 'Représentation circulaire de fractions',
-    icon: '🥧',
-    category: 'Nombres',
-    configFields: [
-      { name: 'numerator', type: 'number', label: 'Numérateur', default: 3 },
-      { name: 'denominator', type: 'number', label: 'Dénominateur', default: 4 },
-      { name: 'radius', type: 'number', label: 'Rayon (px)', default: 80 },
-      { name: 'fillColor', type: 'color', label: 'Couleur parts', default: '#f59e0b' },
-      { name: 'emptyColor', type: 'color', label: 'Couleur vide', default: '#f3f4f6' },
-      { name: 'showLabel', type: 'boolean', label: 'Afficher fraction', default: true },
-    ],
-  },
 
   'cubes-numeration': {
     label: 'Cubes Numération',
