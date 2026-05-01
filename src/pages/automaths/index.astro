@@ -18,6 +18,7 @@ const allData = entries.map(e => ({
   gs: e.data.gs ?? '',
   variantes: (e.data.variantes ?? []).map((v, i) => ({
     i,
+    content: v.content ?? '',
     texte: v.texte ?? '',
     type: v.type ?? '',
     config: v.config ?? null,
@@ -111,10 +112,9 @@ for (const e of allData) {
 </script>
 
 <script>
-  import * as VisualsSystem from '../../utils/visuals-system.js';
   import '../../utils/visual-registry.js';
-  import { quickRandomizeCard } from '../../utils/rapidos-visuals-integration.js';
-  import { injectVisualInput, wireCardInputs } from '../../utils/rapido-engine.js';
+  import { quickRandomizeCard, handleVariantChange } from '../../utils/rapidos-visuals-integration.js';
+  import { buildCard, wireTrainMode, injectVisualInput, wireCardInputs, validateActiveInputs } from '../../utils/rapido-engine.js';
 
   const CART_KEY = 'maths974-automaths-cart';
 
@@ -123,11 +123,6 @@ for (const e of allData) {
     catch { return []; }
   }
   function saveCart(cart: any[]) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
-
-  function miniMd(text: string): string {
-    if (!text) return '';
-    return text.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  }
 
   // --- Éléments UI ---
   const fab       = document.getElementById('cart-fab')!;
@@ -182,11 +177,9 @@ for (const e of allData) {
              : question.variantes.map((_: any, i: number) => i)
     );
 
-    // ── Carte identique aux rapidos ─────────────────────────────────────
-    const variantsHTML = question.variantes.map((v: any, i: number) => `
-      <div class="variant-content ${i === 0 ? 'active' : ''}" data-index="${i}" data-reponse="${v.reponse ?? ''}">
-        <div class="content">${miniMd(v.texte ?? '')}</div>
-      </div>`).join('');
+    // ── Carte construite par rapido-engine ─────────────────────────────
+    const card = buildCard(question, 0, 'dlg', { showEditor: false });
+    card.id = 'dlg-card';
 
     const barHTML = question.variantes.map((v: any, i: number) => `
       <div class="dlg-var-item">
@@ -195,107 +188,51 @@ for (const e of allData) {
       </div>`).join('');
 
     dlgBody.innerHTML = `
-      <article class="q-card" id="dlg-card">
-        <div class="q-card-content">${variantsHTML}</div>
-      </article>
-      <div class="dlg-answer-reveal" id="dlg-answer-reveal" style="display:none">
-        <span class="dlg-answer-label">Réponse&nbsp;:</span>
-        <span class="dlg-answer-text" id="dlg-answer-text"></span>
-      </div>
       <div class="dlg-var-bar">
         <div class="dlg-var-nums">${barHTML}</div>
         <button class="dlg-randomize-btn" title="Regénérer">⟳</button>
+        <button class="dlg-validate-btn" id="dlg-validate-btn" title="Valider la réponse">✓</button>
         <button class="dlg-reveal-btn" id="dlg-reveal-btn" title="Voir / cacher la réponse">👁</button>
       </div>`;
+    dlgBody.prepend(card);
 
-    const card = document.getElementById('dlg-card') as HTMLElement;
-
-    // Attacher visualData sur chaque variant-content
-    card.querySelectorAll<HTMLElement>('.variant-content').forEach((el, i) => {
-      const v = question.variantes[i];
-      if (v?.type) {
-        const data = { type: v.type, config: v.config || {}, rand: v.rand || {} };
-        (el as any).originalVisualData = JSON.parse(JSON.stringify(data));
-        (el as any).visualData = JSON.parse(JSON.stringify(data));
-      }
-    });
-
-    // Init visuel variante 0
-    const firstVariant = card.querySelector<HTMLElement>('.variant-content.active');
-    if ((firstVariant as any)?.visualData) {
-      await VisualsSystem.initCardVisuals(card, (firstVariant as any).visualData);
-    }
+    // Init visuel + inputs variante 0
+    await handleVariantChange(card, 0);
+    wireTrainMode(card);
     if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
 
-    // ── Train : inputs DSL + révélation ────────────────────────────────
-    function resetInputs() {
-      card.querySelectorAll<HTMLInputElement>('.rapido-input').forEach(inp => {
-        inp.value = '';
-        inp.classList.remove('correct', 'incorrect');
-      });
-    }
-
-    function doInjectVisualInput() { injectVisualInput(card); }
-    function doWireInputs()        { wireCardInputs(card); }
-
-    function updateRevealState() {
-      const revealBtn  = document.getElementById('dlg-reveal-btn') as HTMLButtonElement | null;
-      const revealArea = document.getElementById('dlg-answer-reveal') as HTMLElement | null;
-      const revealText = document.getElementById('dlg-answer-text') as HTMLElement | null;
-      const hasInputs  = card.querySelectorAll('.rapido-input').length > 0;
-      const reponse    = card.querySelector<HTMLElement>('.variant-content.active')?.dataset.reponse ?? '';
-      const hasAnswer  = hasInputs || !!reponse;
-      if (revealBtn)  { revealBtn.disabled = !hasAnswer; revealBtn.style.opacity = hasAnswer ? '1' : '0.3'; }
-      if (revealArea)   revealArea.style.display = 'none';
-      if (revealText)   revealText.textContent = '';
-      resetInputs();
-    }
-
-    const revealBtn  = document.getElementById('dlg-reveal-btn')!;
-    const revealArea = document.getElementById('dlg-answer-reveal') as HTMLElement;
-    const revealText = document.getElementById('dlg-answer-text')!;
-
-    revealBtn.addEventListener('click', () => {
-      const inputs  = card.querySelectorAll<HTMLInputElement>('.rapido-input');
-      const reponse = card.querySelector<HTMLElement>('.variant-content.active')?.dataset.reponse ?? '';
-
-      if (inputs.length > 0) {
-        const filled = Array.from(inputs).some(i => i.classList.contains('correct'));
-        inputs.forEach(inp => {
-          if (filled) { inp.value = ''; inp.classList.remove('correct', 'incorrect'); }
-          else        { inp.value = inp.dataset.solution ?? ''; inp.classList.add('correct'); inp.classList.remove('incorrect'); }
-        });
-      } else if (reponse) {
-        const visible = revealArea.style.display !== 'none';
-        revealArea.style.display = visible ? 'none' : 'flex';
-        revealText.textContent   = visible ? '' : reponse;
-      }
+    // ── ✓ valide les inputs de la variante active ───────────────────────
+    const validateBtn = document.getElementById('dlg-validate-btn') as HTMLButtonElement;
+    const hasInputs  = !!card.querySelector('.rapido-input');
+    const hasPlaceEl = !!card.querySelector('[data-place-mode]');
+    validateBtn.style.display = (hasInputs || hasPlaceEl) ? '' : 'none';
+    validateBtn.addEventListener('click', () => {
+      const placeEl = card.querySelector('[data-place-mode]') as any;
+      if (placeEl) { placeEl.validate?.(); return; }
+      validateActiveInputs(card);
     });
 
-    doInjectVisualInput();
-    doWireInputs();
-    updateRevealState();
+    // ── 👁 délègue au bouton interne câblé par wireTrainMode ───────────
+    const revealBtn = document.getElementById('dlg-reveal-btn')!;
+    revealBtn.addEventListener('click', () => {
+      card.querySelector<HTMLElement>('.btn-eye-solution')?.click();
+    });
 
     // ── Changement de variante ──────────────────────────────────────────
     async function switchTo(idx: number) {
       card.querySelectorAll('.variant-content').forEach((el, i) =>
         el.classList.toggle('active', i === idx));
+      card.querySelectorAll('.bullet').forEach((b, i) =>
+        b.classList.toggle('active', i === idx));
+      card.querySelectorAll('.gs-ref-badge').forEach((b, i) =>
+        b.classList.toggle('active', i === idx));
       dlgBody.querySelectorAll('.dlg-var-num').forEach((b, i) =>
         b.classList.toggle('active', i === idx));
-
-      card.querySelectorAll(
-        '.q-card-north,.q-card-south,.q-card-east,.q-card-west,.q-card-front,.q-card-back,.q-content-visual,.sa-projected-text'
-      ).forEach(z => z.remove());
-      card.classList.remove('has-visual-west', 'has-visual-east');
-
-      const target = card.querySelector<HTMLElement>(`.variant-content[data-index="${idx}"]`);
-      if ((target as any)?.visualData) {
-        await VisualsSystem.initCardVisuals(card, (target as any).visualData);
-      }
+      await handleVariantChange(card, idx);
+      injectVisualInput(card);
+      wireCardInputs(card);
+      validateBtn.style.display = (!!card.querySelector('.rapido-input') || !!card.querySelector('[data-place-mode]')) ? '' : 'none';
       if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
-      doInjectVisualInput();
-      doWireInputs();
-      updateRevealState();
     }
 
     dlgBody.querySelectorAll<HTMLElement>('.dlg-var-num').forEach(btn => {
@@ -305,10 +242,9 @@ for (const e of allData) {
     // ── Randomize ───────────────────────────────────────────────────────
     dlgBody.querySelector('.dlg-randomize-btn')!.addEventListener('click', async () => {
       await quickRandomizeCard(card);
+      injectVisualInput(card);
+      wireCardInputs(card);
       if ((window as any).MathJax) (window as any).MathJax.typesetPromise([card]);
-      doInjectVisualInput();
-      doWireInputs();
-      updateRevealState();
     });
 
     if (mode === 'cart') updateAddBtn();
@@ -547,6 +483,10 @@ for (const e of allData) {
 .am-dialog-body .variant-content { display: none; width: 100%; }
 .am-dialog-body .variant-content.active { display: block; }
 
+/* Cacher numéro et navigation interne (gérés par dlg-var-bar) */
+.am-dialog-body .q-num,
+.am-dialog-body .card-header-controls { display: none !important; }
+
 /* Vraie carte rapido dans la dialog */
 .am-dialog-body .q-card {
   background: white;
@@ -627,7 +567,7 @@ for (const e of allData) {
 }
 .dlg-randomize-btn:hover { background: #e2e8f0; transform: rotate(180deg); }
 
-.dlg-reveal-btn {
+.dlg-reveal-btn, .dlg-validate-btn {
   background: #f1f5f9; border: none;
   border-radius: 50%; width: 30px; height: 30px;
   font-size: 1rem; cursor: pointer; color: #475569;
@@ -635,6 +575,7 @@ for (const e of allData) {
   display: flex; align-items: center; justify-content: center;
 }
 .dlg-reveal-btn:hover:not(:disabled) { background: #d1fae5; }
+.dlg-validate-btn:hover { background: #d1fae5; color: #16a34a; font-weight: 700; }
 .dlg-reveal-btn:disabled { cursor: default; }
 
 /* ── Footer ── */

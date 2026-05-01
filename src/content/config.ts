@@ -48,6 +48,7 @@ const rapidosCollection = defineCollection({
       z.object({
         variantes: z.array(
           z.object({
+            content: z.string().optional(),
             texte: z.string().optional(),
             gs: z.string().optional(),
             type: z.string().optional(),
@@ -71,6 +72,7 @@ const automathsCollection = defineCollection({
     gs: z.string().optional(),
     variantes: z.array(
       z.object({
+        content: z.string().optional(),
         texte: z.string().optional(),
         gs: z.string().optional(),
         type: z.string().optional(),

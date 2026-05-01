@@ -23,6 +23,8 @@ registerVisual('balance-equilibre',    () => import('../visuals/balance-equilibr
 registerVisual('programme-scratch',    () => import('../visuals/programme-scratch/programme-scratch.js'));
 registerVisual('suite-figures',        () => import('../visuals/suite-figures/suite-figures.js'));
 registerVisual('trajet-scratch',       () => import('../visuals/trajet-scratch/trajet-scratch.js'));
+registerVisual('ordre-nombres',        () => import('../visuals/ordre-nombres/ordre-nombres.js'));
+registerVisual('fraction-figure',      () => import('../visuals/fraction-figure/fraction-figure.js'));
 
 /**
  * Obtenir la liste des visuels disponibles

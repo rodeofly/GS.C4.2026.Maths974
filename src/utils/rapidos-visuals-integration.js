@@ -69,12 +69,40 @@ export function addVisualToggleButton(cardElement, options = {}) {
       <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3L21.5 8M22 12.5a10 10 0 0 1-18.8 4.3L2.5 16"></path>
     </svg>`;
 
-  reloadBtn.addEventListener('click', (e) => {
+  reloadBtn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    quickRandomize(cardElement);
+    await quickRandomize(cardElement);
+    // Re-câbler inputs DSL si question texte
+    const { wireCardInputs } = await import('./rapido-engine.js');
+    wireCardInputs(cardElement);
   });
 
   nav.appendChild(reloadBtn);
+
+  // Bouton Valider (✓) — entre ⟳ et ⚡, caché par défaut
+  const validateBtn = document.createElement('button');
+  validateBtn.className = 'visual-toggle-btn mini-eye btn-validate';
+  validateBtn.title = "Valider la réponse";
+  validateBtn.style.display = 'none';
+  validateBtn.textContent = '✓';
+  validateBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const activeVariant = cardElement.querySelector('.variant-content.active');
+    const placeEl = activeVariant?.querySelector('[data-place-mode]');
+    if (placeEl) {
+      placeEl.validate?.();
+      return;
+    }
+    activeVariant?.querySelectorAll('.rapido-input').forEach(inp => {
+      if (!inp.value.trim()) return;
+      const u = (inp.value.trim() ?? '').replace(/\s/g, '');
+      const s = (inp.dataset.solution ?? '').replace(/\s/g, '');
+      const ok = isNaN(parseFloat(u)) || isNaN(parseFloat(s)) ? u === s : Math.abs(parseFloat(u) - parseFloat(s)) < 0.001;
+      inp.classList.toggle('correct', ok);
+      inp.classList.toggle('incorrect', !ok);
+    });
+  });
+  nav.appendChild(validateBtn);
 
   const thunderBtn = document.createElement('button');
   thunderBtn.className = 'visual-toggle-btn mini-eye';
@@ -112,6 +140,17 @@ export async function handleVariantChange(cardElement, newVariantIndex, resetToO
   // Retour au config MD original si demandé (comportement par défaut sur clic bullet)
   if (resetToOriginal && variantContent.originalVisualData) {
     variantContent.visualData = JSON.parse(JSON.stringify(variantContent.originalVisualData));
+  }
+
+  // Auto-randomise si le variant n'a que rand (config vide ou sans données affichables)
+  const vd = variantContent.visualData;
+  if (vd.rand && Object.keys(vd.rand).length > 0) {
+    try {
+      const mod = await import(`../visuals/${vd.type}/${vd.type}.js`);
+      if (mod.randomize) {
+        vd.config = await mod.randomize(vd.config || {}, vd.rand, variantContent.originalVisualData?.config || {});
+      }
+    } catch {}
   }
 
   await VisualsSystem.initCardVisuals(cardElement, variantContent.visualData);
@@ -670,7 +709,10 @@ async function applyEditorChanges(panel) {
  */
 async function quickRandomize(cardElement) {
   const activeVariant = cardElement.querySelector('.variant-content.active');
-  if (!activeVariant?.visualData) return;
+  if (!activeVariant?.visualData) {
+    if (activeVariant?._rerandomize) activeVariant._rerandomize();
+    return;
+  }
   const { type, config, rand } = activeVariant.visualData;
   const originalConfig = activeVariant.originalVisualData?.config ?? config;
   const module = await import(`../visuals/${type}/${type}.js`);

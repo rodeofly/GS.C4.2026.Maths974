@@ -1,6 +1,7 @@
 // src/visuals/axe-gradue/axe-gradue.js
 
-import { toFraction } from '../../utils/number-utils.js';
+import { toFraction }    from '../../utils/number-utils.js';
+import { TemplateEngine } from '../../utils/template-engine.js';
 
 class AxeGradueComponent extends HTMLElement {
   constructor() {
@@ -142,8 +143,44 @@ class AxeGradueComponent extends HTMLElement {
     ctx.restore();
   }
 
+  _clearProjectedText() {
+    const card = this.closest?.('.q-card');
+    if (card) card.querySelectorAll('.sa-projected-text').forEach(el => el.remove());
+  }
+
+  _projectText(html) {
+    const card      = this.closest?.('.q-card');
+    const contentEl = card?.querySelector('.q-card-content');
+    if (!contentEl) return;
+    const slot = document.createElement('div');
+    slot.className = 'sa-projected-text';
+    slot.innerHTML = html;
+    contentEl.prepend(slot);
+    if (window.MathJax && this.isConnected)
+      window.MathJax.typesetPromise([slot]).catch(e => console.warn('MathJax:', e));
+  }
+
   render() {
     this.parseAttributes();
+
+    // Texte projeté dans la carte (DSL ou template simple)
+    this._clearProjectedText();
+    if (this.config.content) {
+      const engine = new TemplateEngine();
+      engine.reset();
+      const parsed = engine.parse(this.config.content, 'web')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      this._projectText(parsed);
+      if (this.config.placeTargetExpr)
+        this.config.placeTarget = engine.evaluate(this.config.placeTargetExpr);
+    } else if (this.config.textTemplate && this.config.placeTarget !== undefined) {
+      const html = this.config.textTemplate
+        .replace('{target}', this.config.placeTarget)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      this._projectText(html);
+    }
+
     this.adjustDimensionsForOrientation();
     this.innerHTML = '';
     const canvas = document.createElement('canvas');
@@ -309,7 +346,7 @@ class AxeGradueComponent extends HTMLElement {
 
       if (showNumbers && isMajor) {
         ctx.fillStyle = '#1e293b';
-        ctx.textAlign = 'center';
+        ctx.textAlign = x > width - 35 ? 'right' : x < 35 ? 'left' : 'center';
         ctx.font = 'bold 20px Lexend Deca, sans-serif';
 
         if (this.config.mode === 'decimal') {
@@ -462,6 +499,7 @@ class AxeGradueComponent extends HTMLElement {
 
   drawTooltip() {
     if (!this.hoveredPoint) return;
+    if (this.hoveredPoint.label === '?') return;
     const { ctx } = this;
     const p = this.hoveredPoint;
     const text = `${p.value}`;
@@ -510,8 +548,11 @@ class AxeGradueComponent extends HTMLElement {
         catch(e) { this.config.visibleLabels = null; }
     }
     if(this.hasAttribute('mode')) this.config.mode = this.getAttribute('mode');
-    if(this.hasAttribute('placeTarget')) this.config.placeTarget = parseFloat(this.getAttribute('placeTarget'));
-    if(this.hasAttribute('placeLabel'))  this.config.placeLabel  = this.getAttribute('placeLabel');
+    if(this.hasAttribute('placeTarget'))    this.config.placeTarget    = parseFloat(this.getAttribute('placeTarget'));
+    if(this.hasAttribute('placeLabel'))     this.config.placeLabel     = this.getAttribute('placeLabel');
+    if(this.hasAttribute('content'))         this.config.content         = this.getAttribute('content');
+    if(this.hasAttribute('placeTargetExpr')) this.config.placeTargetExpr = this.getAttribute('placeTargetExpr');
+    if(this.hasAttribute('textTemplate'))    this.config.textTemplate    = this.getAttribute('textTemplate');
     if(this.hasAttribute('denominators')) {
         try { 
           const d = JSON.parse(this.getAttribute('denominators'));
@@ -532,15 +573,49 @@ customElements.define('math974-axe-gradue', AxeGradueComponent);
 export const defaultPosition = 'north';
 
 export function randomize(config, rand) {
-  // Mode placement : tirage d'une graduation aléatoire dans l'axe courant
-  if (config.placeTarget !== undefined) {
-    const { min, max, step } = config;
-    const prec = step < 1 ? 2 : 0;
-    const ticks = [];
-    for (let v = min; v <= max + step / 10; v += step)
-      ticks.push(parseFloat(v.toFixed(prec)));
-    const newTarget = ticks[Math.floor(Math.random() * ticks.length)];
-    return { ...config, placeTarget: newTarget };
+  // Mode placement DSL : le re-render re-tire les variables
+  if ((config.placeTarget !== undefined || config.placeTargetExpr) && config.content)
+    return { ...config };
+
+  // ── Mode simplifié (1.4 + 1.5) : pointRange + pointStep + countRange + spacingRange ──
+  if (rand.pointRange) {
+    const ri     = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+    const step   = Array.isArray(rand.pointStep)
+      ? rand.pointStep[Math.floor(Math.random() * rand.pointStep.length)]
+      : Number(rand.pointStep || 1);
+    const minStart = rand.minStart !== undefined ? Number(rand.minStart) : -Infinity;
+    const [pMin, pMax] = rand.pointRange.map(Number);
+    const effectivePMin = isFinite(minStart) ? Math.max(pMin, minStart + step) : pMin;
+    const p      = effectivePMin + ri(0, Math.floor((pMax - effectivePMin) / step)) * step;
+
+    const [cMin, cMax] = (rand.countRange || [4, 7]).map(Number);
+    const count  = ri(cMin, cMax);
+
+    const maxK   = isFinite(minStart) ? Math.floor((p - minStart) / step) : Math.max(1, count - 2);
+    const k      = ri(1, Math.max(1, Math.min(count - 2, maxK)));
+    const min    = p - k * step;
+    const max    = min + (count - 1) * step;
+
+    const [sMin, sMax] = (rand.spacingRange || [1, 2]).map(Number);
+    const spacing = ri(sMin, Math.min(sMax, count - 1));
+    const ticks   = Array.from({ length: count }, (_, i) => min + i * step);
+    const pairs   = [];
+    for (let i = 0; i + spacing < count; i++) {
+      if (ticks[i] !== p && ticks[i + spacing] !== p)
+        pairs.push([ticks[i], ticks[i + spacing]]);
+    }
+    const visibleLabels = pairs.length > 0
+      ? pairs[Math.floor(Math.random() * pairs.length)]
+      : [min, max];
+
+    const base = { ...config, min, max, step, visibleLabels };
+
+    // 1.4 : mettre à jour le point '?'
+    if (config.points?.some(pt => pt.label === '?'))
+      return { ...base, points: config.points.map(pt => pt.label === '?' ? { ...pt, value: p } : pt) };
+
+    // 1.5 : mettre à jour placeTarget
+    return { ...base, placeTarget: p };
   }
 
   const ri = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;

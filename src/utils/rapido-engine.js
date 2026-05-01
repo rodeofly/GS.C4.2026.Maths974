@@ -18,6 +18,7 @@ import {
   addReponseZone,
   addSolutionZone,
 } from './rapidos-visuals-integration.js';
+import { TemplateEngine } from './template-engine.js';
 
 // ── Utilitaire texte ────────────────────────────────────────────────────────
 
@@ -41,7 +42,7 @@ function miniMd(text) {
  * @param {Function} [opts.onGsBadgeClick] - callback(gsKey) quand un badge GS est cliqué
  * @returns {HTMLElement}
  */
-function buildCard(question, index, prefix, opts = {}) {
+export function buildCard(question, index, prefix, opts = {}) {
   const { showEditor = true, onGsBadgeClick = null } = opts;
 
   const card = document.createElement('article');
@@ -98,7 +99,17 @@ function buildCard(question, index, prefix, opts = {}) {
     const varDiv = document.createElement('div');
     varDiv.className = `variant-content${vi === 0 ? ' active' : ''}`;
     varDiv.dataset.index = String(vi);
-    varDiv.dataset.reponse = v.reponse ?? '';
+    // DSL sur content (ou texte en fallback)
+    const engine = new TemplateEngine();
+    engine.reset();
+    const rawContent = v.content || v.texte || '';
+    const parsedContent = rawContent ? engine.parse(rawContent, 'web') : '';
+
+    // reponse: évaluée dynamiquement si entourée de [...]
+    let reponse = v.reponse ?? '';
+    if (reponse.startsWith('[') && reponse.endsWith(']'))
+      reponse = String(engine.evaluate(reponse.slice(1, -1)));
+    varDiv.dataset.reponse = reponse;
 
     // Attache visualData pour le système de visuels
     if (v.type) {
@@ -109,8 +120,23 @@ function buildCard(question, index, prefix, opts = {}) {
 
     const textDiv = document.createElement('div');
     textDiv.className = 'content';
-    textDiv.innerHTML = miniMd(v.texte ?? '');
+    textDiv.innerHTML = miniMd(parsedContent);
     varDiv.appendChild(textDiv);
+
+    // Closure pour re-randomiser le contenu DSL (sans visual)
+    if (rawContent) {
+      const _rawContent  = rawContent;
+      const _rawReponse  = v.reponse ?? '';
+      varDiv._rerandomize = () => {
+        const eng = new TemplateEngine();
+        eng.reset();
+        textDiv.innerHTML = miniMd(eng.parse(_rawContent, 'web'));
+        let rep = _rawReponse;
+        if (rep.startsWith('[') && rep.endsWith(']'))
+          rep = String(eng.evaluate(rep.slice(1, -1)));
+        varDiv.dataset.reponse = rep;
+      };
+    }
 
     content.appendChild(varDiv);
   });
@@ -133,20 +159,97 @@ function normalizeAnswer(s) {
   return (s ?? '').replace(/\s/g, '');
 }
 
+function gcd(a, b) {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  while (b) { [a, b] = [b, a % b]; }
+  return a || 1;
+}
+
+function reduceFrac(n, d) {
+  const g = gcd(n, d);
+  return [n / g, d / g];
+}
+
+function validateFracWrap(wrap) {
+  const [numInp, denInp] = wrap.querySelectorAll('.rapido-input');
+  if (!numInp || !denInp) return;
+  const numVal = parseInt(numInp.value.trim());
+  const denVal = parseInt(denInp.value.trim());
+  if (isNaN(numVal) || isNaN(denVal) || denVal === 0) return;
+  const [rn, rd]   = reduceFrac(numVal, denVal);
+  const [rsn, rsd] = reduceFrac(
+    parseInt(numInp.dataset.solution),
+    parseInt(denInp.dataset.solution)
+  );
+  const ok = rn === rsn && rd === rsd;
+  [numInp, denInp].forEach(inp => {
+    inp.classList.toggle('correct',   ok);
+    inp.classList.toggle('incorrect', !ok);
+  });
+}
+
 export function injectVisualInput(card) {
   card.querySelectorAll('.visual-answer-wrap').forEach(el => el.remove());
   const visualEl = card.querySelector('[data-solution]:not(.rapido-input)');
   if (!visualEl) return;
-  if (visualEl.dataset.placeMode) return; // axe-gradue place mode : interaction par clic, pas de champ texte
-  const sol = visualEl.dataset.solution;
-  const w   = Math.max(4, sol.length + 1);
-  const wrap = document.createElement('span');
-  wrap.className = 'rapido-input-wrap visual-answer-wrap';
-  wrap.innerHTML = `<input class="rapido-input" type="text" data-solution="${sol}" size="${w}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span>`;
-  card.querySelector('.variant-content.active .content')?.appendChild(wrap);
+  if (visualEl.dataset.placeMode) return;
+  const sol  = visualEl.dataset.solution;
+  const target = card.querySelector('.variant-content.active .content');
+  if (!target) return;
+
+  if (sol.includes('/')) {
+    const [numSol, denSol] = sol.split('/');
+    const num = parseInt(numSol), den = parseInt(denSol);
+
+    // Helpers locaux
+    const inp = (v) => {
+      const w = Math.max(2, String(v).length + 1);
+      return `<span class="rapido-input-wrap"><input class="rapido-input" type="text" data-solution="${v}" size="${w}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span></span>`;
+    };
+    const fracExact = (n, d) =>
+      `<span class="rapido-frac-exact">${inp(n)}<span class="rapido-frac-bar"></span>${inp(d)}</span>`;
+
+    if (num > den) {
+      // Fraction impropre → décomposition X/Y = Z + T/Y (5 champs, validation exacte)
+      const Z = Math.floor(num / den);
+      const T = num % den;
+      const wrap = document.createElement('span');
+      wrap.className = 'rapido-frac-decomp visual-answer-wrap';
+      wrap.innerHTML =
+        fracExact(num, den) +
+        `<span class="rapido-frac-op">=</span>` +
+        inp(Z) +
+        `<span class="rapido-frac-op">+</span>` +
+        fracExact(T, den);
+      target.appendChild(wrap);
+    } else {
+      // Fraction propre → double input avec validation GCD
+      const wrap = document.createElement('span');
+      wrap.className = 'rapido-frac-wrap visual-answer-wrap';
+      wrap.innerHTML = inp(num) + `<span class="rapido-frac-bar"></span>` + inp(den);
+      target.appendChild(wrap);
+    }
+  } else {
+    const w    = Math.max(4, sol.length + 1);
+    const wrap = document.createElement('span');
+    wrap.className = 'rapido-input-wrap visual-answer-wrap';
+    wrap.innerHTML = `<input class="rapido-input" type="text" data-solution="${sol}" size="${w}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span>`;
+    target.appendChild(wrap);
+  }
 }
 
 export function wireCardInputs(card) {
+  // Paires fraction : valider comme une unité (irréductible), avant le câblage individuel
+  card.querySelectorAll('.rapido-frac-wrap').forEach(wrap => {
+    wrap.querySelectorAll('.rapido-input').forEach(inp => {
+      if (inp.dataset.wired) return;
+      inp.dataset.wired = '1';
+      inp.addEventListener('blur',    () => validateFracWrap(wrap));
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') validateFracWrap(wrap); });
+    });
+  });
+
+  // Inputs simples (string comparison)
   card.querySelectorAll('.rapido-input').forEach(inp => {
     if (inp.dataset.wired) return;
     inp.dataset.wired = '1';
@@ -158,6 +261,30 @@ export function wireCardInputs(card) {
     };
     inp.addEventListener('blur', validate);
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') validate(); });
+  });
+
+  // Afficher/cacher le bouton ✓ selon présence d'inputs ou de composant interactif
+  const hasInputs   = !!card.querySelector('.rapido-input');
+  const hasPlaceEl  = !!card.querySelector('[data-place-mode]');
+  card.querySelectorAll('.btn-validate').forEach(btn => {
+    btn.style.display = (hasInputs || hasPlaceEl) ? '' : 'none';
+  });
+}
+
+export function validateActiveInputs(card) {
+  const active = card.querySelector('.variant-content.active');
+  if (!active) return;
+
+  // Paires fraction
+  active.querySelectorAll('.rapido-frac-wrap').forEach(wrap => validateFracWrap(wrap));
+
+  // Inputs simples
+  active.querySelectorAll('.rapido-input').forEach(inp => {
+    if (inp.closest('.rapido-frac-wrap')) return;
+    if (!inp.value.trim()) return;
+    const ok = normalizeAnswer(inp.value.trim()) === normalizeAnswer(inp.dataset.solution);
+    inp.classList.toggle('correct', ok);
+    inp.classList.toggle('incorrect', !ok);
   });
 }
 
@@ -175,8 +302,12 @@ export function wireTrainMode(card) {
 
   newBtn.addEventListener('click', e => {
     e.stopPropagation();
-    const inputs = card.querySelectorAll('.rapido-input');
-    if (inputs.length > 0) {
+    const placeEl = card.querySelector('[data-place-mode]');
+    const inputs  = card.querySelectorAll('.rapido-input');
+    if (placeEl) {
+      const active = placeEl.toggleSolution?.();
+      newBtn.classList.toggle('active', !!active);
+    } else if (inputs.length > 0) {
       const filled = Array.from(inputs).some(i => i.classList.contains('correct'));
       inputs.forEach(inp => {
         if (filled) { inp.value = ''; inp.classList.remove('correct', 'incorrect'); }

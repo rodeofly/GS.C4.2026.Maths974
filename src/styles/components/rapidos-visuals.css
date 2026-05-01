@@ -682,33 +682,80 @@
 .rapido-input {
   display: inline;
   border: none;
-  border-bottom: 2.5px solid #94a3b8;
-  background: transparent;
+  background: #e8edf2;
+  border-radius: 0.3em;
   font-size: 1em;
   font-weight: inherit;
   font-family: inherit;
   color: inherit;
   text-align: center;
-  padding: 0 0.25em 0.1em;
+  padding: 0.05em 0.3em 0.1em;
   vertical-align: baseline;
   outline: none;
-  border-radius: 0;
   min-width: 2ch;
-  transition: border-color 0.15s, background 0.15s;
+  transition: background 0.15s;
 }
-.rapido-input:focus     { border-color: #f59e0b; }
-.rapido-input.correct   { border-color: #16a34a; color: #16a34a; background: #f0fdf4; border-radius: 0.25em; }
-.rapido-input.incorrect { border-color: #dc2626; color: #dc2626; background: #fef2f2; border-radius: 0.25em; }
+.rapido-input:focus     { background: #fef9c3; outline: 2px solid #f59e0b; outline-offset: 1px; }
+.rapido-input.correct   { background: #f0fdf4; color: #16a34a; }
+.rapido-input.incorrect { background: #fef2f2; color: #dc2626; }
 
-/* Indicateur ✓ / ✗ en bas à gauche du champ (accessible daltoniens) */
+/* Indicateur ✓ / ✗ à l'intérieur du champ, en bas à gauche */
 .rapido-fb {
   position: absolute;
-  bottom: -1.1em;
-  left: 0.1em;
+  bottom: 0.05em;
+  left: 0.15em;
   font-size: 0.55em;
   font-weight: 900;
   line-height: 1;
   pointer-events: none;
 }
-.rapido-input.correct   + .rapido-fb::before { content: '✓'; color: #16a34a; }
-.rapido-input.incorrect + .rapido-fb::before { content: '✗'; color: #dc2626; }
+.rapido-input.correct   ~ .rapido-fb::before { content: '✓'; color: #16a34a; }
+.rapido-input.incorrect ~ .rapido-fb::before { content: '✗'; color: #dc2626; }
+
+/* === FRACTION INPUT [frac?{}{}] et injectVisualInput fraction === */
+/* .rapido-frac-wrap  → validation GCD (fraction équivalente acceptée)  */
+/* .rapido-frac-exact → validation exacte champ par champ (décomposition) */
+.rapido-frac-wrap,
+.rapido-frac-exact {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 0.3em;
+  gap: 3px;
+}
+.rapido-frac-bar {
+  align-self: stretch;
+  min-width: 2.5em;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.rapido-frac-wrap .rapido-input-wrap,
+.rapido-frac-exact .rapido-input-wrap {
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+.rapido-frac-wrap .rapido-input,
+.rapido-frac-exact .rapido-input {
+  text-align: center;
+  min-width: 2ch;
+}
+
+/* === DÉCOMPOSITION fraction impropre : X/Y = Z + T/Y === */
+.rapido-frac-decomp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  vertical-align: middle;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 0.4em 0.2em;
+}
+.rapido-frac-op {
+  font-size: 0.95em;
+  font-weight: 700;
+  color: #374151;
+}
+

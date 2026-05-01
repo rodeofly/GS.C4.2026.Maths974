@@ -103,7 +103,24 @@ export class TemplateEngine {
     return text.replace(/\[(.*?)\]/g, (match, content) => {
       content = content.trim();
 
-      // 1. Input trou [?expr]
+      // 1. Fraction input [frac?{num_expr}{denom_expr}]
+      if (content.startsWith('frac?')) {
+        const m = content.match(/^frac\?\{([^}]*)\}\{([^}]*)\}/);
+        if (m) {
+          if (mode === 'print') return '\\frac{\\Box}{\\Box}';
+          const numSol = String(this.evaluate(m[1]));
+          const denSol = String(this.evaluate(m[2]));
+          const nw = Math.max(2, numSol.length + 1);
+          const dw = Math.max(2, denSol.length + 1);
+          return `<span class="rapido-frac-wrap">` +
+            `<span class="rapido-input-wrap"><input class="rapido-input" type="text" data-solution="${numSol}" size="${nw}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span></span>` +
+            `<span class="rapido-frac-bar"></span>` +
+            `<span class="rapido-input-wrap"><input class="rapido-input" type="text" data-solution="${denSol}" size="${dw}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span></span>` +
+            `</span>`;
+        }
+      }
+
+      // 2. Input trou [?expr]
       if (content.startsWith('?')) {
         const expr     = content.substring(1).trim();
         const solution = this.evaluate(expr);
@@ -113,14 +130,14 @@ export class TemplateEngine {
         return `<span class="rapido-input-wrap"><input class="rapido-input" type="text" data-solution="${sol}" size="${w}" placeholder="…" autocomplete="off" spellcheck="false"><span class="rapido-fb" aria-hidden="true"></span></span>`;
       }
 
-      // 2. Affichage [>expr] — nombres en lettres, ou passe-plat si string
+      // 3. Affichage [>expr] — nombres en lettres, ou passe-plat si string
       if (content.startsWith('>')) {
         const expr   = content.substring(1).trim();
         const result = this.evaluate(expr);
         return typeof result === 'string' ? result : nombresEnLettres(result);
       }
 
-      // 3. Définition de variable — visible [name:range] ou silencieuse [#name:range]
+      // 4. Définition de variable — visible [name:range] ou silencieuse [#name:range]
       const silent     = content.startsWith('#');
       const defContent = silent ? content.substring(1) : content;
 
@@ -142,7 +159,7 @@ export class TemplateEngine {
         return silent ? '' : formatInt(val);
       }
 
-      // 4. Rappel de variable [name]
+      // 5. Rappel de variable [name]
       if (this.variables.has(content)) {
         return formatInt(this.variables.get(content));
       }
