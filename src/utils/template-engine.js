@@ -137,6 +137,12 @@ export class TemplateEngine {
         return typeof result === 'string' ? result : nombresEnLettres(result);
       }
 
+      // 3b. Affichage [=expr] — valeur numérique brute (pour usage dans LaTeX math)
+      if (content.startsWith('=')) {
+        const expr = content.substring(1).trim();
+        return String(this.evaluate(expr));
+      }
+
       // 4. Définition de variable — visible [name:range] ou silencieuse [#name:range]
       const silent     = content.startsWith('#');
       const defContent = silent ? content.substring(1) : content;
@@ -145,7 +151,8 @@ export class TemplateEngine {
         const [defPart, excludePart] = defContent.split('sauf');
         const [name, rangePart]     = defPart.split(':').map(s => s.trim());
         const [range, stepStr]      = rangePart.split(',').map(s => s.trim());
-        const [min, max]            = range.split('..').map(Number);
+        const evalBound = s => { const n = Number(s.trim()); return isNaN(n) ? Number(this.evaluate(s.trim())) : n; };
+        const [min, max]            = range.split('..').map(evalBound);
         const step                  = stepStr ? Number(stepStr) : 1;
 
         let exclude = [];

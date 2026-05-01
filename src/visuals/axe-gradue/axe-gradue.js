@@ -37,11 +37,14 @@ class AxeGradueComponent extends HTMLElement {
   // 🛠️ UTILITAIRE : Adapter dimensions selon orientation
   adjustDimensionsForOrientation() {
     if (this.config.orientation === 'vertical') {
-      // Si dimensions par défaut horizontal (450x100), adapter pour vertical
-      // SEULEMENT si width/height n'ont pas été explicitement définis dans la config
       if (this.config.width === 800 && (this.config.height === 80 || this.config.height === 100 || this.config.height === 120 || this.config.height === 160 || this.config.height === 200 || this.config.height === 300)) {
-        this.config.width = 180; // Réduit pour ne pas prendre trop de place (max 1/3 largeur)
-        this.config.height = 300; // Plus haut pour l'axe vertical
+        this.config.width = 180;
+        this.config.height = 300;
+      }
+    } else {
+      // En mode fraction/mixed, les étiquettes numérateur/barre/dénominateur nécessitent plus de hauteur
+      if ((this.config.mode === 'fraction' || this.config.mode === 'mixed') && this.config.height === 100) {
+        this.config.height = 140;
       }
     }
   }
@@ -175,7 +178,15 @@ class AxeGradueComponent extends HTMLElement {
       if (this.config.placeTargetExpr)
         this.config.placeTarget = engine.evaluate(this.config.placeTargetExpr);
     } else if (this.config.textTemplate && this.config.placeTarget !== undefined) {
+      let fracDisp = String(this.config.placeTarget).replace('.', ',');
+      const m = this.config.mode;
+      if (m === 'fraction' || m === 'mixed') {
+        const frac = toFraction(this.config.placeTarget, { allowedDenominators: this.config.denominators });
+        if (frac && frac.d !== 1)
+          fracDisp = `${frac.n}/${frac.d}`;
+      }
       const html = this.config.textTemplate
+        .replace('{targetFrac}', fracDisp)
         .replace('{target}', this.config.placeTarget)
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
       this._projectText(html);
@@ -197,8 +208,7 @@ class AxeGradueComponent extends HTMLElement {
       canvas.style.maxHeight = this.config.height + 'px';
     } else {
       canvas.style.maxWidth = this.config.width + 'px';
-      // Force une hauteur max stricte en horizontal pour tenir sur l'écran (5 questions)
-      canvas.style.maxHeight = Math.min(this.config.height, 120) + 'px';
+      canvas.style.maxHeight = this.config.height + 'px';
     }
     canvas.style.objectFit = 'contain';
     ctx.scale(2, 2);
@@ -223,10 +233,16 @@ class AxeGradueComponent extends HTMLElement {
       canvas.addEventListener('click', this.handleClick.bind(this));
     } else {
       delete this.dataset.placeMode;
-      // Mode lecture : le point '?' expose sa valeur pour l'input texte
-      const questionPoint = this.config.points?.find(p => p.label === '?');
+      // Mode lecture : point '?' ou point avec question:true expose sa valeur pour l'input texte
+      const questionPoint = this.config.points?.find(p => p.label === '?' || p.question);
       if (questionPoint !== undefined) {
-        this.dataset.solution = String(questionPoint.value);
+        const m = this.config.mode;
+        if (m === 'fraction' || m === 'mixed') {
+          const frac = toFraction(questionPoint.value, { allowedDenominators: this.config.denominators });
+          this.dataset.solution = (frac && frac.d !== 1) ? `${frac.n}/${frac.d}` : String(questionPoint.value);
+        } else {
+          this.dataset.solution = String(questionPoint.value);
+        }
       } else {
         delete this.dataset.solution;
       }
@@ -499,7 +515,7 @@ class AxeGradueComponent extends HTMLElement {
 
   drawTooltip() {
     if (!this.hoveredPoint) return;
-    if (this.hoveredPoint.label === '?') return;
+    if (this.hoveredPoint.label === '?' || this.hoveredPoint.question) return;
     const { ctx } = this;
     const p = this.hoveredPoint;
     const text = `${p.value}`;
@@ -577,28 +593,40 @@ export function randomize(config, rand) {
   if ((config.placeTarget !== undefined || config.placeTargetExpr) && config.content)
     return { ...config };
 
-  // ── Mode simplifié (1.4 + 1.5) : pointRange + pointStep + countRange + spacingRange ──
+  // ── Mode simplifié (1.4 + 1.5) : pointRange + pointStep/denominatorPool + countRange + spacingRange ──
   if (rand.pointRange) {
-    const ri     = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
-    const step   = Array.isArray(rand.pointStep)
-      ? rand.pointStep[Math.floor(Math.random() * rand.pointStep.length)]
-      : Number(rand.pointStep || 1);
+    const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+    const fix = v => parseFloat(v.toFixed(10));
+
+    // denominatorPool : tire un dénominateur → fixe step + denominators
+    let denomOverride = null;
+    let step;
+    if (rand.denominatorPool?.length) {
+      const d = rand.denominatorPool[Math.floor(Math.random() * rand.denominatorPool.length)];
+      denomOverride = [d];
+      step = fix(1 / d);
+    } else {
+      step = Array.isArray(rand.pointStep)
+        ? rand.pointStep[Math.floor(Math.random() * rand.pointStep.length)]
+        : Number(rand.pointStep || 1);
+    }
+
     const minStart = rand.minStart !== undefined ? Number(rand.minStart) : -Infinity;
     const [pMin, pMax] = rand.pointRange.map(Number);
-    const effectivePMin = isFinite(minStart) ? Math.max(pMin, minStart + step) : pMin;
-    const p      = effectivePMin + ri(0, Math.floor((pMax - effectivePMin) / step)) * step;
+    const effectivePMin = isFinite(minStart) ? Math.max(pMin, fix(minStart + step)) : pMin;
+    const p = fix(effectivePMin + ri(0, Math.floor((pMax - effectivePMin) / step)) * step);
 
     const [cMin, cMax] = (rand.countRange || [4, 7]).map(Number);
     const count  = ri(cMin, cMax);
 
     const maxK   = isFinite(minStart) ? Math.floor((p - minStart) / step) : Math.max(1, count - 2);
     const k      = ri(1, Math.max(1, Math.min(count - 2, maxK)));
-    const min    = p - k * step;
-    const max    = min + (count - 1) * step;
+    const min    = fix(p - k * step);
+    const max    = fix(min + (count - 1) * step);
 
     const [sMin, sMax] = (rand.spacingRange || [1, 2]).map(Number);
     const spacing = ri(sMin, Math.min(sMax, count - 1));
-    const ticks   = Array.from({ length: count }, (_, i) => min + i * step);
+    const ticks   = Array.from({ length: count }, (_, i) => fix(min + i * step));
     const pairs   = [];
     for (let i = 0; i + spacing < count; i++) {
       if (ticks[i] !== p && ticks[i + spacing] !== p)
@@ -608,11 +636,11 @@ export function randomize(config, rand) {
       ? pairs[Math.floor(Math.random() * pairs.length)]
       : [min, max];
 
-    const base = { ...config, min, max, step, visibleLabels };
+    const base = { ...config, ...(denomOverride ? { denominators: denomOverride } : {}), min, max, step, visibleLabels };
 
-    // 1.4 : mettre à jour le point '?'
-    if (config.points?.some(pt => pt.label === '?'))
-      return { ...base, points: config.points.map(pt => pt.label === '?' ? { ...pt, value: p } : pt) };
+    // 1.4 : mettre à jour le point question ('?' ou question:true)
+    if (config.points?.some(pt => pt.label === '?' || pt.question))
+      return { ...base, points: config.points.map(pt => (pt.label === '?' || pt.question) ? { ...pt, value: p } : pt) };
 
     // 1.5 : mettre à jour placeTarget
     return { ...base, placeTarget: p };
